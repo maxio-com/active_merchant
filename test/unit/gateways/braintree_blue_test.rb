@@ -86,14 +86,14 @@ class BraintreeBlueTest < Test::Unit::TestCase
   end
 
   def test_store_with_verify_card_true
-    customer_attributes = {
+    customer = mock(
       :credit_cards => [],
       :email => 'email',
       :first_name => 'John',
-      :last_name => 'Smith',
-      :id => "123"
-    }
-    result = Braintree::SuccessfulResult.new(:customer => mock(customer_attributes))
+      :last_name => 'Smith'
+    )
+    customer.expects(:id).twice.returns('123')
+    result = Braintree::SuccessfulResult.new(:customer => customer)
     Braintree::Customer.expects(:create).with do |params|
       params[:credit_card][:options].has_key?(:verify_card)
       assert_equal true, params[:credit_card][:options][:verify_card]
@@ -104,14 +104,14 @@ class BraintreeBlueTest < Test::Unit::TestCase
   end
 
   def test_store_with_verify_card_false
-    customer_attributes = {
+    customer = mock(
       :credit_cards => [],
       :email => 'email',
       :first_name => 'John',
-      :last_name => 'Smith',
-      :id => "123"
-    }
-    result = Braintree::SuccessfulResult.new(:customer => mock(customer_attributes))
+      :last_name => 'Smith'
+    )
+    customer.expects(:id).twice.returns('123')
+    result = Braintree::SuccessfulResult.new(:customer => customer)
     Braintree::Customer.expects(:create).with do |params|
       params[:credit_card][:options].has_key?(:verify_card)
       assert_equal false, params[:credit_card][:options][:verify_card]
