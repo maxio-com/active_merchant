@@ -153,6 +153,7 @@ module ActiveMerchant #:nodoc:
       # * <tt>:first_name</tt> -- The first name of the account being refunded.
       # * <tt>:last_name</tt> -- The last name of the account being refunded.
       # * <tt>:zip</tt> -- The postal code of the account being refunded.
+      # * <tt>:exp_date</tt> -- The credit card expiration_date the refund is being issued to. Needed in the event that the card you wish to issue a credit for is expired and the cardholder has provided a new expiration date for the same card.
       def refund(money, identification, options = {})
         requires!(options, :card_number)
 
@@ -160,6 +161,7 @@ module ActiveMerchant #:nodoc:
                  :card_num => options[:card_number]
                }
 
+        post[:exp_date]   = options[:exp_date] if options[:exp_date]
         post[:first_name] = options[:first_name] if options[:first_name]
         post[:last_name] = options[:last_name] if options[:last_name]
         post[:zip] = options[:zip] if options[:zip]
