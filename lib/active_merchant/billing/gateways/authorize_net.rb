@@ -153,7 +153,7 @@ module ActiveMerchant #:nodoc:
       # * <tt>:first_name</tt> -- The first name of the account being refunded.
       # * <tt>:last_name</tt> -- The last name of the account being refunded.
       # * <tt>:zip</tt> -- The postal code of the account being refunded.
-      # * <tt>:exp_date</tt> -- The credit card expiration_date the refund is being issued to. Needed in the event that the card you wish to issue a credit for is expired and the cardholder has provided a new expiration date for the same card.
+      # * <tt>:exp_date</tt> -- The credit card expiration_date the refund is being issued to. Needed in the event that the card you wish to issue a credit for is expired and the cardholder has provided a new expiration date for the same card. See the following link for acceptable formats: http://developer.authorize.net/guides/AIM/Transaction_Data_Requirements/Transaction_Information.htm
       def refund(money, identification, options = {})
         requires!(options, :card_number)
 

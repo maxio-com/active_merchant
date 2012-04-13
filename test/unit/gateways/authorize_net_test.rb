@@ -121,12 +121,12 @@ class AuthorizeNetTest < Test::Unit::TestCase
   
   def test_refund_passing_extra_info
     response = stub_comms do
-      @gateway.refund(50, '123456789', :card_number => @credit_card.number, :first_name => "Bob", :last_name => "Smith", :zip => "12345", :exp_date => "09#{@credit_card.year}")
+      @gateway.refund(50, '123456789', :card_number => @credit_card.number, :first_name => "Bob", :last_name => "Smith", :zip => "12345", :exp_date => "0915")
     end.check_request do |endpoint, data, headers|
       assert_match(/x_first_name=Bob/, data)
       assert_match(/x_last_name=Smith/, data)
       assert_match(/x_zip=12345/, data)
-      assert_match(/x_exp_date=09#{@credit_card.year}/, data)
+      assert_match(/x_exp_date=0915/, data)
     end.respond_with(successful_purchase_response)
     assert_success response
   end
