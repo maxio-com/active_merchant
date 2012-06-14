@@ -2,14 +2,24 @@ require 'test_helper'
 
 class RemoteSecurePayAuTest < Test::Unit::TestCase
 
+  class MyCreditCard
+    include ActiveMerchant::Billing::CreditCardMethods
+    include ActiveMerchant::Validateable
+    attr_accessor :number, :month, :year, :first_name, :last_name, :verification_value, :brand
+
+    def verification_value?
+      !@verification_value.blank?
+    end
+  end
+
   def setup
     @gateway = SecurePayAuGateway.new(fixtures(:secure_pay_au))
 
     @amount = 100
-    @credit_card = credit_card('4444333322221111', {:month => 9, :year => 15})
+    @credit_card = credit_card('4242424242424242', {:month => 9, :year => 15})
 
     @options = {
-      :order_id => '1',
+      :order_id => '2',
       :billing_address => address,
       :description => 'Store Purchase'
     }
@@ -17,6 +27,22 @@ class RemoteSecurePayAuTest < Test::Unit::TestCase
 
   def test_successful_purchase
     assert response = @gateway.purchase(@amount, @credit_card, @options)
+    assert_success response
+    assert_equal 'Approved', response.message
+  end
+
+  def test_successful_purchase_with_custom_credit_card_class
+    options = {
+      :number => 4242424242424242,
+      :month => 9,
+      :year => Time.now.year + 1,
+      :first_name => 'Longbob',
+      :last_name => 'Longsen',
+      :verification_value => '123',
+      :brand => 'visa'
+    }
+    credit_card = MyCreditCard.new(options)
+    assert response = @gateway.purchase(@amount, credit_card, @options)
     assert_success response
     assert_equal 'Approved', response.message
   end
@@ -76,11 +102,13 @@ class RemoteSecurePayAuTest < Test::Unit::TestCase
   def test_successful_void
     assert response = @gateway.purchase(@amount, @credit_card, @options)
     assert_success response
+
     authorization = response.authorization
 
-    assert response = @gateway.void(authorization)
-    assert_success response
-    assert_equal 'Approved', response.message
+    assert result = @gateway.void(authorization)
+
+    assert_success result
+    assert_equal 'Approved', result.message
   end
 
   def test_failed_void
@@ -102,13 +130,12 @@ class RemoteSecurePayAuTest < Test::Unit::TestCase
     assert_equal 'Successful', response.message
   end
 
-  def test_failed_unstore
+  def test_repeat_unstore
     @gateway.unstore('test1234') rescue nil #Ensure it is already missing
 
-    assert response = @gateway.unstore('test1234')
-    assert_failure response
+    response = @gateway.unstore('test1234')
 
-    assert_equal 'Normal', response.message
+    assert_success response
   end
 
   def test_successful_store
@@ -155,6 +182,6 @@ class RemoteSecurePayAuTest < Test::Unit::TestCase
               )
     assert response = gateway.purchase(@amount, @credit_card, @options)
     assert_failure response
-    assert_equal "Fatal Unknown Error", response.message
+    assert_equal "Invalid merchant ID", response.message
   end
 end

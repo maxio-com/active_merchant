@@ -64,7 +64,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def purchase(money, credit_card_or_stored_id, options = {})
-        if credit_card_or_stored_id.is_a?(ActiveMerchant::Billing::CreditCard)
+        if credit_card_or_stored_id.respond_to?(:number)
           requires!(options, :order_id)
           commit :purchase, build_purchase_request(money, credit_card_or_stored_id, options)
         else
@@ -126,7 +126,8 @@ module ActiveMerchant #:nodoc:
       def build_reference_request(money, reference)
         xml = Builder::XmlMarkup.new
 
-        transaction_id, order_id, preauth_id, original_amount = reference.split("*")
+        transaction_id, order_id, preauth_id, original_amount = reference.split('*')
+
         xml.tag! 'amount', (money ? amount(money) : original_amount)
         xml.tag! 'currency', options[:currency] || currency(money)
         xml.tag! 'txnID', transaction_id

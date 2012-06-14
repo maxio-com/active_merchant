@@ -148,7 +148,7 @@ module ActiveMerchant
         :first_name => 'Longbob',
         :last_name => 'Longsen',
         :verification_value => '123',
-        :type => 'visa'
+        :brand => 'visa'
       }.update(options)
 
       Billing::CreditCard.new(defaults)
@@ -193,11 +193,13 @@ module ActiveMerchant
     end
         
     def load_fixtures
-      file = File.exists?(LOCAL_CREDENTIALS) ? LOCAL_CREDENTIALS : DEFAULT_CREDENTIALS
-      yaml_data = YAML.load(File.read(file))
-      symbolize_keys(yaml_data)
-    
-      yaml_data
+      [DEFAULT_CREDENTIALS, LOCAL_CREDENTIALS].inject({}) do |credentials, file_name|
+        if File.exists?(file_name)
+          yaml_data = YAML.load(File.read(file_name))
+          credentials.merge!(symbolize_keys(yaml_data))
+        end
+        credentials
+      end
     end
     
     def symbolize_keys(hash)

@@ -32,7 +32,7 @@ class RealexTest < Test::Unit::TestCase
       :year => 2008,
       :first_name => 'Longbob',
       :last_name => 'Longsen',
-      :type => 'visa'
+      :brand => 'visa'
     )
     
     @options = {
@@ -121,6 +121,16 @@ class RealexTest < Test::Unit::TestCase
   
     response = @gateway.purchase(@amount, @credit_card, @options)
     assert_equal 'M', response.cvv_result['code']
+  end
+  
+  def test_malformed_xml
+    @gateway.expects(:ssl_post).returns(malformed_unsuccessful_purchase_response)
+    
+    response = @gateway.purchase(@amount, @credit_card, @options)
+    assert_instance_of Response, response
+    assert_failure response
+    assert_equal '[ test system ] This is  not awesome', response.params['message']
+    assert response.test?
   end
   
   def test_capture_xml
@@ -340,6 +350,35 @@ SRC
   <authcode>authcode received</authcode>
   <result>01</result>
   <message>[ test system ] message returned from system</message>
+  <pasref> realex payments reference</pasref>
+  <cvnresult>M</cvnresult>
+  <batchid>batch id for this transaction (if any)</batchid>
+  <cardissuer>
+    <bank>Issuing Bank Name</bank>
+    <country>Issuing Bank Country</country>
+    <countrycode>Issuing Bank Country Code</countrycode>
+    <region>Issuing Bank Region</region>
+  </cardissuer>
+  <tss>
+    <result>89</result>
+    <check id="1000">9</check>
+    <check id="1001">9</check>
+  </tss>
+  <sha1hash>7384ae67....ac7d7d</sha1hash>
+  <md5hash>34e7....a77d</md5hash>
+</response>"
+    RESPONSE
+  end
+  
+  def malformed_unsuccessful_purchase_response
+    <<-RESPONSE
+<response timestamp='20010427043422'>
+  <merchantid>your merchant id</merchantid>
+  <account>account to use</account>
+  <orderid>order id from request</orderid>
+  <authcode>authcode received</authcode>
+  <result>01</result>
+  <message>[ test system ] This is & not awesome</message>
   <pasref> realex payments reference</pasref>
   <cvnresult>M</cvnresult>
   <batchid>batch id for this transaction (if any)</batchid>
