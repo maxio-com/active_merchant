@@ -584,6 +584,19 @@ class AuthorizeNetCimTest < Test::Unit::TestCase
     assert_equal 'This transaction has been approved.', response.params['direct_response']['message']
   end
 
+  def test_should_include_customer_ip_option
+    options = {:ip => '0.0.0.0',
+               :extra_options => {:x_foo => 'bar'}}
+    assert_equal "x_foo=bar&x_customer_ip=0.0.0.0", @gateway.send(:build_extra_options_string,options)
+  end
+
+  def test_should_not_overwrite_explicit_ip_option
+    options = {:ip => '0.0.0.0',
+               :extra_options => {:x_foo => 'bar',
+                                  :x_customer_ip => '1.1.1.1'}}
+    assert_equal "x_foo=bar&x_customer_ip=1.1.1.1", @gateway.send(:build_extra_options_string,options)
+  end
+
   private
   
   def get_auth_only_response

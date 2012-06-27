@@ -656,7 +656,8 @@ module ActiveMerchant #:nodoc:
                 tag_unless_blank(xml,'customerShippingAddressId', transaction[:customer_shipping_address_id])
                 xml.tag!('transId', transaction[:trans_id])
               when :refund
-                #TODO - add lineItems and extraOptions fields 
+                #TODO - add lineItems
+                xml.tag!('extraOptions', xml.cdata!(build_extra_options_string(@options))) if @options[:ip] || @options[:extra_options]
                 xml.tag!('amount', transaction[:amount])
                 tag_unless_blank(xml, 'customerProfileId', transaction[:customer_profile_id])
                 tag_unless_blank(xml, 'customerPaymentProfileId', transaction[:customer_payment_profile_id])
@@ -681,6 +682,12 @@ module ActiveMerchant #:nodoc:
             add_order(xml, transaction[:order]) if transaction[:order].present?
           end
         end
+      end
+
+      def build_extra_options_string(options)
+        options[:extra_options].reverse_merge!(:x_customer_ip => options[:ip]) if options[:ip]
+        extra_options = options[:extra_options].map {|key, value| "#{key}=#{value}" }
+        extra_options.join("&")
       end
 
       def add_tax(xml, tax)
