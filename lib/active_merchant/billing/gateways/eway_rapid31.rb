@@ -22,7 +22,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def purchase(money, credit_card_or_token, options = {})
-        requires!(options, :billing_address)
+        requires!(options, :billing_address) unless token?(credit_card_or_token)
 
         post = {}
         post[:Payment] ||= {}
@@ -74,6 +74,10 @@ module ActiveMerchant #:nodoc:
 
       private
 
+      def token?(input)
+        input.is_a?(String) || input.is_a?(Integer)
+      end
+
       def url_for(endpoint)
         (test? ? test_url : live_url) + endpoint
       end
@@ -86,7 +90,10 @@ module ActiveMerchant #:nodoc:
 
       def add_customer_data(post, options)
         post[:Customer] ||= {}
-        post[:Customer].merge! translated_address_hash(post, (options[:billing_address] || options[:address]), { :email => options[:email] })
+
+        if options[:billing_address] || options[:address]
+          post[:Customer].merge! translated_address_hash(post, (options[:billing_address] || options[:address]), { :email => options[:email] })
+        end
 
         if options[:shipping_address]
           post[:ShippingAddress] = translated_address_hash(post, options[:shipping_address])
@@ -131,7 +138,7 @@ module ActiveMerchant #:nodoc:
       def add_credit_card(post, credit_card_or_token)
         post[:Customer] ||= {}
 
-        if credit_card_or_token.is_a?(String) || credit_card_or_token.is_a?(Integer)
+        if token?(credit_card_or_token)
           post[:Customer][:TokenCustomerID] = credit_card_or_token.to_s
         else
           post[:Customer][:CardDetails] ||= {}
