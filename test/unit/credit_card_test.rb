@@ -370,7 +370,7 @@ class CreditCardTest < Test::Unit::TestCase
     assert !card.valid?
     assert_equal "", card.number
   end
-  
+
   def test_brand_is_aliased_as_type
     assert_deprecation_warning("CreditCard#type is deprecated and will be removed from a future release of ActiveMerchant. Please use CreditCard#brand instead.", CreditCard) do
       assert_equal @visa.type, @visa.brand
@@ -378,5 +378,13 @@ class CreditCardTest < Test::Unit::TestCase
     assert_deprecation_warning("CreditCard#type is deprecated and will be removed from a future release of ActiveMerchant. Please use CreditCard#brand instead.", CreditCard) do
       assert_equal @solo.type, @solo.brand
     end
+  end
+
+  def test_should_be_true_when_credit_card_has_a_reference
+    c = CreditCard.new
+    assert_false c.reference?
+
+    c = CreditCard.new(:reference => 'visa01')
+    assert c.reference?
   end
 end

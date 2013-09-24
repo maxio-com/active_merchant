@@ -117,6 +117,15 @@ module ActiveMerchant #:nodoc:
       # @return [String]
       attr_accessor :track_data
 
+      # Returns or sets a card reference value.
+      #
+      # This attribute is optional and is for setting a reference value for a
+      # card on gateway that support multiple payment methods (cards) on a
+      # payer.
+      #
+      # @return [String] the reference value
+      attr_accessor :reference
+
       def type
         self.class.deprecated "CreditCard#type is deprecated and will be removed from a future release of ActiveMerchant. Please use CreditCard#brand instead."
         brand
@@ -139,6 +148,11 @@ module ActiveMerchant #:nodoc:
       # @return +true+ if the card has expired, +false+ otherwise
       def expired?
         expiry_date.expired?
+      end
+
+      # Returns whether the +reference+ attribute has been set.
+      def reference?
+        @reference.present?
       end
 
       # Returns whether either the +first_name+ or the +last_name+ attributes has been set.
