@@ -1,7 +1,6 @@
 require 'test_helper'
 
 class RemoteRealexTest < Test::Unit::TestCase
-
   def setup
     @gateway = RealexGateway.new(fixtures(:realex))
 
@@ -19,6 +18,11 @@ class RemoteRealexTest < Test::Unit::TestCase
     @mastercard_coms_error = card_fixtures(:realex_mastercard_coms_error)
 
     @amount = 10000
+
+    @customer = generate_unique_id
+
+    # require 'logger'
+    # ActiveMerchant::Billing::Gateway.wiredump_device = Logger.new(STDOUT)
   end
 
   def card_fixtures(name)
@@ -36,6 +40,7 @@ class RemoteRealexTest < Test::Unit::TestCase
           :country => 'US'
         }
       )
+
       assert_not_nil response
       assert_success response
       assert response.test?
@@ -58,7 +63,7 @@ class RemoteRealexTest < Test::Unit::TestCase
     assert_failure response
 
     assert_equal '504', response.params['result']
-    assert_equal "There is no such merchant id. Please contact realex payments if you continue to experience this problem.", response.message
+    assert_equal "There is no such merchant id. Please contact Realex Payments if you continue to experience this problem.", response.message
   end
 
   def test_realex_purchase_with_invalid_account
@@ -101,7 +106,7 @@ class RemoteRealexTest < Test::Unit::TestCase
       assert_not_nil response
       assert_failure response
       assert response.test?
-      assert_equal '102', response.params['result']
+      assert_equal '103', response.params['result']
       assert_equal RealexGateway::DECLINED, response.message
     end
   end
@@ -111,11 +116,11 @@ class RemoteRealexTest < Test::Unit::TestCase
 
       response = @gateway.purchase(@amount, card,
         :order_id => generate_unique_id,
-        :description => 'Test Realex Rqeferral A'
+        :description => 'Test Realex Referral A'
       )
       assert_not_nil response
       assert_failure response
-      assert_equal '103', response.params['result']
+      assert_equal '102', response.params['result']
       assert_equal RealexGateway::DECLINED, response.message
     end
 
@@ -164,7 +169,7 @@ class RemoteRealexTest < Test::Unit::TestCase
     assert_failure response
 
     assert_equal '509', response.params['result']
-    assert_equal "Expiry date invalid", response.message
+    assert_equal 'Invalid Expiry Date', response.message
   end
 
   def test_realex_expiry_year_error
@@ -178,7 +183,7 @@ class RemoteRealexTest < Test::Unit::TestCase
     assert_failure response
 
     assert_equal '509', response.params['result']
-    assert_equal "Expiry date invalid", response.message
+    assert_equal 'Expiry date invalid', response.message
   end
 
   def test_invalid_credit_card_name
@@ -283,7 +288,7 @@ class RemoteRealexTest < Test::Unit::TestCase
   def test_realex_purchase_then_refund
     order_id = generate_unique_id
 
-    gateway_with_refund_password = RealexGateway.new(fixtures(:realex).merge(:rebate_secret => 'refund'))
+    gateway_with_refund_password = RealexGateway.new(fixtures(:realex).merge(:rebate_secret => 'rebate'))
 
     purchase_response = gateway_with_refund_password.purchase(@amount, @visa,
       :order_id => order_id,
@@ -303,4 +308,97 @@ class RemoteRealexTest < Test::Unit::TestCase
     assert_equal 'Successful', rebate_response.message
   end
 
+  def test_realex_successful_store
+    response = @gateway.store(@visa)
+
+    assert_success response
+    assert response.test?
+    assert_equal 'Successful', response.message
+  end
+
+  def test_realex_unsuccessful_store
+    @visa.number = '0000000000000000'
+    response = @gateway.store(@visa)
+
+    assert_failure response
+    assert response.test?
+    assert_equal 'That Card Number does not correspond to the card type you selected', response.message
+  end
+
+  def test_realex_successful_purchase_with_token
+    store = @gateway.store(@visa)
+
+    assert_success store
+
+    response = @gateway.purchase(@amount, store.authorization, :order_id => generate_unique_id)
+
+    assert_success response
+    assert response.test?
+    assert 'Successful', response.message
+  end
+
+  def test_realex_unsuccessful_purchase_with_token
+    store = @gateway.store(@visa)
+
+    assert_success store
+
+    response = @gateway.purchase(@amount, 'badref', :order_id => generate_unique_id)
+
+    assert_failure response
+    assert response.test?
+  end
+
+  def test_realex_successful_update_card
+    store = @gateway.store(@visa)
+
+    assert_success store
+
+    response = @gateway.update(store.authorization, @mastercard)
+
+    assert_success response
+    assert response.test?
+    assert_equal 'Successful', response.message
+  end
+
+  def test_realex_unsuccessful_update_card
+    store = @gateway.store(@visa)
+
+    assert_success store
+
+    response = @gateway.update('badref', @mastercard)
+
+    assert_failure response
+    assert response.test?
+    assert 'Mandatory Fields missing: Card Reference. See Developers Guide', response.message
+  end
+
+  def test_realex_successul_purchase_with_updated_card
+    store = @gateway.store(@visa)
+    assert_success store
+
+    update = @gateway.update(store.authorization, @mastercard)
+    assert_success update
+
+    response = @gateway.purchase(@amount, update.authorization, :order_id => generate_unique_id)
+    assert_success response
+    assert response.test?
+  end
+
+  def test_realex_successful_refund_card
+    @options.merge!(:refund => 'refund')
+
+    store = @gateway.store(@visa)
+
+    assert_success store
+
+    purchase = @gateway.purchase(@amount, store.authorization, :order_id => generate_unique_id)
+
+    assert_success purchase
+
+    response = @gateway.refund(@amount, purchase.authorization)
+
+    assert_success response
+    assert response.test?
+    assert_equal 'Successful', response.message
+  end
 end

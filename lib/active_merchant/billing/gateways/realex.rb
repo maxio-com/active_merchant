@@ -19,7 +19,10 @@ module ActiveMerchant
     # so if validation fails you can not correct and resend using the
     # same order id
     class RealexGateway < Gateway
+      class_attribute :live_vault_url, :test_vault_url
+
       self.live_url = self.test_url = 'https://epage.payandshop.com/epage-remote.cgi'
+      self.live_vault_url = self.test_vault_url = 'https://epage.payandshop.com/epage-remote-plugins.cgi'
 
       CARD_MAPPING = {
         'master'            => 'MC',
@@ -48,11 +51,20 @@ module ActiveMerchant
         super
       end
 
-      def purchase(money, credit_card, options = {})
+      def purchase(money, credit_card_or_token, options = {})
         requires!(options, :order_id)
 
-        request = build_purchase_or_authorization_request(:purchase, money, credit_card, options)
-        commit(request)
+        request = if credit_card_or_token.is_a?(String)
+          use_vault = true
+
+          build_purchase_with_token(money, credit_card_or_token, options)
+        else
+          use_vault = false
+
+          build_purchase_or_authorization_request(:purchase, money, credit_card_or_token, options)
+        end
+
+        commit(request, :use_vault => use_vault)
       end
 
       def authorize(money, creditcard, options = {})
@@ -82,13 +94,44 @@ module ActiveMerchant
         commit(request)
       end
 
+      def store_payer(cc, options = {})
+        request = build_payer_create_request(cc, options)
+        commit(request, :use_vault => true, :token => build_token(options))
+      end
+
+      def store_card(cc, options = {})
+        request = build_payment_method_create_request(cc, options)
+        commit(request, :use_vault => true, :token => build_token(options))
+      end
+
+      def store(credit_card, options = {})
+        options[:customer]       = options[:customer] || generate_unique_id[0...30]
+        options[:card_reference] = options[:card_reference] || generate_unique_id[0...30]
+
+        MultiResponse.new.tap do |r|
+          r.process { store_payer(credit_card, options) }
+          r.process { store_card(credit_card, options) }
+        end
+      end
+
+      def update(token, credit_card, options = {})
+        commit(build_update_request(token, credit_card, options), :use_vault => true, :token => token)
+      end
+
       private
-      def commit(request)
-        response = parse(ssl_post(self.live_url, request))
+
+      def build_token(options)
+        "#{options[:customer]};#{options[:card_reference]}"
+      end
+
+      def commit(request, params = {})
+        params = { :use_vault => false, :token => nil }.merge(params)
+
+        response = parse(ssl_post((params[:use_vault] ? self.live_vault_url : self.live_url), request))
 
         Response.new(response[:result] == "00", message_from(response), response,
-          :test => response[:message] =~ /\[ test system \]/,
-          :authorization => authorization_from(response),
+          :test => (response[:message] =~ /\[ test system \]/ || test?),
+          :authorization => params[:token] || authorization_from(response),
           :cvv_result => response[:cvnresult],
           :avs_result => {
             :street_match => response[:avspostcoderesponse],
@@ -115,8 +158,12 @@ module ActiveMerchant
         response
       end
 
-      def authorization_from(parsed)
-        [parsed[:orderid], parsed[:pasref], parsed[:authcode]].join(';')
+      def authorization_from(parsed, options = {})
+        if options[:customer] && options[:card_reference]
+          "#{options[:customer]}:#{options[:card_reference]}"
+        else
+          [parsed[:orderid], parsed[:pasref], parsed[:authcode]].join(';')
+        end
       end
 
       def build_purchase_or_authorization_request(action, money, credit_card, options)
@@ -131,6 +178,70 @@ module ActiveMerchant
           add_signed_digest(xml, timestamp, @options[:login], sanitize_order_id(options[:order_id]), amount(money), (options[:currency] || currency(money)), credit_card.number)
           add_comments(xml, options)
           add_address_and_customer_info(xml, options)
+        end
+        xml.target!
+      end
+
+      # TODO: CVN?
+      def build_purchase_with_token(money, token, options)
+        timestamp = new_timestamp
+        token     = token.split(';')
+
+        xml = Builder::XmlMarkup.new :indent => 2
+        xml.tag! 'request', 'timestamp' => timestamp, 'type' => 'receipt-in' do
+          add_merchant_details(xml, options)
+          xml.tag! 'autosettle', 'flag' => 1
+          xml.tag! 'orderid', sanitize_order_id(options[:order_id])
+
+          xml.tag! 'paymentdata' do
+            xml.tag! 'cvn' do
+              xml.tag! 'number', options[:cvn]
+            end
+          end if options[:cvn]
+
+          add_amount(xml, money, options)
+          xml.tag! 'payerref', token[0]
+          xml.tag! 'paymentmethod', token[1]
+          add_signed_digest(xml, timestamp, @options[:login], sanitize_order_id(options[:order_id]), amount(money), options[:currency] || currency(money), token[0])
+        end
+      end
+
+      def build_payer_create_request(credit_card, options)
+        timestamp = new_timestamp
+
+        xml = Builder::XmlMarkup.new :indent => 2
+        xml.tag! 'request', 'timestamp' => timestamp, 'type' => 'payer-new' do
+          add_merchant_details(xml, options)
+          xml.tag! 'payer', :type => 'Business', :ref => options[:customer] do
+            xml.tag! 'firstname', credit_card.first_name
+            xml.tag! 'surname', credit_card.last_name
+          end
+          add_signed_digest(xml, timestamp, @options[:login], nil, nil, nil, options[:customer])
+        end
+        xml.target!
+      end
+
+      def build_payment_method_create_request(credit_card, options)
+        timestamp = new_timestamp
+
+        xml = Builder::XmlMarkup.new :indent => 2
+        xml.tag! 'request', 'timestamp' => timestamp, 'type' => 'card-new' do
+          add_merchant_details(xml, options)
+          add_card(xml, credit_card, options)
+          add_signed_digest(xml, timestamp, @options[:login], nil, nil, nil, options[:customer], credit_card.name, credit_card.number)
+        end
+        xml.target!
+      end
+
+      def build_update_request(token, credit_card, options)
+        timestamp = new_timestamp
+        options[:customer], options[:card_reference] = token.split(';')
+
+        xml = Builder::XmlMarkup.new :indent => 2
+        xml.tag! 'request', 'timestamp' => timestamp, 'type' => 'card-update-card' do
+          add_merchant_details(xml, options)
+          add_card(xml, credit_card, options)
+          add_signed_digest(xml, timestamp, @options[:login], options[:customer], options[:card_reference], expiry_date(credit_card), credit_card.number)
         end
         xml.target!
       end
@@ -226,7 +337,7 @@ module ActiveMerchant
         xml.tag! 'amount', amount(money), 'currency' => options[:currency] || currency(money)
       end
 
-      def add_card(xml, credit_card)
+      def add_card(xml, credit_card, options = {})
         xml.tag! 'card' do
           xml.tag! 'number', credit_card.number
           xml.tag! 'expdate', expiry_date(credit_card)
@@ -236,6 +347,11 @@ module ActiveMerchant
           xml.tag! 'cvn' do
             xml.tag! 'number', credit_card.verification_value
             xml.tag! 'presind', (options['presind'] || (credit_card.verification_value? ? 1 : nil))
+          end unless options[:card_reference]
+
+          if options[:card_reference]
+            xml.tag! 'ref', options[:card_reference]
+            xml.tag! 'payerref', options[:customer]
           end
         end
       end
@@ -251,6 +367,7 @@ module ActiveMerchant
       def add_signed_digest(xml, *values)
         string = Digest::SHA1.hexdigest(values.join("."))
         xml.tag! 'sha1hash', Digest::SHA1.hexdigest([string, @options[:password]].join("."))
+        xml.tag! 'refundhash', Digest::SHA1.hexdigest(@options[:refund]) if @options[:refund]
       end
 
       def auto_settle_flag(action)
