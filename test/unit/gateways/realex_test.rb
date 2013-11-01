@@ -2,6 +2,8 @@ require 'test_helper'
 require 'digest/sha1'
 
 class RealexTest < Test::Unit::TestCase
+  include CommStub
+
   class ActiveMerchant::Billing::RealexGateway
     # For the purposes of testing, lets redefine some protected methods as public.
     public :build_purchase_or_authorization_request, :build_refund_request, :build_void_request, :build_capture_request
@@ -12,6 +14,7 @@ class RealexTest < Test::Unit::TestCase
     @password = 'your_secret'
     @account = 'your_account'
     @rebate_secret = 'your_rebate_secret'
+    @refund_secret = 'your_refund_secret'
 
     @gateway = RealexGateway.new(
       :login => @login,
@@ -48,6 +51,9 @@ class RealexTest < Test::Unit::TestCase
     }
 
     @amount = 100
+
+    @customer       = generate_unique_id
+    @card_reference = generate_unique_id
   end
 
   def test_hash
@@ -308,6 +314,65 @@ SRC
     @gateway.authorize(@amount, @credit_card, options)
   end
 
+  def test_store
+    request_count = 0
+
+    stub_comms do
+      assert @response = @gateway.store(@credit_card, :customer => @customer, :card_reference => @card_reference)
+    end.check_request do |endpoint, data, headers|
+      request_count += 1
+      xml           = parse_xml(data)
+
+      if xml.attributes['type'] == 'payer-new'
+        @payer_ref = xml.elements['payer'].attributes['ref']
+
+        assert_equal @payer_ref, @customer
+      elsif xml.attributes['type'] == 'card-new'
+        card = xml.elements['card'].elements
+
+        assert_equal card['ref'].get_text, @card_reference
+        assert_equal card['payerref'].get_text, @customer
+        assert_equal card['payerref'].get_text, @payer_ref
+      end
+    end.respond_with(realvault_successful_payer_create_response, realvault_successful_store_response)
+
+    assert_equal request_count, 2
+    assert_equal @response.message, 'Successful'
+    assert_equal @response.authorization, "#{@customer};#{@card_reference}"
+  end
+
+  def test_purchase_with_token
+    stub_comms do
+      assert @response = @gateway.purchase(@amount, "#{@customer};#{@card_reference}", :order_id => generate_unique_id)
+    end.check_request do |endpoint, data, headers|
+      xml = parse_xml(data)
+
+      assert_equal xml.elements['paymentmethod'].get_text, @card_reference
+      assert_equal xml.elements['payerref'].get_text, @customer
+    end.respond_with(realvault_successful_purchase_with_token_response)
+
+    assert_equal @response.message, 'Successful'
+  end
+
+  def test_update
+    new_credit_card = @credit_card
+    new_credit_card.number = '1234123412341234'
+
+    stub_comms do
+      assert @response = @gateway.update("#{@customer};#{@card_reference}", new_credit_card)
+    end.check_request do |endpoint, data, headers|
+      xml  = parse_xml(data)
+      card = xml.elements['card'].elements
+
+      assert_equal card['number'].get_text, new_credit_card.number
+      assert_equal card['ref'].get_text, @card_reference
+      assert_equal card['payerref'].get_text, @customer
+    end.respond_with(realvault_successful_update_card_request)
+
+    assert_equal @response.authorization, "#{@customer};#{@card_reference}"
+    assert_equal @response.message, 'Successful'
+  end
+
   private
 
   def successful_purchase_response
@@ -433,6 +498,93 @@ SRC
     RESPONSE
   end
 
+  def realvault_successful_store_response
+    <<-XML
+      <?xml version='1.0' encoding='ISO-8859-1'?>
+      <response timestamp="20130924165606">
+        <merchantid>your_merchant_id</merchantid>
+        <account>your_account</account>
+        <orderid></orderid>
+        <result>00</result>
+        <message>Successful</message>
+        <pasref>4321</pasref>
+        <authcode></authcode>
+        <batchid></batchid>
+        <timetaken>1</timetaken>
+        <processingtimetaken></processingtimetaken>
+        <md5hash>e1f9faa5a50d4baacb0f47217a5d744e</md5hash>
+        <sha1hash>5095b4c30a1c3cb1414ea7b2d60955217697742c</sha1hash>
+      </response>
+    XML
+  end
+
+  def realvault_successful_purchase_with_token_response
+    <<-XML
+      <?xml version="1.0" encoding="UTF-8"?>
+      <response timestamp="20130924165600">
+        <merchantid>your_merchant_id</merchantid>
+        <account>your_account</account>
+        <orderid>1</orderid>
+        <authcode>12345</authcode>
+        <result>00</result>
+        <cvnresult>U</cvnresult>
+        <avspostcoderesponse>U</avspostcoderesponse>
+        <avsaddressresponse>U</avsaddressresponse>
+        <batchid>137699</batchid>
+        <message>Authorised</message>
+        <pasref>4321</pasref>
+        <timetaken>0</timetaken>
+        <authtimetaken>0</authtimetaken>
+        <cardissuer>
+          <bank>AIB BANK</bank>
+          <country>IRELAND</country>
+          <countrycode>IE</countrycode>
+          <region>EUR</region>
+        </cardissuer>
+        <tss>
+          <result>73</result>
+        </tss>
+        <sha1hash>002c453750f6a21475bb5960458bf8dbd2140461</sha1hash>
+      </response>
+    XML
+  end
+
+  def realvault_successful_update_card_request
+    <<-XML
+      <?xml version='1.0' encoding='ISO-8859-1'?>
+      <response timestamp="20130924165620">
+        <merchantid>your_merchant_id</merchantid>
+        <result>00</result>
+        <message>Successful</message>
+        <pasref>4321</pasref>
+        <timetaken>0</timetaken>
+        <processingtimetaken></processingtimetaken>
+        <md5hash>7b4fe85e44960a21d80666e8fdabb260</md5hash>
+        <sha1hash>bbb93c274c3ed42a1061f51782c39f4ba9a228e5</sha1hash>
+      </response>
+    XML
+  end
+
+  def realvault_successful_payer_create_response
+    <<-XML
+      <?xml version='1.0' encoding='ISO-8859-1'?>
+      <response timestamp="20130924175748">
+        <merchantid>your_merchant_id</merchantid>
+        <account>your_account</account>
+        <orderid></orderid>
+        <result>00</result>
+        <message>Successful</message>
+        <pasref>4321</pasref>
+        <authcode></authcode>
+        <batchid></batchid>
+        <timetaken>0</timetaken>
+        <processingtimetaken></processingtimetaken>
+        <md5hash>e168a4eea7cb0b6393a77b4f3ccebcaa</md5hash>
+        <sha1hash>0a41b2b0485a5fa43f1bd37c6e4a7cf09b14fa7c</sha1hash>
+      </response>
+    XML
+  end
+
   require 'nokogiri'
   def assert_xml_equal(expected, actual)
     assert_xml_equal_recursive(Nokogiri::XML(expected).root, Nokogiri::XML(actual).root)
@@ -446,5 +598,9 @@ SRC
       assert_equal a1.value, b1.value
     end
     a.children.zip(b.children).all?{|a1, b1| assert_xml_equal_recursive(a1, b1)}
+  end
+
+  def parse_xml(xml)
+    REXML::Document.new(xml).root
   end
 end
