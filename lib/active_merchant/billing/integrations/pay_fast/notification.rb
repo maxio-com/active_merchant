@@ -73,7 +73,7 @@ module ActiveMerchant #:nodoc:
             params['amount_gross']
           end
 
-          # The total in fees which was deducated from the amount.
+          # The total in fees which was deducted from the amount.
           def fee
             params['amount_fee']
           end
@@ -116,7 +116,7 @@ module ActiveMerchant #:nodoc:
           #     else
           #       ... log possible hacking attempt ...
           #     end
-          def acknowledge
+          def acknowledge(authcode = nil)
             if params[PayFast.signature_parameter_name] == generate_signature(:notify)
               response = ssl_post(PayFast.validate_service_url, notify_signature_string,
                 'Content-Type' => "application/x-www-form-urlencoded",

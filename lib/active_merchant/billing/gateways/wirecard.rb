@@ -3,10 +3,7 @@ require 'base64'
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
     class WirecardGateway < Gateway
-      # Test server location
       self.test_url = 'https://c3-test.wirecard.com/secure/ssl-gateway'
-
-      # Live server location
       self.live_url = 'https://c3.wirecard.com/secure/ssl-gateway'
 
       # The Namespaces are not really needed, because it just tells the System, that there's actually no namespace used.
@@ -29,34 +26,21 @@ module ActiveMerchant #:nodoc:
       # number 5551234 within area code 202 (country code 1).
       VALID_PHONE_FORMAT = /\+\d{1,3}(\(?\d{3}\)?)?\d{3}-\d{4}-\d{3}/
 
-      # The countries the gateway supports merchants from as 2 digit ISO country codes
-      self.supported_countries = ['DE']
-
-      # Wirecard supports all major credit and debit cards:
-      # Visa, Mastercard, American Express, Diners Club,
-      # JCB, Switch, VISA Carte Bancaire, Visa Electron and UATP cards.
-      # They also support the latest anti-fraud systems such as Verified by Visa or Master Secure Code.
-      self.supported_cardtypes = [
-        :visa, :master, :american_express, :diners_club, :jcb, :switch
-      ]
-
-      # The homepage URL of the gateway
+      self.supported_cardtypes = [ :visa, :master, :american_express, :diners_club, :jcb, :switch ]
+      self.supported_countries = %w(AD CY GI IM MT RO CH AT DK GR IT MC SM TR BE EE HU LV NL SK GB BG FI IS LI NO SI VA FR IL LT PL ES CZ DE IE LU PT SE)
       self.homepage_url = 'http://www.wirecard.com'
-
-      # The name of the gateway
       self.display_name = 'Wirecard'
-
-      # The currency should normally be EUROs
       self.default_currency = 'EUR'
-
-      # 100 is 1.00 Euro
       self.money_format = :cents
 
+      # Public: Create a new Wirecard gateway.
+      #
+      # options - A hash of options:
+      #           :login         - The username
+      #           :password      - The password
+      #           :signature     - The BusinessCaseSignature
       def initialize(options = {})
-        # verify that username and password are supplied
-        requires!(options, :login, :password)
-        # unfortunately Wirecard also requires a BusinessCaseSignature in the XML request
-        requires!(options, :signature)
+        requires!(options, :login, :password, :signature)
         super
       end
 
@@ -69,7 +53,6 @@ module ActiveMerchant #:nodoc:
         commit(:preauthorization, money, options)
       end
 
-      # Capture Authorization
       def capture(money, authorization, options = {})
         options[:preauthorization] = authorization
         commit(:capture, money, options)
@@ -82,6 +65,16 @@ module ActiveMerchant #:nodoc:
       def purchase(money, creditcard_or_reference, options = {})
         options[:payment_source] = creditcard_or_reference
         commit(:purchase, money, options)
+      end
+
+      def void(identification, options = {})
+        options[:preauthorization] = identification
+        commit(:reversal, nil, options)
+      end
+
+      def refund(money, identification, options = {})
+        options[:preauthorization] = identification
+        commit(:bookback, money, options)
       end
 
       # Store card - Wirecard supports the notion of "Recurring
@@ -121,7 +114,6 @@ module ActiveMerchant #:nodoc:
       end
 
       private
-
       def prepare_options_hash(options)
         result = @options.merge(options)
         setup_address_hash!(result)
@@ -208,9 +200,12 @@ module ActiveMerchant #:nodoc:
               add_invoice(xml, money, options)
               add_creditcard_or_reference(xml, options[:payment_source])
               add_address(xml, options[:billing_address])
-            when :capture
+            when :capture, :bookback
+              xml.tag! 'GuWID', options[:preauthorization]
               add_reference(xml, options[:preauthorization])
               add_amount(xml, money)
+            when :reversal
+              xml.tag! 'GuWID', options[:preauthorization]
             end
           end
         end
@@ -304,7 +299,7 @@ module ActiveMerchant #:nodoc:
         response
       end
 
-      # Parse the <ProcessingStatus> Element which containts all important information
+      # Parse the <ProcessingStatus> Element which contains all important information
       def parse_response(response, root)
         status = nil
         # get the root element for this Transaction

@@ -11,24 +11,14 @@ module ActiveMerchant #:nodoc:
           end
 
           def complete?
-            status == "success"
+            status == "Completed"
           end
 
-          # Status of the transaction. List of possible values:
-          # <tt>invalid</tt>:: transaction id is not present
-          # <tt>tampered</tt>:: transaction data has been tampered
-          # <tt>success</tt>:: transaction successful
-          # <tt>pending</tt>:: transaction is pending for some approval
-          # <tt>failure</tt>:: transaction failure
           def status
-            @status ||= if checksum_ok?
-              if transaction_id.blank?
-                'invalid'
-              else
-                transaction_status.downcase
-              end
-            else
-              'tampered'
+            case transaction_status.downcase
+            when 'success' then 'Completed'
+            when 'failure' then 'Failed'
+            when 'pending' then 'Pending'
             end
           end
 
@@ -38,7 +28,7 @@ module ActiveMerchant #:nodoc:
 
           # Order amount should be equal to gross - discount
           def amount_ok?( order_amount, order_discount = BigDecimal.new( '0.0' ) )
-            BigDecimal.new( gross ) == order_amount && BigDecimal.new( discount ) == order_discount
+            BigDecimal.new( gross ) == order_amount && BigDecimal.new( discount.to_s ) == order_discount
           end
 
           # Status of transaction return from the PayU. List of possible values:
@@ -131,10 +121,7 @@ module ActiveMerchant #:nodoc:
           end
 
           def user_defined
-            return @user_defined if @user_defined
-            @user_defined = []
-            10.times{ |i| @user_defined.push( params[ "udf#{i+1}" ] ) }
-            @user_defined
+            @user_defined ||= 10.times.map { |i| params["udf#{i + 1}"] }
           end
 
           def checksum
@@ -145,14 +132,14 @@ module ActiveMerchant #:nodoc:
             @message || params['error']
           end
 
-          def acknowledge
+          def acknowledge(authcode = nil)
             checksum_ok?
           end
 
           def checksum_ok?
-            fields = user_defined.dup.push( customer_email, customer_first_name, product_info, gross, invoice, :reverse => true )
-            fields.unshift( transaction_status )
-            unless PayuIn.checksum(@merchant_id, @secret_key, *fields ) == checksum
+            checksum_fields = [transaction_status, *user_defined.reverse, customer_email, customer_first_name, product_info, gross, invoice]
+
+            unless Digest::SHA512.hexdigest([@secret_key, *checksum_fields, @merchant_id].join("|")) == checksum
               @message = 'Return checksum not matching the data provided'
               return false
             end

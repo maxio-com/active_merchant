@@ -1,17 +1,38 @@
 require 'test_helper'
 
 class WebpayTest < Test::Unit::TestCase
+  include CommStub
+
   def setup
     @gateway = WebpayGateway.new(:login => 'login')
 
     @credit_card = credit_card()
-    @amount = 400
-    @refund_amount = 200
+    @amount = 40000
+    @refund_amount = 20000
 
     @options = {
       :billing_address => address(),
       :description => 'Test Purchase'
     }
+  end
+
+  def test_successful_authorization
+    @gateway.expects(:ssl_request).returns(successful_authorization_response)
+
+    assert response = @gateway.authorize(@amount, @credit_card, @options)
+    assert_instance_of Response, response
+    assert_success response
+
+    assert_equal 'ch_test_charge', response.authorization
+    assert response.test?
+  end
+
+  def test_successful_capture
+    @gateway.expects(:ssl_request).returns(successful_capture_response)
+
+    assert response = @gateway.capture(@amount, "ch_test_charge")
+    assert_success response
+    assert response.test?
   end
 
   def test_successful_purchase
@@ -24,6 +45,28 @@ class WebpayTest < Test::Unit::TestCase
     # Replace with authorization number from the successful response
     assert_equal 'ch_test_charge', response.authorization
     assert response.test?
+  end
+
+  def test_appropriate_purchase_amount
+    @gateway.expects(:ssl_request).returns(successful_purchase_response)
+
+    response = @gateway.purchase(@amount, @credit_card, @options)
+    assert_instance_of Response, response
+    assert_success response
+
+    assert_equal @amount / 100, response.params["amount"]
+  end
+
+  def test_successful_purchase_with_token
+    response = stub_comms(@gateway, :ssl_request) do
+      @gateway.purchase(@amount, "tok_xxx")
+    end.check_request do |method, endpoint, data, headers|
+      assert_match(/card=tok_xxx/, data)
+    end.respond_with(successful_purchase_response)
+
+    assert response
+    assert_instance_of Response, response
+    assert_success response
   end
 
   def test_successful_void
@@ -42,7 +85,6 @@ class WebpayTest < Test::Unit::TestCase
     @gateway.expects(:ssl_request).returns(successful_partially_refunded_response)
 
     assert response = @gateway.refund(@refund_amount, 'ch_test_charge')
-    assert_instance_of Response, response
     assert_success response
 
     # Replace with authorization number from the successful response
@@ -54,7 +96,6 @@ class WebpayTest < Test::Unit::TestCase
     @gateway.expects(:ssl_request).returns(successful_partially_refunded_response(:livemode => true))
 
     assert response = @gateway.refund(@refund_amount, 'ch_test_charge')
-    assert_instance_of Response, response
     assert_success response
 
     assert !response.test?
@@ -79,13 +120,13 @@ class WebpayTest < Test::Unit::TestCase
 
   def test_add_customer
     post = {}
-    @gateway.send(:add_customer, post, {:customer => "test_customer"})
+    @gateway.send(:add_customer, post, 'card_token', {:customer => "test_customer"})
     assert_equal "test_customer", post[:customer]
   end
 
   def test_doesnt_add_customer_if_card
-    post = { :card => 'foo' }
-    @gateway.send(:add_customer, post, {:customer => "test_customer"})
+    post = {}
+    @gateway.send(:add_customer, post, @credit_card, {:customer => "test_customer"})
     assert !post[:customer]
   end
 
@@ -124,6 +165,66 @@ class WebpayTest < Test::Unit::TestCase
   end
 
   private
+
+  def successful_authorization_response
+    <<-RESPONSE
+{
+  "id": "ch_test_charge",
+  "object": "charge",
+  "created": 1309131571,
+  "livemode": false,
+  "paid": true,
+  "amount": 40000,
+  "currency": "jpy",
+  "refunded": false,
+  "fee": 0,
+  "fee_details": [],
+  "card": {
+    "country": "JP",
+    "exp_month": 9,
+    "exp_year": #{Time.now.year + 1},
+    "last4": "4242",
+    "object": "card",
+    "type": "Visa"
+  },
+  "captured": false,
+  "description": "ActiveMerchant Test Purchase",
+  "dispute": null,
+  "uncaptured": true,
+  "disputed": false
+}
+    RESPONSE
+  end
+
+  def successful_capture_response
+    <<-RESPONSE
+{
+  "id": "ch_test_charge",
+  "object": "charge",
+  "created": 1309131571,
+  "livemode": false,
+  "paid": true,
+  "amount": 40000,
+  "currency": "jpy",
+  "refunded": false,
+  "fee": 0,
+  "fee_details": [],
+  "card": {
+    "country": "JP",
+    "exp_month": 9,
+    "exp_year": #{Time.now.year + 1},
+    "last4": "4242",
+    "object": "card",
+    "type": "Visa"
+  },
+  "captured": true,
+  "description": "ActiveMerchant Test Purchase",
+  "dispute": null,
+  "uncaptured": false,
+  "disputed": false
+}
+    RESPONSE
+  end
 
   # Place raw successful response from gateway here
   def successful_purchase_response(refunded=false)

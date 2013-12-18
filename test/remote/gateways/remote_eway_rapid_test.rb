@@ -5,7 +5,7 @@ class RemoteEwayRapidTest < Test::Unit::TestCase
     @gateway = EwayRapidGateway.new(fixtures(:eway_rapid))
 
     @amount = 100
-    @failed_amount = 105
+    @failed_amount = -100
     @credit_card = credit_card("4444333322221111")
 
     @options = {
@@ -19,7 +19,7 @@ class RemoteEwayRapidTest < Test::Unit::TestCase
   def test_successful_purchase
     assert response = @gateway.purchase(@amount, @credit_card, @options)
     assert_success response
-    assert_equal "Transaction Approved", response.message
+    assert_equal "Transaction Approved Successful", response.message
   end
 
   def test_fully_loaded_purchase
@@ -27,13 +27,15 @@ class RemoteEwayRapidTest < Test::Unit::TestCase
       :redirect_url => "http://awesomesauce.com",
       :ip => "0.0.0.0",
       :application_id => "Woohoo",
+      :transaction_type => "Purchase",
       :description => "Description",
       :order_id => "orderid1",
       :currency => "AUD",
       :email => "jim@example.com",
       :billing_address => {
-        :name => "Jim Awesome Smith",
-        :company => "Awesome Co",
+        :title    => "Mr.",
+        :name     => "Jim Awesome Smith",
+        :company  => "Awesome Co",
         :address1 => "1234 My Street",
         :address2 => "Apt 1",
         :city     => "Ottawa",
@@ -44,8 +46,9 @@ class RemoteEwayRapidTest < Test::Unit::TestCase
         :fax      => "(555)555-6666"
       },
       :shipping_address => {
-        :name => "Baker",
-        :company => "Elsewhere Inc.",
+        :title    => "Ms.",
+        :name     => "Baker",
+        :company  => "Elsewhere Inc.",
         :address1 => "4321 Their St.",
         :address2 => "Apt 2",
         :city     => "Chicago",
@@ -62,35 +65,61 @@ class RemoteEwayRapidTest < Test::Unit::TestCase
   def test_failed_purchase
     assert response = @gateway.purchase(@failed_amount, @credit_card, @options)
     assert_failure response
-    assert_equal "Do Not Honour", response.message
+    assert_equal "Invalid Payment TotalAmount", response.message
   end
 
-  def test_failed_setup_purchase
-    assert response = @gateway.setup_purchase(@amount, :redirect_url => "")
-    assert_failure response
-    assert_equal "V6047", response.message
+  def test_successful_refund
+    # purchase
+    assert response = @gateway.purchase(@amount, @credit_card, @options)
+    assert_success response
+    assert_equal "Transaction Approved Successful", response.message
+
+    # refund
+    assert response = @gateway.refund(@amount, response.authorization, @options)
+    assert_success response
+    assert_equal "Transaction Approved Successful", response.message
   end
 
-  def test_failed_run_purchase
-    setup_response = @gateway.setup_purchase(@amount, @options)
-    assert_success setup_response
-
-    assert response = @gateway.send(:run_purchase, "bogus", @credit_card, setup_response.params["formactionurl"])
+  def test_failed_refund
+    assert response = @gateway.refund(@amount, 'fakeid', @options)
     assert_failure response
-    assert_match(%r{Not Found}, response.message)
+    assert_equal "System Error", response.message
   end
 
-  def test_failed_status
-    setup_response = @gateway.setup_purchase(@failed_amount, @options)
-    assert_success setup_response
+  def test_successful_store
+    @options[:billing_address].merge!(:title => "Dr.")
+    assert response = @gateway.store(@credit_card, @options)
+    assert_success response
+    assert_equal "Transaction Approved Successful", response.message
+  end
 
-    assert run_response = @gateway.send(:run_purchase, setup_response.authorization, @credit_card, setup_response.params["formactionurl"])
-    assert_success run_response
-
-    response = @gateway.status(run_response.authorization)
+  def test_failed_store
+    @options[:billing_address].merge!(:country => nil)
+    assert response = @gateway.store(@credit_card, @options)
     assert_failure response
-    assert_equal "Do Not Honour", response.message
-    assert_equal run_response.authorization, response.authorization
+    assert_equal "V6044", response.params["Errors"]
+    assert_equal "Customer CountryCode Required", response.message
+  end
+
+  def test_successful_update
+    @options[:billing_address].merge!(:title => "Dr.")
+    assert response = @gateway.store(@credit_card, @options)
+    assert_success response
+    assert_equal "Transaction Approved Successful", response.message
+    assert response = @gateway.update(response.authorization, @credit_card, @options)
+    assert_success response
+    assert_equal "Transaction Approved Successful", response.message
+  end
+
+  def test_successful_store_purchase
+    @options[:billing_address].merge!(:title => "Dr.")
+    assert response = @gateway.store(@credit_card, @options)
+    assert_success response
+    assert_equal "Transaction Approved Successful", response.message
+
+    assert response = @gateway.purchase(@amount, response.authorization, {transaction_type: 'MOTO'})
+    assert_success response
+    assert_equal "Transaction Approved Successful", response.message
   end
 
   def test_invalid_login

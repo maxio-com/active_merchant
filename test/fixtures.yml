@@ -10,6 +10,11 @@
 #
 # Paste any required PEM certificates after the pem key.
 #
+
+app55:
+  api_key: "QDtACYMCFqtuKOQ22QtCkGR1TzD7XM8i"
+  api_secret: "yT1FRpuusBIQoEBIfIQ8bPStkl7yzdTz"
+
 authorize_net:
   login: X
   password: Y
@@ -25,6 +30,15 @@ barclays_epdq:
   login: test
   password: test
   client_id: 1234
+
+barclays_epdq_extra_plus:
+  login: merchant number
+  user: username
+  password: password
+
+be2bill:
+  login: your_test_login
+  password: your_test_password
 
 beanstream:
   login: merchant id
@@ -50,6 +64,7 @@ braintree_blue:
   merchant_id: X
   public_key: Y
   private_key: Z
+  merchant_account_id: A
 
 braintree_blue_with_processing_rules:
   merchant_id: X
@@ -75,6 +90,9 @@ certo_direct:
 cyber_source:
   login: X
   password: Y
+
+conekta:
+  key: 1tv5yJp3xnVZ7eK67m4h
 
 data_cash:
   login: X
@@ -110,10 +128,9 @@ eway_managed:
   username: 'test@eway.com.au'
   password: 'test123'
 
-# Working credentials, no need to replace
 eway_rapid:
-  login: "F9802CIVgUgNaD8y/H52MBMnL5OvMoy4cYimpi1L/dCXeNNR6or3vLPoC9GjeLVdA7ymi+"
-  password: "sandbox1"
+  login: LOGIN
+  password: PASSWORD
 
 # Working credentials, no need to replace
 exact:
@@ -205,6 +222,11 @@ merchant_ware:
  password:
  name:
 
+merchant_ware_version_four:
+ login:
+ password:
+ name:
+
 merchant_warrior:
   merchant_uuid: '50c5b9f0b52ea'
   api_key: '8fr3ajm7'
@@ -212,8 +234,13 @@ merchant_warrior:
 
 # Working credentials, no need to replace
 mercury:
+  login: '395347306=TOKEN'
+  password: '123TOKEN'
+
+mercury_no_tokenization:
   login: '595901'
   password: 'xyz'
+  tokenization: false
 
 metrics_global:
   login: 'demo'
@@ -247,6 +274,10 @@ moneris:
 moneris_us:
   login: monusqa002
   password: qatoken
+
+money_movers:
+  login: demo
+  password: password
 
 # Working credentials, no need to replace
 nab_transact:
@@ -305,6 +336,11 @@ pay_gate_xml:
   login: '10011021600'
   password: 'test'
 
+payex:
+  account: ACCOUNT
+  # encryption key is generated via the PayEx Admin console
+  encryption_key: ENCRYPTION_KEY
+
 payflow:
   login: LOGIN
   password: PASSWORD
@@ -340,6 +376,10 @@ paypal_signature:
   login: LOGIN
   password: PASSWORD
   signature: SIGNATURE
+
+payu_in:
+  login: C0Dr8m
+  secret: 3sf0jURk
 
 payway:
   username:
@@ -433,6 +473,10 @@ psl_visa_debit_address:
   state:
   zip:
 
+payscout:
+  username: demo
+  password: password
+
 # Quickpay offers a test account.
 # To log in to the manager, use demo@quickpay.net and test234
 quickpay:
@@ -444,11 +488,16 @@ quickpay_with_api_key:
   login: 89898978
   password: "29p61DveBZ79c3144LW61lVz1qrwk2gfAFCxPyi5sn49m3Y3IRK5M6SN5d8a68u7"
   apikey: "fB46983ZwR5dzy46A3r6ngDx7P37N5YTu1F4S9W2JKCs9v4t5L9m2Q8Mlbjpa2I1"
-  version: 6
+  version: 7
 
 quantum:
   login: X
   password: Y
+
+raven_pac_net:
+  user: ernest
+  secret: "all good men die young"
+  prn: 840033
 
 realex:
   login: X
@@ -555,6 +604,10 @@ skipjack:
   login: X
   password: Y
 
+so_easy_pay:
+  login: 110159
+  password: b1fe9de37c234ef8fd53668377076687d6314dc8f6146023338d61b5969719e0
+
 # Working credentials, no need to replace
 spreedly_core:
   login: "4Y9bVkOCpYesPQOfDi7TXQyUw50"
@@ -563,6 +616,13 @@ spreedly_core:
 
 stripe:
   login:
+  fee_refund_login:
+
+# Working credentials, no need to replace
+swipe_checkout:
+  login: 2077103073D8B5
+  api_key: f2fe4efd5033edfaed9e4aad319ef4d34536a10eea07f90f182616d7216ae2b8
+  region: NZ
 
 trans_first:
   login: LOGIN
@@ -610,7 +670,7 @@ vindicia:
   password: PASSWORD
 
 webpay:
-  login: "vtUQeOtUnYr7PGCLQ96Ul4zqpDUO4sOE"
+  login: "test_secret_eHn4TTgsGguBcW764a2KA8Yd"
 
 # Working test credentials, no need to replace
 wirecard:
@@ -620,3 +680,15 @@ wirecard:
 world_pay_gateway:
   login: LOGIN
   password: PASSWORD
+
+iats_payments:
+  login: TEST88
+  password: TEST88
+
+bit_pay:
+  api_key: 'rKrahSl7WRrYeKRUhGzbvW3nBzo0jG4FPaL8uPYaoPk'
+
+wirecard_checkout_page:
+  secret: B8AKTPWBRMNBV455FG6M2DANE99WU2
+  shop_id: ''
+  paymenttype: IDL

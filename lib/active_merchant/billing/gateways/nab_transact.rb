@@ -67,7 +67,15 @@ module ActiveMerchant #:nodoc:
       end
 
       def refund(money, authorization, options = {})
-        commit :refund, build_reference_request(money, authorization)
+        commit :refund, build_reference_request(money, authorization, options)
+      end
+
+      def authorize(money, credit_card, options = {})
+        commit :authorization, build_purchase_request(money, credit_card, options)
+      end
+
+      def capture(money, authorization, options = {})
+        commit :capture, build_reference_request(money, authorization, options)
       end
 
       def store(creditcard, options = {})
@@ -108,7 +116,7 @@ module ActiveMerchant #:nodoc:
         xml.target!
       end
 
-      def build_reference_request(money, reference)
+      def build_reference_request(money, reference, options)
         xml = Builder::XmlMarkup.new
 
         transaction_id, order_id, preauth_id, original_amount = reference.split('*')
@@ -119,11 +127,13 @@ module ActiveMerchant #:nodoc:
         xml.tag! 'purchaseOrderNo', order_id
         xml.tag! 'preauthID', preauth_id
 
+        add_metadata(xml, options)
+
         xml.target!
       end
 
       #Generate payment request XML
-      # - API is set to allow multiple Txn's but currentlu only allows one
+      # - API is set to allow multiple Txn's but currently only allows one
       # - txnSource = 23 - (XML)
       def build_request(action, body)
         xml = Builder::XmlMarkup.new
