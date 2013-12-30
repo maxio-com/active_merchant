@@ -102,7 +102,7 @@ module ActiveMerchant #:nodoc:
         post = {}
         add_creditcard(post, creditcard, options)
         post[:description] = options[:description]
-        post[:email] = options[:email]
+        post[:email] = options[:email] unless options[:set_default]
 
         commit_options = generate_options(options)
         if options[:customer]
