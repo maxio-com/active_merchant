@@ -69,14 +69,14 @@ module ActiveMerchant #:nodoc:
       end
 
       # Make a purchase
-      def purchase(money, payment_method, options = {})
+      def purchase(money, creditcard_or_token, options = {})
         form = {}
         add_salestax(form, options)
         add_invoice(form, options)
-        if payment_method.is_a?(String)
-          add_token(form, payment_method)
+        if creditcard_or_token.is_a?(String)
+          add_token(form, creditcard_or_token)
         else
-          add_creditcard(form, payment_method)
+          add_creditcard(form, creditcard_or_token)
         end
         add_address(form, options)
         add_customer_data(form, options)
@@ -186,6 +186,26 @@ module ActiveMerchant #:nodoc:
         add_customer_data(form, options)
         add_test_mode(form, options)
         add_verification(form, options)
+        form[:add_token] = 'Y'
+        commit(:store, nil, form)
+      end
+
+      def update(token, creditcard, options = {})
+        form = {}
+        add_token(form, token)
+        add_creditcard(form, creditcard)
+        add_address(form, options)
+        add_customer_data(form, options)
+        add_test_mode(form, options)
+        commit(:update, nil, form)
+      end
+
+      def store(creditcard, options = {})
+        form = {}
+        add_creditcard(form, creditcard)
+        add_address(form, options)
+        add_customer_data(form, options)
+        add_test_mode(form, options)
         form[:add_token] = 'Y'
         commit(:store, nil, form)
       end
