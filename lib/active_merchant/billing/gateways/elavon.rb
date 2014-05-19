@@ -209,6 +209,26 @@ module ActiveMerchant #:nodoc:
         commit(:update, nil, form)
       end
 
+      def store(creditcard, options = {})
+        form = {}
+        add_creditcard(form, creditcard)
+        add_address(form, options)
+        add_customer_data(form, options)
+        add_test_mode(form, options)
+        form[:add_token] = 'Y'
+        commit(:store, nil, form)
+      end
+
+      def update(token, creditcard, options = {})
+        form = {}
+        add_token(form, token)
+        add_creditcard(form, creditcard)
+        add_address(form, options)
+        add_customer_data(form, options)
+        add_test_mode(form, options)
+        commit(:update, nil, form)
+      end
+
       private
 
       def add_invoice(form,options)
