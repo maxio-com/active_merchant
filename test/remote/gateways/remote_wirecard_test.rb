@@ -162,6 +162,12 @@ class RemoteWirecardTest < Test::Unit::TestCase
     assert_equal "Could not find referenced transaction for GuWID 1234567890123456789012.", response.message
   end
 
+  def test_unauthorized_purchase
+    assert response = @gateway.purchase(@amount, "1234567890123456789012")
+    assert_failure response
+    assert_equal "Could not find referenced transaction for GuWID 1234567890123456789012.", response.message
+  end
+
   def test_failed_refund
     assert refund = @gateway.refund(@amount - 20, 'C428094138244444404448')
     assert_failure refund
