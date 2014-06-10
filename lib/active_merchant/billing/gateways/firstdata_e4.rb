@@ -218,7 +218,6 @@ module ActiveMerchant #:nodoc:
       end
 
       def add_credit_card(xml, credit_card, options)
-
         if credit_card.respond_to?(:track_data) && credit_card.track_data.present?
           xml.tag! "Track1", credit_card.track_data
         else
