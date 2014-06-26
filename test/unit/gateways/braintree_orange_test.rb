@@ -48,6 +48,32 @@ class BraintreeOrangeTest < Test::Unit::TestCase
     assert_failure response
   end
 
+<<<<<<< HEAD
+=======
+  def test_successful_verify
+    response = stub_comms do
+      @gateway.verify(@credit_card)
+    end.respond_with(successful_authorization_response, successful_void_response)
+    assert_success response
+  end
+
+  def test_successful_verify_with_failed_void
+    response = stub_comms do
+      @gateway.verify(@credit_card, @options)
+    end.respond_with(successful_authorization_response, failed_void_response)
+    assert_success response
+    assert_match %r{This transaction has been approved}, response.message
+  end
+
+  def test_unsuccessful_verify
+    response = stub_comms do
+      @gateway.verify(@credit_card, @options)
+    end.respond_with(failed_authorization_response, successful_void_response)
+    assert_failure response
+    assert_match %r{Invalid Credit Card Number}, response.message
+  end
+
+>>>>>>> 62261c9... Clean up warnings
   def test_add_address
     result = {}
 

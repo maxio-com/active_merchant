@@ -156,7 +156,33 @@ class PaypalTest < Test::Unit::TestCase
     response = @gateway.void('foo')
     assert_failure response
   end
+<<<<<<< HEAD
   
+=======
+
+  def test_successful_verify
+    assert response = @gateway.verify(@credit_card, @params)
+    assert_success response
+    assert_equal "0.00", response.params['amount']
+    assert_match %r{This card authorization verification is not a payment transaction}, response.message
+  end
+
+  def test_failed_verify
+    assert response = @gateway.verify(@declined_card, @params)
+    assert_failure response
+    assert_match %r{This transaction cannot be processed}, response.message
+  end
+
+  def test_successful_verify_non_visa_mc
+    amex_card = credit_card('371449635398431', brand: nil, verification_value: '1234')
+    assert response = @gateway.verify(amex_card, @params)
+    assert_success response
+    assert_equal "1.00", response.params['amount']
+    assert_match %r{Success}, response.message
+    assert_success response.responses.last, "The void should succeed"
+  end
+
+>>>>>>> 62261c9... Clean up warnings
   def test_successful_transfer
     response = @gateway.purchase(@amount, @creditcard, @params)
     assert_success response

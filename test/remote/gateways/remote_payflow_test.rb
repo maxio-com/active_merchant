@@ -263,4 +263,15 @@ class RemotePayflowTest < Test::Unit::TestCase
     assert response.test?
     assert_not_nil response.authorization
   end
+<<<<<<< HEAD
+=======
+
+  def test_high_verbosity
+    assert response = @gateway.purchase(100, @credit_card, @options)
+    assert_nil response.params['transaction_time']
+    @gateway.options[:verbosity] = 'HIGH'
+    assert response = @gateway.purchase(100, @credit_card, @options)
+    assert_match %r{^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}}, response.params['transaction_time']
+  end
+>>>>>>> 62261c9... Clean up warnings
 end

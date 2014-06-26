@@ -461,6 +461,57 @@ class PaypalTest < Test::Unit::TestCase
     end.respond_with(successful_purchase_response)
   end
 
+<<<<<<< HEAD
+=======
+  def test_successful_verify
+    response = stub_comms do
+      @gateway.verify(@credit_card, @options)
+    end.respond_with(successful_zero_dollar_auth_response)
+    assert_success response
+    assert_equal "This card authorization verification is not a payment transaction.", response.message
+    assert_equal "0.00", response.params["amount"]
+  end
+
+  def test_failed_verify
+    response = stub_comms do
+      @gateway.verify(@credit_card, @options)
+    end.respond_with(failed_zero_dollar_auth_response)
+    assert_failure response
+    assert_match %r{This transaction cannot be processed}, response.message
+  end
+
+  def test_successful_verify_non_visa_mc
+    amex_card = credit_card('371449635398431', brand: nil, verification_value: '1234')
+    response = stub_comms do
+      @gateway.verify(amex_card, @options)
+    end.respond_with(successful_one_dollar_auth_response, successful_void_response)
+    assert_success response
+    assert_equal "Success", response.message
+    assert_equal "1.00", response.params["amount"]
+  end
+
+  def test_successful_verify_non_visa_mc_failed_void
+    amex_card = credit_card('371449635398431', brand: nil, verification_value: '1234')
+    response = stub_comms do
+      @gateway.verify(amex_card, @options)
+    end.respond_with(successful_one_dollar_auth_response, failed_void_response)
+    assert_success response
+    assert_equal "Success", response.message
+    assert_equal "1.00", response.params["amount"]
+  end
+
+  def test_failed_verify_non_visa_mc
+    amex_card = credit_card('371449635398431', brand: nil, verification_value: '1234')
+    response = stub_comms do
+      @gateway.verify(amex_card, @options)
+    end.respond_with(failed_one_dollar_auth_response, successful_void_response)
+    assert_failure response
+    assert_match %r{This transaction cannot be processed}, response.message
+    assert_equal "1.00", response.params["amount"]
+  end
+
+
+>>>>>>> 62261c9... Clean up warnings
   private
 
   def successful_purchase_response
