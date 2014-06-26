@@ -228,6 +228,19 @@ class WirecardTest < Test::Unit::TestCase
     @gateway.expects(:ssl_post).returns(failed_avs_response)
     response = @gateway.purchase(@amount, @amex_card, options)
     assert_match %r{B}, response.avs_result["code"]
+<<<<<<< HEAD
+=======
+  end
+
+  def test_commerce_type_option
+    options = { commerce_type: "MOTO" }
+
+    stub_comms do
+      @gateway.purchase(@amount, @credit_card, options)
+    end.check_request do |endpoint, data, headers|
+      assert_match(/<CommerceType>MOTO<\/CommerceType>/, data)
+    end.respond_with(successful_purchase_response)
+>>>>>>> 62261c9... Clean up warnings
   end
 
   def test_store_sets_recurring_transaction_type_to_initial
