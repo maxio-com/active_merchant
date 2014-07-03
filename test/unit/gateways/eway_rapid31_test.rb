@@ -172,7 +172,7 @@ class EwayRapid31Test < Test::Unit::TestCase
                   "Number":"444433XXXXXX1111",
                   "Name":"Longbob Longsen",
                   "ExpiryMonth":"09",
-                  "ExpiryYear":"14",
+                  "ExpiryYear":"15",
                   "StartMonth":null,
                   "StartYear":null,
                   "IssueNumber":null
@@ -231,7 +231,7 @@ class EwayRapid31Test < Test::Unit::TestCase
                   "Number":"444433XXXXXX1111",
                   "Name":"Longbob Longsen",
                   "ExpiryMonth":"09",
-                  "ExpiryYear":"14",
+                  "ExpiryYear":"15",
                   "StartMonth":null,
                   "StartYear":null,
                   "IssueNumber":null
@@ -282,7 +282,7 @@ class EwayRapid31Test < Test::Unit::TestCase
                   "Name":"Longbob Longsen",
                   "Number":"4444333322221111",
                   "ExpiryMonth":"09",
-                  "ExpiryYear":"14",
+                  "ExpiryYear":"15",
                   "CVN":"123"
               },
               "FirstName":"Jim",
@@ -317,7 +317,7 @@ class EwayRapid31Test < Test::Unit::TestCase
                   "Name":"Longbob Longsen",
                   "Number":"4444333322221111",
                   "ExpiryMonth":"#{sprintf('%02d', options[:month])}",
-                  "ExpiryYear":"14",
+                  "ExpiryYear":"15",
                   "CVN":"123"
               },
               "FirstName":"Jim",
@@ -349,7 +349,7 @@ class EwayRapid31Test < Test::Unit::TestCase
                   "Number":"444433XXXXXX1111",
                   "Name":"Longbob Longsen",
                   "ExpiryMonth":"09",
-                  "ExpiryYear":"14",
+                  "ExpiryYear":"15",
                   "StartMonth":null,
                   "StartYear":null,
                   "IssueNumber":null
@@ -387,7 +387,7 @@ class EwayRapid31Test < Test::Unit::TestCase
                   "Number":"444433XXXXXX1111",
                   "Name":"Longbob Longsen",
                   "ExpiryMonth":"13",
-                  "ExpiryYear":"14",
+                  "ExpiryYear":"15",
                   "StartMonth":null,
                   "StartYear":null,
                   "IssueNumber":null
@@ -578,7 +578,7 @@ class EwayRapid31Test < Test::Unit::TestCase
                   "Number":"444433XXXXXX1111",
                   "Name":"Longbob Longsen",
                   "ExpiryMonth":"09",
-                  "ExpiryYear":"14",
+                  "ExpiryYear":"15",
                   "StartMonth":"",
                   "StartYear":"",
                   "IssueNumber":""
@@ -764,7 +764,7 @@ class EwayRapid31Test < Test::Unit::TestCase
                   "Name":"Longbob Longsen",
                   "Number":"4444333322221111",
                   "ExpiryMonth":"09",
-                  "ExpiryYear":"14",
+                  "ExpiryYear":"15",
                   "CVN":"123"
               }
           },
@@ -785,7 +785,7 @@ class EwayRapid31Test < Test::Unit::TestCase
                   "Number":"444433XXXXXX1111",
                   "Name":"Longbob Longsen",
                   "ExpiryMonth":"09",
-                  "ExpiryYear":"14",
+                  "ExpiryYear":"15",
                   "StartMonth":null,
                   "StartYear":null,
                   "IssueNumber":null
