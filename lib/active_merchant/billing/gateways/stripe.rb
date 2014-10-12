@@ -24,7 +24,7 @@ module ActiveMerchant #:nodoc:
       # Source: https://support.stripe.com/questions/which-zero-decimal-currencies-does-stripe-support
       CURRENCIES_WITHOUT_FRACTIONS = ['BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'VUV', 'XAF', 'XOF', 'XPF']
 
-      self.supported_countries = %w(US CA GB AU IE FR NL BE DE ES)
+      self.supported_countries = %w(AU BE CA CH DE ES FI FR GB IE IT LU NL US)
       self.default_currency = 'USD'
       self.money_format = :cents
       self.supported_cardtypes = [:visa, :master, :american_express, :discover, :jcb, :diners_club]
@@ -84,7 +84,14 @@ module ActiveMerchant #:nodoc:
           return r unless options[:refund_fee_amount]
 
           r.process { fetch_application_fees(identification, options) }
-          r.process { refund_application_fee(options[:refund_fee_amount], application_fee_from_response(r), options) }
+          r.process { refund_application_fee(options[:refund_fee_amount], application_fee_from_response(r.responses.last), options) }
+        end
+      end
+
+      def verify(creditcard, options = {})
+        MultiResponse.run(:use_first_response) do |r|
+          r.process { authorize(50, creditcard, options) }
+          r.process(:ignore_result) { void(r.authorization, options) }
         end
       end
 
@@ -156,6 +163,7 @@ module ActiveMerchant #:nodoc:
         add_customer(post, creditcard, options)
         add_customer_data(post,options)
         post[:description] = options[:description]
+        post[:statement_description] = options[:statement_description]
         post[:metadata] = { email: options[:email] } if options[:email]
         add_flags(post, options)
         add_application_fee(post, options)
@@ -292,11 +300,12 @@ module ActiveMerchant #:nodoc:
         card = response["card"] || response["active_card"] || {}
         avs_code = AVS_CODE_TRANSLATOR["line1: #{card["address_line1_check"]}, zip: #{card["address_zip_check"]}"]
         cvc_code = CVC_CODE_TRANSLATOR[card["cvc_check"]]
+
         Response.new(success,
           success ? "Transaction approved" : response["error"]["message"],
           response,
           :test => response.has_key?("livemode") ? !response["livemode"] : false,
-          :authorization => response["id"],
+          :authorization => success ? response["id"] : response["error"]["charge"],
           :avs_result => { :code => avs_code },
           :cvv_result => cvc_code
         )
