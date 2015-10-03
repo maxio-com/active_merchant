@@ -1,3 +1,4 @@
+require 'active_merchant/billing/gateways/braintree/braintree_common'
 
 begin
   require "braintree"
