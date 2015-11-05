@@ -274,7 +274,7 @@ module ActiveMerchant #:nodoc:
           return Response.new(false, 'Braintree::NotFoundError') if customer.nil?
 
           # Delete the customers existing payment methods
-          customer.paypal_accounts.each {|pp| Braintree::PayPalAccount.delete(pp.token)}
+          customer.paypal_accounts.each { |pp| @braintree_gateway.paypal_account.delete(pp.token) }
 
           # Update it with the new nonce
           result = @braintree_gateway.customer.update(vault_id,
