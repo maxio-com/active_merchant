@@ -185,6 +185,11 @@ firstdata_e4:
   login:
   password:
 
+fusebox:
+  terminal_id: 'TERM1'
+  location_name: 'ETE MOTO'
+  chain_code: 'TSTLA2'
+
 garanti:
   login: "PROVAUT"
   terminal_id: 111995
