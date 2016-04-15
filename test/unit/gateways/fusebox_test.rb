@@ -61,7 +61,7 @@ class FuseboxTest < Test::Unit::TestCase
   end
 
   def test_successful_store
-    @gateway.expects(:build_request).with(:token_request => 'ID:', :transaction_qualifier => '010', :transaction_amount => '0.00', :unique_reference => 8888888, :billing_zip_code => '', :billing_address => '', :cashier_id => '0', :customer_code => 8888888, :account_number => '4242424242424242', :expiration => '0917', :cvc => '123', :transaction_type => '01')
+    @gateway.expects(:build_request).with(:token_request => 'ID:', :transaction_qualifier => '010', :transaction_amount => '1.00', :unique_reference => 8888888, :billing_zip_code => '', :billing_address => '', :cashier_id => '0', :customer_code => 8888888, :account_number => '4242424242424242', :expiration => '0917', :cvc => '123', :transaction_type => '01')
     @gateway.expects(:ssl_post).returns(successful_store_response)
 
     assert response = @gateway.store(@credit_card, @options)
