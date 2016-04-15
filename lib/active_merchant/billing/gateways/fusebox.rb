@@ -130,7 +130,7 @@ module ActiveMerchant #:nodoc:
 
       # Storing a card is done via an authorize for $0.00 with the string "ID:" in the token request field
       def store(creditcard, options = {})
-        authorize(0, creditcard, options.merge(:token_request => 'ID:'))
+        authorize(100, creditcard, options.merge(:token_request => 'ID:'))
       end
 
       # For a successful void, options must include same :reference of a
