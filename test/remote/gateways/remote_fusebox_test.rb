@@ -46,6 +46,18 @@ class RemoteFuseboxTest < Test::Unit::TestCase
     assert_match(/^0041 BAD ACCT NUMBER/, response.message)
   end
 
+  def test_successful_auth_and_reverse
+    @reference = unique_reference
+    assert response = @gateway.store(@credit_card, reference: @reference, auth_amount: 100)
+    assert_success response
+    assert_match(/^0000, COMPLETE/, response.message)
+    @token = response.params['token']
+
+    assert response = @gateway.auth_reversal(100, @token, reference: @reference)
+    assert_success response
+    assert_match(/^0000, COMPLETE/, response.message)
+  end
+
   def test_successful_store_and_refund
     # Get a token
     assert response = @gateway.store(@credit_card, reference: unique_reference)

@@ -37,11 +37,12 @@ module ActiveMerchant #:nodoc:
       }
 
       TRAN_TYPES = {
-        :authorize => '01',
-        :sale  =>     '02',
-        :refund =>    '09',
-        :void =>      '11',
-        :inquiry =>   '22'
+        :authorize =>     '01',
+        :sale  =>         '02',
+        :refund =>        '09',
+        :void =>          '11',
+        :inquiry =>       '22',
+        :auth_reversal => '61'
       }
 
       GATEWAY_RETRYABLE_CODES = ['0003', '0004', '0015', '0016', '0017', '0155']
@@ -129,8 +130,10 @@ module ActiveMerchant #:nodoc:
       end
 
       # Storing a card is done via an authorize for $0.00 with the string "ID:" in the token request field
+      # NB: Some cards/banks return an error for $0 auth, so you have to use $1 auth and then reverse it.
       def store(creditcard, options = {})
-        authorize(100, creditcard, options.merge(:token_request => 'ID:'))
+        auth_amount = options[:auth_amount] || 0
+        authorize(auth_amount, creditcard, options.merge(:token_request => 'ID:'))
       end
 
       # For a successful void, options must include same :reference of a
@@ -138,6 +141,12 @@ module ActiveMerchant #:nodoc:
       def void(money, creditcard, options = {})
         commit(
           transaction_details(money, creditcard, options).merge(:transaction_type => TRAN_TYPES[:void])
+        )
+      end
+
+      def auth_reversal(money, creditcard, options = {})
+        commit(
+          transaction_details(money, creditcard, options).merge(:transaction_type => TRAN_TYPES[:auth_reversal])
         )
       end
 
