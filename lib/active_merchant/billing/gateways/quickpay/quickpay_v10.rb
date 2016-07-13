@@ -122,6 +122,7 @@ module ActiveMerchant
           post = {}
 
           add_amount(post, nil, options)
+          add_additional_params(:authorize_store, post, options)
           add_credit_card_or_reference(post, credit_card, options)
           commit(synchronized_path("/cards/#{identification}/authorize"), post)
         end
