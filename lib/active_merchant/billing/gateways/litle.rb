@@ -285,9 +285,23 @@ module ActiveMerchant #:nodoc:
           if (node.elements.empty?)
             parsed[node.name.to_sym] = node.text
           else
-            node.elements.each do |childnode|
-              name = "#{node.name}_#{childnode.name}"
-              parsed[name.to_sym] = childnode.text
+            if node.name == "accountUpdater"
+              parsed[:accountUpdater] = {}
+              parsed[:accountUpdater][:originalCardTokenInfo] = {}
+              parsed[:accountUpdater][:newCardTokenInfo] = {}
+              node.xpath("//originalCardTokenInfo/*").each do |childnode_au|
+                name = "#{childnode_au.name}"
+                parsed[:accountUpdater][:originalCardTokenInfo][name.to_sym] = childnode_au.text
+              end
+              node.xpath("//newCardTokenInfo/*").each do |childnode_au|
+                name = "#{childnode_au.name}"
+                parsed[:accountUpdater][:newCardTokenInfo][name.to_sym] = childnode_au.text
+              end
+            else
+              node.elements.each do |childnode|
+                name = "#{node.name}_#{childnode.name}"
+                parsed[name.to_sym] = childnode.text
+              end
             end
           end
         end
