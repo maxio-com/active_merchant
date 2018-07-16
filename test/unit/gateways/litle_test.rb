@@ -22,12 +22,12 @@ class LitleTest < Test::Unit::TestCase
         payment_cryptogram: "BwABBJQ1AgAAAAAgJDUCAAAAAAA="
       })
     @amount = 100
-    @options = {}
+    @options = { billing_address: { email: "foo@bar.com"} }
   end
 
   def test_successful_purchase
     response = stub_comms do
-      @gateway.purchase(@amount, @credit_card)
+      @gateway.purchase(@amount, @credit_card, @options)
     end.respond_with(successful_purchase_response)
 
     assert_success response
@@ -38,7 +38,7 @@ class LitleTest < Test::Unit::TestCase
 
   def test_failed_purchase
     response = stub_comms do
-      @gateway.purchase(@amount, @credit_card)
+      @gateway.purchase(@amount, @credit_card, @options)
     end.respond_with(failed_purchase_response)
 
     assert_failure response
@@ -49,7 +49,7 @@ class LitleTest < Test::Unit::TestCase
 
   def test_passing_name_on_card
     stub_comms do
-      @gateway.purchase(@amount, @credit_card)
+      @gateway.purchase(@amount, @credit_card, @options)
     end.check_request do |endpoint, data, headers|
       assert_match(%r(<billToAddress>\s*<name>Longbob Longsen<), data)
     end.respond_with(successful_purchase_response)
@@ -57,7 +57,7 @@ class LitleTest < Test::Unit::TestCase
 
   def test_passing_order_id
     stub_comms do
-      @gateway.purchase(@amount, @credit_card, order_id: "774488")
+      @gateway.purchase(@amount, @credit_card, order_id: "774488", billing_address: { email: "foo@bar.com"})
     end.check_request do |endpoint, data, headers|
       assert_match(/774488/, data)
     end.respond_with(successful_purchase_response)
@@ -73,7 +73,7 @@ class LitleTest < Test::Unit::TestCase
 
   def test_passing_shipping_address
     stub_comms do
-      @gateway.purchase(@amount, @credit_card, shipping_address: address)
+      @gateway.purchase(@amount, @credit_card, shipping_address: address, billing_address: { email: "foo@bar.com" })
     end.check_request do |endpoint, data, headers|
       assert_match(/<shipToAddress>.*Widgets.*456.*Apt 1.*Otta.*ON.*K1C.*CA.*555-5/m, data)
     end.respond_with(successful_purchase_response)
@@ -82,7 +82,7 @@ class LitleTest < Test::Unit::TestCase
   def test_passing_descriptor
     stub_comms do
       @gateway.authorize(@amount, @credit_card, {
-        descriptor_name: "Name", descriptor_phone: "Phone"
+        descriptor_name: "Name", descriptor_phone: "Phone",  billing_address: { email: "foo@bar.com" }
       })
     end.check_request do |endpoint, data, headers|
       assert_match(%r(<customBilling>.*<descriptor>Name<)m, data)
@@ -92,7 +92,7 @@ class LitleTest < Test::Unit::TestCase
 
   def test_passing_debt_repayment
     stub_comms do
-      @gateway.authorize(@amount, @credit_card, { debt_repayment: true })
+      @gateway.authorize(@amount, @credit_card, { debt_repayment: true,  billing_address: { email: "foo@bar.com" } })
     end.check_request do |endpoint, data, headers|
       assert_match(%r(<debtRepayment>true</debtRepayment>), data)
     end.respond_with(successful_authorize_response)
@@ -100,7 +100,7 @@ class LitleTest < Test::Unit::TestCase
 
   def test_passing_payment_cryptogram
     stub_comms do
-      @gateway.purchase(@amount, @decrypted_apple_pay)
+      @gateway.purchase(@amount, @decrypted_apple_pay, @options)
     end.check_request do |endpoint, data, headers|
       assert_match(/BwABBJQ1AgAAAAAgJDUCAAAAAAA=/, data)
     end.respond_with(successful_purchase_response)
@@ -108,7 +108,7 @@ class LitleTest < Test::Unit::TestCase
 
   def test_add_applepay_order_source
     stub_comms do
-      @gateway.purchase(@amount, @decrypted_apple_pay)
+      @gateway.purchase(@amount, @decrypted_apple_pay, @options)
     end.check_request do |endpoint, data, headers|
       assert_match "<orderSource>applepay</orderSource>", data
     end.respond_with(successful_purchase_response)
@@ -117,7 +117,7 @@ class LitleTest < Test::Unit::TestCase
 
   def test_successful_authorize_and_capture
     response = stub_comms do
-      @gateway.authorize(@amount, @credit_card)
+      @gateway.authorize(@amount, @credit_card, @options)
     end.respond_with(successful_authorize_response)
 
     assert_success response
@@ -136,7 +136,7 @@ class LitleTest < Test::Unit::TestCase
 
   def test_failed_authorize
     response = stub_comms do
-      @gateway.authorize(@amount, @credit_card)
+      @gateway.authorize(@amount, @credit_card, @options)
     end.respond_with(failed_authorize_response)
 
     assert_failure response
@@ -146,7 +146,7 @@ class LitleTest < Test::Unit::TestCase
 
   def test_failed_capture
     response = stub_comms do
-      @gateway.capture(@amount, @credit_card)
+      @gateway.capture(@amount, @credit_card, @options)
     end.respond_with(failed_capture_response)
 
     assert_failure response
@@ -156,7 +156,7 @@ class LitleTest < Test::Unit::TestCase
 
   def test_successful_refund
     response = stub_comms do
-      @gateway.purchase(@amount, @credit_card)
+      @gateway.purchase(@amount, @credit_card, @options)
     end.respond_with(successful_purchase_response)
 
     assert_equal "100000000000000006;sale", response.authorization
@@ -170,7 +170,7 @@ class LitleTest < Test::Unit::TestCase
     assert_success refund
   end
 
-  def test_failed_refund
+  def test_failed_refund   fd
     response = stub_comms do
       @gateway.refund(@amount, "SomeAuthorization")
     end.respond_with(failed_refund_response)
@@ -182,7 +182,7 @@ class LitleTest < Test::Unit::TestCase
 
   def test_successful_void_of_authorization
     response = stub_comms do
-      @gateway.authorize(@amount, @credit_card)
+      @gateway.authorize(@amount, @credit_card, @options)
     end.respond_with(successful_authorize_response)
 
     assert_success response
@@ -265,7 +265,7 @@ class LitleTest < Test::Unit::TestCase
 
   def test_successful_verify
     response = stub_comms do
-      @gateway.verify(@credit_card)
+      @gateway.verify(@credit_card, @options)
     end.respond_with(successful_authorize_response, successful_void_of_auth_response)
     assert_success response
   end
@@ -290,7 +290,7 @@ class LitleTest < Test::Unit::TestCase
     @credit_card.track_data = "Track Data"
 
     stub_comms do
-      @gateway.purchase(@amount, @credit_card)
+      @gateway.purchase(@amount, @credit_card, @options)
     end.check_request do |endpoint, data, headers|
       assert_match "<track>Track Data</track>", data
       assert_match "<orderSource>retail</orderSource>", data
@@ -300,7 +300,7 @@ class LitleTest < Test::Unit::TestCase
 
   def test_order_source_with_creditcard_no_track_data
     stub_comms do
-      @gateway.purchase(@amount, @credit_card)
+      @gateway.purchase(@amount, @credit_card, @options)
     end.check_request do |endpoint, data, headers|
       assert_match "<orderSource>ecommerce</orderSource>", data
       assert %r{<pos>.+<\/pos>}m !~ data
@@ -309,7 +309,7 @@ class LitleTest < Test::Unit::TestCase
 
   def test_order_source_override
     stub_comms do
-      @gateway.purchase(@amount, @credit_card, order_source: "recurring")
+      @gateway.purchase(@amount, @credit_card, order_source: "recurring", billing_address: { email: "foo@bar.com" } )
     end.check_request do |endpoint, data, headers|
       assert_match "<orderSource>recurring</orderSource>", data
     end.respond_with(successful_purchase_response)
@@ -326,8 +326,8 @@ class LitleTest < Test::Unit::TestCase
   end
 
   def test_account_updater
-    response = stub_comms(@gateway, :ssl_post) do
-      @gateway.purchase(@amount, @credit_card, billing_address: { email: "foo@bar.com"})
+    response = stub_comms do
+      @gateway.purchase(@amount, @credit_card, @options)
     end.respond_with(account_updater_response)
     assert_success response
     assert_equal "1111222233334444", response.params["accountUpdater"]["originalCardTokenInfo"]["litleToken"]
@@ -574,15 +574,16 @@ class LitleTest < Test::Unit::TestCase
   def account_updater_response
    %(
       <litleOnlineResponse version='9.4' response='0' message='Valid Format' xmlns='http://www.litle.com/schema'>
-        <saleResponse id='6' reportGroup='Default Report Group' customerId=''>
-          <litleTxnId>600000000000000002</litleTxnId>
-          <orderId>6</orderId>
-          <response>110</response>
+       <saleResponse id='1' reportGroup='Default Report Group' customerId=''>
+          <litleTxnId>100000000000000006</litleTxnId>
+          <orderId>1</orderId>
+          <response>000</response>
           <responseTime>2014-03-31T11:48:47</responseTime>
-          <message>Insufficient Funds</message>
+          <message>Approved</message>
+          <authCode>11111 </authCode>
           <fraudResult>
-            <avsResult>34</avsResult>
-            <cardValidationResult>P</cardValidationResult>
+            <avsResult>01</avsResult>
+            <cardValidationResult>M</cardValidationResult>
           </fraudResult>
           <accountUpdater>
             <originalCardTokenInfo>

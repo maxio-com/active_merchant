@@ -286,16 +286,17 @@ module ActiveMerchant #:nodoc:
             parsed[node.name.to_sym] = node.text
           else
             if node.name == "accountUpdater"
+              # stringify keys gets called on all top level keys, not for nested, so stringify them now
               parsed[:accountUpdater] = {}
-              parsed[:accountUpdater][:originalCardTokenInfo] = {}
-              parsed[:accountUpdater][:newCardTokenInfo] = {}
+              parsed[:accountUpdater]["originalCardTokenInfo"] = {}
+              parsed[:accountUpdater]["newCardTokenInfo"] = {}
               node.xpath("//originalCardTokenInfo/*").each do |childnode_au|
                 name = "#{childnode_au.name}"
-                parsed[:accountUpdater][:originalCardTokenInfo][name.to_sym] = childnode_au.text
+                parsed[:accountUpdater]["originalCardTokenInfo"][name] = childnode_au.text
               end
               node.xpath("//newCardTokenInfo/*").each do |childnode_au|
                 name = "#{childnode_au.name}"
-                parsed[:accountUpdater][:newCardTokenInfo][name.to_sym] = childnode_au.text
+                parsed[:accountUpdater]["newCardTokenInfo"][name] = childnode_au.text
               end
             else
               node.elements.each do |childnode|
