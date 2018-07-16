@@ -325,6 +325,15 @@ class LitleTest < Test::Unit::TestCase
     assert_equal "1", response.params["response"]
   end
 
+  def test_account_updater
+    response = stub_comms(@gateway, :ssl_post) do
+      @gateway.purchase(@amount, @credit_card, billing_address: { email: "foo@bar.com"})
+    end.respond_with(account_updater_response)
+    assert_success response
+    assert_equal "1111222233334444", response.params["accountUpdater"]["originalCardTokenInfo"]["litleToken"]
+    assert_equal "1111222233344444", response.params["accountUpdater"]["newCardTokenInfo"]["litleToken"]
+  end
+
   private
 
   def successful_purchase_response
@@ -560,6 +569,38 @@ class LitleTest < Test::Unit::TestCase
                      message='Error validating xml data against the schema on line 8\nthe length of the value is 10, but the required minimum is 13.'/>
 
     )
+  end
+
+  def account_updater_response
+   %(
+      <litleOnlineResponse version='9.4' response='0' message='Valid Format' xmlns='http://www.litle.com/schema'>
+        <saleResponse id='6' reportGroup='Default Report Group' customerId=''>
+          <litleTxnId>600000000000000002</litleTxnId>
+          <orderId>6</orderId>
+          <response>110</response>
+          <responseTime>2014-03-31T11:48:47</responseTime>
+          <message>Insufficient Funds</message>
+          <fraudResult>
+            <avsResult>34</avsResult>
+            <cardValidationResult>P</cardValidationResult>
+          </fraudResult>
+          <accountUpdater>
+            <originalCardTokenInfo>
+              <litleToken>1111222233334444</litleToken>
+              <type>VI</type>
+              <expDate>0120</expDate>
+              <bin>445711</bin>
+            </originalCardTokenInfo>
+            <newCardTokenInfo>
+              <litleToken>1111222233344444</litletoken>
+              <type>MC</type>
+              <expDate>2020</expDate>
+              <bin>445711</bin>
+            </newCardTokenInfo>
+          </accountUpdater>
+        </saleResponse>
+      </litleOnlineResponse>
+   )
   end
 
 end
