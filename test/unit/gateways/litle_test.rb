@@ -22,7 +22,7 @@ class LitleTest < Test::Unit::TestCase
         payment_cryptogram: "BwABBJQ1AgAAAAAgJDUCAAAAAAA="
       })
     @amount = 100
-    @options = { billing_address: { email: "foo@bar.com"} }
+    @options = { billing_address: { } }
   end
 
   def test_successful_purchase
@@ -57,7 +57,7 @@ class LitleTest < Test::Unit::TestCase
 
   def test_passing_order_id
     stub_comms do
-      @gateway.purchase(@amount, @credit_card, order_id: "774488", billing_address: { email: "foo@bar.com"})
+      @gateway.purchase(@amount, @credit_card, order_id: "774488", billing_address: { })
     end.check_request do |endpoint, data, headers|
       assert_match(/774488/, data)
     end.respond_with(successful_purchase_response)
@@ -73,7 +73,7 @@ class LitleTest < Test::Unit::TestCase
 
   def test_passing_shipping_address
     stub_comms do
-      @gateway.purchase(@amount, @credit_card, shipping_address: address, billing_address: { email: "foo@bar.com" })
+      @gateway.purchase(@amount, @credit_card, shipping_address: address, billing_address: {  })
     end.check_request do |endpoint, data, headers|
       assert_match(/<shipToAddress>.*Widgets.*456.*Apt 1.*Otta.*ON.*K1C.*CA.*555-5/m, data)
     end.respond_with(successful_purchase_response)
@@ -82,7 +82,7 @@ class LitleTest < Test::Unit::TestCase
   def test_passing_descriptor
     stub_comms do
       @gateway.authorize(@amount, @credit_card, {
-        descriptor_name: "Name", descriptor_phone: "Phone",  billing_address: { email: "foo@bar.com" }
+        descriptor_name: "Name", descriptor_phone: "Phone",  billing_address: {  }
       })
     end.check_request do |endpoint, data, headers|
       assert_match(%r(<customBilling>.*<descriptor>Name<)m, data)
@@ -92,7 +92,7 @@ class LitleTest < Test::Unit::TestCase
 
   def test_passing_debt_repayment
     stub_comms do
-      @gateway.authorize(@amount, @credit_card, { debt_repayment: true,  billing_address: { email: "foo@bar.com" } })
+      @gateway.authorize(@amount, @credit_card, { debt_repayment: true,  billing_address: {  } })
     end.check_request do |endpoint, data, headers|
       assert_match(%r(<debtRepayment>true</debtRepayment>), data)
     end.respond_with(successful_authorize_response)
@@ -309,7 +309,7 @@ class LitleTest < Test::Unit::TestCase
 
   def test_order_source_override
     stub_comms do
-      @gateway.purchase(@amount, @credit_card, order_source: "recurring", billing_address: { email: "foo@bar.com" } )
+      @gateway.purchase(@amount, @credit_card, order_source: "recurring", billing_address: { } )
     end.check_request do |endpoint, data, headers|
       assert_match "<orderSource>recurring</orderSource>", data
     end.respond_with(successful_purchase_response)
