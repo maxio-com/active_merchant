@@ -26,7 +26,24 @@ module ActiveMerchant #:nodoc:
           }
         }
 
-        commit('/payments', post, options)
+        commit(:post, '/payments', post, options)
+      end
+
+      def store(customer_attributes, bank_account, options = {})
+        res = nil
+        MultiResponse.run do |r|
+          #if customer_attributes['vault_token'].blank?
+          r.process { res = commit(:post, '/customers', customer_params(customer_attributes, options)) }
+          #else
+          #  r.process { res = commit(:put, "/customers/#{customer_attributes['vault_token']}", customer_params(customer_attributes, options)) }
+          #end
+          if res.success?
+            r.process { res = create_bank_account(res.params['customers']['id'], bank_account) }
+          end
+          if res.success?
+            r.process { create_mandate(res.params['customer_bank_accounts']['id']) }
+          end
+        end
       end
 
       def supports_scrubbing?
@@ -47,13 +64,16 @@ module ActiveMerchant #:nodoc:
         JSON.parse(response)
       end
 
-      def commit(action, params, options={})
+      def commit(method, action, params, options={})
         begin
-          response = parse(ssl_post(
-            (url + action),
-            params.to_json,
-            headers(options)
-          ))
+          response = parse(
+            ssl_request(
+              method,
+              (url + action),
+              params.to_json,
+              headers(options)
+            )
+          )
         rescue ResponseError => e
           response = parse(e.response.body)
         end
@@ -97,6 +117,54 @@ module ActiveMerchant #:nodoc:
         }.tap do |h|
           h['Idempotency-Key'] = options[:order_id] if options[:order_id]
         end
+      end
+
+      def customer_params(customer_attributes, options)
+        post = {
+          customers: {
+            "email": customer_attributes['email'],
+            "given_name": customer_attributes['first_name'],
+            "family_name": customer_attributes['last_name']
+          }
+        }
+        if options[:billing_address]
+          post[:customers]["address_line1"] = options[:billing_address][:address1]
+          post[:customers]["address_line2"] = options[:billing_address][:address2]
+          post[:customers]["city"] = options[:billing_address][:city]
+          post[:customers]["region"] = options[:billing_address][:state]
+          post[:customers]["postal_code"] = options[:billing_address][:zip]
+          post[:customers]["country_code"] = options[:billing_address][:country]
+        end
+        post
+      end
+
+      def create_bank_account(customer_id, bank_account)
+        post = {
+          "customer_bank_accounts": {
+            "account_holder_name": "#{bank_account.first_name} #{bank_account.last_name}",
+            "links": {
+              "customer": customer_id
+            }
+          }
+        }
+        if bank_account.iban
+          post[:customer_bank_accounts]['iban'] = bank_account.iban
+        else
+          post[:customer_bank_accounts]['account_number'] = bank_account.account_number
+          post[:customer_bank_accounts]['bank_code'] = bank_account.routing_number
+        end
+        commit(:post, '/customer_bank_accounts', post)
+      end
+
+      def create_mandate(bank_account_id)
+        post = {
+          "mandates": {
+            "links": {
+              "customer_bank_account": bank_account_id
+            }
+          }
+        }
+        commit(:post, '/mandates', post)
       end
     end
   end
