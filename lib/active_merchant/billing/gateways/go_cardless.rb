@@ -32,13 +32,22 @@ module ActiveMerchant #:nodoc:
       def store(customer_attributes, bank_account, options = {})
         res = nil
         MultiResponse.run do |r|
-          #if customer_attributes['vault_token'].blank?
           r.process { res = commit(:post, '/customers', customer_params(customer_attributes, options)) }
-          #else
-          #  r.process { res = commit(:put, "/customers/#{customer_attributes['vault_token']}", customer_params(customer_attributes, options)) }
-          #end
           if res.success?
-            r.process { res = create_bank_account(res.params['customers']['id'], bank_account) }
+            r.process { res = create_bank_account(res.params['customers']['id'], bank_account, options) }
+          end
+          if res.success?
+            r.process { create_mandate(res.params['customer_bank_accounts']['id']) }
+          end
+        end
+      end
+
+      def update(customer_attributes, bank_account, options)
+        res = nil
+        MultiResponse.run do |r|
+          r.process { res = commit(:put, "/customers/#{customer_attributes['vault_token']}", customer_params(customer_attributes, options)) }
+          if res.success?
+            r.process { res = create_bank_account(res.params['customers']['id'], bank_account, options) }
           end
           if res.success?
             r.process { create_mandate(res.params['customer_bank_accounts']['id']) }
@@ -138,16 +147,18 @@ module ActiveMerchant #:nodoc:
         post
       end
 
-      def create_bank_account(customer_id, bank_account)
+      def create_bank_account(customer_id, bank_account, opts)
         post = {
-          "customer_bank_accounts": {
-            "account_holder_name": "#{bank_account.first_name} #{bank_account.last_name}",
-            "links": {
+          customer_bank_accounts: {
+            account_holder_name: "#{bank_account.first_name} #{bank_account.last_name}",
+            links: {
               "customer": customer_id
-            }
+            },
+            currency: opts[:currency],
+            country_code: opts.dig(:billing_address, :country)
           }
         }
-        if bank_account.iban
+        if bank_account.iban.present?
           post[:customer_bank_accounts]['iban'] = bank_account.iban
         else
           post[:customer_bank_accounts]['account_number'] = bank_account.account_number
