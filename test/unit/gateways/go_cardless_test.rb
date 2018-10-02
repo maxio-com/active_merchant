@@ -16,7 +16,7 @@ class GoCardlessTest < Test::Unit::TestCase
 
   def test_successful_store_iban
     bank_account = mock_bank_account_with_iban
-    stub_gocardless_requests
+    stub_requests_to_be_successful
 
     response = @gateway.store(@customer_attributes, bank_account, @store_options)
 
@@ -26,7 +26,7 @@ class GoCardlessTest < Test::Unit::TestCase
 
   def test_successful_store_bank_credentials
     bank_account = mock_bank_account
-    stub_gocardless_requests
+    stub_requests_to_be_successful
 
     response = @gateway.store(@customer_attributes, bank_account, @store_options)
 
@@ -74,7 +74,7 @@ class GoCardlessTest < Test::Unit::TestCase
     end
   end
 
-  def stub_gocardless_requests
+  def stub_requests_to_be_successful
     @gateway.expects(:ssl_request)
       .with(:post, 'https://api-sandbox.gocardless.com/customers', anything, anything)
       .returns(successful_create_customer_response)
