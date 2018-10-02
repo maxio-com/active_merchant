@@ -10,15 +10,25 @@ class GoCardlessTest < Test::Unit::TestCase
       description: "John Doe - gold: Signup payment",
       currency: "EUR"
     }
+    @customer_attributes = { 'email' => 'foo@bar.com', 'first_name' => 'John', 'last_name' => 'Doe' }
+    @store_options = { 'billing_address' => { 'country_code' => 'FR' } }
   end
 
-  def test_successful_store
-    customer_attributes = { 'email' => 'foo@bar.com', 'first_name' => 'John', 'last_name' => 'Doe' }
-    options = { 'billing_address' => { 'country_code' => 'FR' } }
+  def test_successful_store_iban
+    bank_account = mock_bank_account_with_iban
+    stub_gocardless_requests
+
+    response = @gateway.store(@customer_attributes, bank_account, @store_options)
+
+    assert_instance_of MultiResponse, response
+    assert_success response
+  end
+
+  def test_successful_store_bank_credentials
     bank_account = mock_bank_account
     stub_gocardless_requests
 
-    response = @gateway.store(customer_attributes, bank_account, options)
+    response = @gateway.store(@customer_attributes, bank_account, @store_options)
 
     assert_instance_of MultiResponse, response
     assert_success response
@@ -47,6 +57,16 @@ class GoCardlessTest < Test::Unit::TestCase
   private
 
   def mock_bank_account
+    bank_account = mock.tap do |bank_account_mock|
+      bank_account_mock.expects(:iban).returns(nil)
+      bank_account_mock.expects(:first_name).returns('John')
+      bank_account_mock.expects(:last_name).returns('Doe')
+      bank_account_mock.expects(:account_number).returns('0500013M026')
+      bank_account_mock.expects(:routing_number).returns('20041')
+    end
+  end
+
+  def mock_bank_account_with_iban
     mock.tap do |bank_account_mock|
       bank_account_mock.expects(:first_name).returns('John')
       bank_account_mock.expects(:last_name).returns('Doe')
