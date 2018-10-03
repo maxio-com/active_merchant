@@ -13,6 +13,10 @@ class RemoteWepayTest < Test::Unit::TestCase
       description: "John Doe - gold: Signup payment",
       currency: "EUR"
     }
+
+    @customer_attributes = { 'email' => 'foo@bar.com', 'first_name' => 'John', 'last_name' => 'Doe' }
+    @store_options = { billing_address: { country: 'FR' } }
+    @bank_account = OpenStruct.new(iban: 'FR1420041010050500013M02606', first_name: 'John', last_name: 'Doe')
   end
 
   def test_successful_purchase_with_token
@@ -25,9 +29,31 @@ class RemoteWepayTest < Test::Unit::TestCase
     assert_failure response
   end
 
-  def test_invalid_login
+  def test_purchase_invalid_login
     gateway = GoCardlessGateway.new(access_token: '')
     response = gateway.purchase(@amount, @token, @options)
+    assert_failure response
+  end
+
+  def test_failed_store_invalid_customer_attrs
+    invalid_customer_attributes = { 'email' => '', 'first_name' => 'John', 'last_name' => 'Doe' }
+
+    response = @gateway.store(invalid_customer_attributes, @bank_account, @store_options)
+
+    assert_failure response
+  end
+
+  def test_successful_store
+    response = @gateway.store(@customer_attributes, @bank_account, @store_options)
+
+    assert_success response
+  end
+
+  def test_store_invalid_login
+    gateway = GoCardlessGateway.new(access_token: '')
+
+    response = gateway.store(@customer_attributes, @bank_account, @store_options)
+
     assert_failure response
   end
 end

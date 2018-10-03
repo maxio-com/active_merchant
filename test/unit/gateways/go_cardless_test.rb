@@ -11,14 +11,13 @@ class GoCardlessTest < Test::Unit::TestCase
       currency: "EUR"
     }
     @customer_attributes = { 'email' => 'foo@bar.com', 'first_name' => 'John', 'last_name' => 'Doe' }
-    @store_options = { 'billing_address' => { 'country_code' => 'FR' } }
   end
 
   def test_successful_store_iban
     bank_account = mock_bank_account_with_iban
     stub_requests_to_be_successful
 
-    response = @gateway.store(@customer_attributes, bank_account, @store_options)
+    response = @gateway.store(@customer_attributes, bank_account)
 
     assert_instance_of MultiResponse, response
     assert_success response
@@ -28,7 +27,7 @@ class GoCardlessTest < Test::Unit::TestCase
     bank_account = mock_bank_account
     stub_requests_to_be_successful
 
-    response = @gateway.store(@customer_attributes, bank_account, @store_options)
+    response = @gateway.store(@customer_attributes, bank_account)
 
     assert_instance_of MultiResponse, response
     assert_success response
@@ -57,7 +56,7 @@ class GoCardlessTest < Test::Unit::TestCase
   private
 
   def mock_bank_account
-    bank_account = mock.tap do |bank_account_mock|
+    mock.tap do |bank_account_mock|
       bank_account_mock.expects(:iban).returns(nil)
       bank_account_mock.expects(:first_name).returns('John')
       bank_account_mock.expects(:last_name).returns('Doe')
