@@ -163,6 +163,7 @@ module ActiveMerchant #:nodoc:
         else
           post[:customer_bank_accounts]['account_number'] = bank_account.account_number
           post[:customer_bank_accounts]['bank_code'] = bank_account.routing_number
+          post[:customer_bank_accounts]['branch_code'] = bank_account.branch_code
         end
         commit(:post, '/customer_bank_accounts', post)
       end

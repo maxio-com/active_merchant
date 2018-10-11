@@ -16,7 +16,6 @@ class RemoteWepayTest < Test::Unit::TestCase
 
     @customer_attributes = { 'email' => 'foo@bar.com', 'first_name' => 'John', 'last_name' => 'Doe' }
     @store_options = { billing_address: { country: 'FR' } }
-    @bank_account = OpenStruct.new(iban: 'FR1420041010050500013M02606', first_name: 'John', last_name: 'Doe')
   end
 
   def test_successful_purchase_with_token
@@ -43,8 +42,59 @@ class RemoteWepayTest < Test::Unit::TestCase
     assert_failure response
   end
 
-  def test_successful_store
-    response = @gateway.store(@customer_attributes, @bank_account, @store_options)
+  def test_successful_store_iban
+    bank_account = stub(iban: 'FR1420041010050500013M02606', first_name: 'John', last_name: 'Doe')
+
+    response = @gateway.store(@customer_attributes, bank_account, @store_options)
+
+    assert_success response
+  end
+
+  def test_successful_store_local_data_branch_code_and_routing_number
+    bank_account = stub(
+      first_name: 'John',
+      last_name: 'Doe',
+      routing_number: '20041',
+      branch_code: '01005',
+      account_number: '0500013M02606',
+      iban: nil
+    )
+
+    response = @gateway.store(@customer_attributes, bank_account, @store_options)
+
+    assert_success response
+  end
+
+  def test_successful_store_local_data_only_branch_code
+    # Malta uses shorter account_number and only branch_code
+    store_options = { billing_address:{ country: 'MT' } }
+    bank_account = stub(
+      first_name: 'John',
+      last_name: 'Doe',
+      branch_code: '44093',
+      account_number: '9027293051',
+      routing_number: nil,
+      iban: nil
+    )
+
+    response = @gateway.store(@customer_attributes, bank_account, store_options)
+
+    assert_success response
+  end
+
+  def test_successful_store_local_data_only_routing_number
+    # LU - Luxemburg only routing_number (bank_code)
+    store_options = { billing_address:{ country: 'LU' } }
+    bank_account = stub(
+      first_name: 'John',
+      last_name: 'Doe',
+      account_number: '9400644750000',
+      routing_number: '001',
+      branch_code: nil,
+      iban: nil
+    )
+
+    response = @gateway.store(@customer_attributes, bank_account, store_options)
 
     assert_success response
   end
