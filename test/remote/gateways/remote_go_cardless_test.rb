@@ -67,7 +67,7 @@ class RemoteWepayTest < Test::Unit::TestCase
 
   def test_successful_store_local_data_only_branch_code
     # Malta uses shorter account_number and only branch_code
-    store_options = { billing_address:{ country: 'MT' } }
+    store_options = { billing_address: { country: 'MT' } }
     bank_account = stub(
       first_name: 'John',
       last_name: 'Doe',
