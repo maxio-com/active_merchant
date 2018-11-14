@@ -55,6 +55,22 @@ module ActiveMerchant #:nodoc:
         end
       end
 
+      def refund(money, identification, options = {})
+        money_in_cents = money.respond_to?(:cents) ? money.cents : money.to_i
+
+        post = {
+          refunds: {
+            amount: money_in_cents,
+            total_amount_confirmation: money_in_cents,
+            links: {
+              payment: identification
+            }
+          }
+        }
+
+        commit(:post, '/refunds', post, options)
+      end
+
       def supports_scrubbing?
         false
       end
