@@ -54,14 +54,20 @@ class GoCardlessTest < Test::Unit::TestCase
   end
 
   def test_successful_refund
-    @gateway.expects(:ssl_request).returns(successful_refund_response)
+    @gateway.expects(:ssl_request)
+       .with(:post, 'https://api-sandbox.gocardless.com/refunds', anything, anything)
+      .returns(successful_refund_response)
+
+    @gateway.expects(:ssl_request)
+       .with(:get, 'https://api-sandbox.gocardless.com/refunds?payment=PM000C7A086NA7', anything, anything)
+       .returns(successful_refunds_response)
 
     assert response = @gateway.refund(@amount, 'PM000C7A086NA7', @options)
-    assert_instance_of Response, response
+    assert_instance_of MultiResponse, response
     assert_success response
-
     assert response.test?
   end
+
   private
 
   def mock_bank_account
@@ -164,6 +170,14 @@ class GoCardlessTest < Test::Unit::TestCase
             "mandate":"MD00048KV3PRCX"
           }
         }
+      }
+    RESPONSE
+  end
+
+  def successful_refunds_response
+    <<~RESPONSE
+      {
+        "refunds": []
       }
     RESPONSE
   end
