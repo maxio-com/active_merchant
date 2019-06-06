@@ -429,7 +429,7 @@ class NmiTest < Test::Unit::TestCase
 
     assert_failure response
     assert response.test?
-    assert_match /Invalid Initial Transaction ID/, response.message
+    assert_match(/Invalid Initial Transaction ID/, response.message)
   end
 
 

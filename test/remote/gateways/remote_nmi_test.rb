@@ -284,6 +284,6 @@ class RemoteNmiTest < Test::Unit::TestCase
     response = @gateway.purchase(@amount, vault_id, @options)
 
     assert_failure response
-    assert_match /Invalid Initial Transaction ID/, response.message
+    assert_match(/Invalid Initial Transaction ID/, response.message)
   end
 end
