@@ -27,7 +27,7 @@ module ActiveMerchant #:nodoc:
       XSD_VERSION = '1.153'
 
       self.supported_cardtypes = [:visa, :master, :american_express, :discover, :diners_club, :jcb, :dankort, :maestro]
-      self.supported_countries = %w(US BR CA CN DK FI FR DE IN JP MX NO SE GB SG LB)
+      self.supported_countries = %w(US BR CA CN DK FI FR DE IN JP MX NO SE GB SG LB ZA)
 
       self.default_currency = 'USD'
       self.currencies_without_fractions = %w(JPY)
@@ -122,6 +122,7 @@ module ActiveMerchant #:nodoc:
       end
 
       # options[:pinless_debit_card] => true # attempts to process as pinless debit card
+      # options[:source_type] => 'check' for stored ACH purchases
       def purchase(money, payment_method_or_reference, options = {})
         setup_address_hash(options)
         commit(build_purchase_request(money, payment_method_or_reference, options), :purchase, money, options)
@@ -291,7 +292,7 @@ module ActiveMerchant #:nodoc:
         add_payment_method_or_subscription(xml, money, payment_method_or_reference, options)
         add_decision_manager_fields(xml, options)
         add_mdd_fields(xml, options)
-        if !payment_method_or_reference.is_a?(String) && card_brand(payment_method_or_reference) == 'check'
+        if !payment_method_or_reference.is_a?(String) && card_brand(payment_method_or_reference) == 'check' || options[:source_type] == 'check'
           add_check_service(xml)
         else
           add_purchase_service(xml, payment_method_or_reference, options)
@@ -749,7 +750,16 @@ module ActiveMerchant #:nodoc:
         end
 
         success = response[:decision] == 'ACCEPT'
-        message = response[:message]
+
+        response_code = ('r' + response.fetch(:reasonCode,'')).to_sym
+        # CyberSource sometimes returns a REJECT with reason_code 100.
+        # Set message to 'Failure' instead of 'Successful transaction' in that case.
+        message = (!success && response_code == :r100) ? "Failure" : @@response_codes[response_code] rescue response[:message]
+
+        # if a <soap::Fault> is in the return xml there wont be a reasonCode
+        if !success && @@response_codes[response_code].nil?
+          message = response[:message]
+        end
 
         authorization = success ? authorization_from(response, action, amount, options) : nil
 
