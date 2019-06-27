@@ -300,6 +300,7 @@ module ActiveMerchant #:nodoc:
           add_payment_network_token(xml) if network_tokenization?(payment_method_or_reference)
           add_business_rules_data(xml, payment_method_or_reference, options) unless options[:pinless_debit_card]
         end
+        add_stored_credential_options(xml, options)
         xml.target!
       end
 

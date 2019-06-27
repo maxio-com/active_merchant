@@ -1,5 +1,7 @@
 require 'test_helper'
 
+AMOUNT_TRIGGERING_NETWORK_TRANSACTION_ID = 610201 # cents
+
 class RemoteCyberSourceTest < Test::Unit::TestCase
   def setup
     Base.mode = :test
@@ -479,6 +481,13 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
     assert response = @gateway.authorize(@amount, @credit_card, @options)
     assert_equal 'Successful transaction', response.message
     assert_success response
+  end
+
+  def test_successful_purchase_response_includes_network_transaction_id
+    response = @gateway.purchase(AMOUNT_TRIGGERING_NETWORK_TRANSACTION_ID, @credit_card, @options)
+
+    assert_equal 'Successful transaction', response.message
+    assert response.params['paymentNetworkTransactionID']
   end
 
   def pares
