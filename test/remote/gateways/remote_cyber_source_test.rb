@@ -484,6 +484,12 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
   end
 
   def test_successful_purchase_response_includes_network_transaction_id
+    @options[:stored_credential] = {
+      :initiator => 'cardholder',
+      :reason_type => 'recurring',
+      :initial_transaction => true,
+      :network_transaction_id => ''
+    }
     response = @gateway.purchase(AMOUNT_TRIGGERING_NETWORK_TRANSACTION_ID, @credit_card, @options)
 
     assert_equal 'Successful transaction', response.message
