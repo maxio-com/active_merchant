@@ -518,10 +518,16 @@ module ActiveMerchant #:nodoc:
 
       def response_message(success, url, response)
         if url == "payment_intents"
-          success ? "Transaction approved" : response.dig("error", "message") || response["status"]
+          success ? "Transaction approved" : response.dig("error", "message") || response_status_to_response_message_mapper(response)
         else
           success ? "Transaction approved" : response["error"]["message"]
         end
+      end
+
+      def response_status_to_response_message_mapper(response)
+        {
+          requires_source_action: "Your card was declined. This transaction requires authentication."
+        }.fetch(response["status"].to_sym, response["status"])
       end
 
       def authorization_from(success, url, method, response)
