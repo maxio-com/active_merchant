@@ -97,7 +97,7 @@ module ActiveMerchant #:nodoc:
           end
           r.process do
             post = create_post_for_auth_or_purchase(money, payment, options)
-            commit(:post, 'charges', post, options)
+            commit(:post, 'payment_intents', post, options)
           end
         end.responses.last
       end
@@ -297,6 +297,8 @@ module ActiveMerchant #:nodoc:
         add_metadata(post, options)
         add_application_fee(post, options)
         add_destination(post, options)
+        post[:confirmation_method] = "manual"
+        post[:confirm] = "true"
         post
       end
 
@@ -330,8 +332,9 @@ module ActiveMerchant #:nodoc:
         metadata_options = [:description, :ip, :user_agent, :referrer]
         post.update(options.slice(*metadata_options))
 
-        post[:external_id] = options[:order_id]
-        post[:payment_user_agent] = "Stripe/v1 ActiveMerchantBindings/#{ActiveMerchant::VERSION}"
+        # TODO: check why this is not working and if we can just delete it?
+        # post[:external_id] = options[:order_id]
+        # post[:payment_user_agent] = "Stripe/v1 ActiveMerchantBindings/#{ActiveMerchant::VERSION}"
       end
 
       def add_address(post, options)
@@ -485,16 +488,16 @@ module ActiveMerchant #:nodoc:
 
       def commit(method, url, parameters = nil, options = {})
         add_expand_parameters(parameters, options) if parameters
-        response = api_request(method, url, parameters, options)
 
-        success = !response.key?("error")
+        response = api_request(method, url, parameters, options)
+        success = success_response?(url, response)
 
         card = card_from_response(response)
         avs_code = AVS_CODE_TRANSLATOR["line1: #{card["address_line1_check"]}, zip: #{card["address_zip_check"]}"]
         cvc_code = CVC_CODE_TRANSLATOR[card["cvc_check"]]
 
         Response.new(success,
-          success ? "Transaction approved" : response["error"]["message"],
+          response_message(success, url, response),
           response,
           :test => response_is_test?(response),
           :authorization => authorization_from(success, url, method, response),
@@ -505,8 +508,24 @@ module ActiveMerchant #:nodoc:
         )
       end
 
+      def success_response?(url, response)
+        if url == "payment_intents"
+          !response.key?("error") && response["status"] == "succeeded"
+        else
+          !response.key?("error")
+        end
+      end
+
+      def response_message(success, url, response)
+        if url == "payment_intents"
+          success ? "Transaction approved" : response.dig("error", "message") || response["status"]
+        else
+          success ? "Transaction approved" : response["error"]["message"]
+        end
+      end
+
       def authorization_from(success, url, method, response)
-        return response["error"]["charge"] unless success
+        return response["error"]["charge"] if !success && url != "payment_intents"
 
         if url == "customers"
           [response["id"], response["sources"]["data"].first["id"]].join("|")
@@ -560,6 +579,8 @@ module ActiveMerchant #:nodoc:
       end
 
       def error_code_from(response)
+        return unless response.key?('error')
+
         code = response['error']['code']
         decline_code = response['error']['decline_code'] if code == 'card_declined'
 
