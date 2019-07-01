@@ -383,57 +383,57 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
     assert response.test?
   end
 
-  # def test_3ds_enroll_request_via_purchase
-  #   assert response = @gateway.purchase(1202, @three_ds_enrolled_card, @options.merge(payer_auth_enroll_service: true))
-  #   assert_equal '475', response.params['reasonCode']
-  #   assert !response.params['acsURL'].blank?
-  #   assert !response.params['paReq'].blank?
-  #   assert !response.params['xid'].blank?
-  #   assert !response.success?
-  # end
-  #
-  # def test_3ds_enroll_request_via_authorize
-  #   assert response = @gateway.authorize(1202, @three_ds_enrolled_card, @options.merge(payer_auth_enroll_service: true))
-  #   assert_equal '475', response.params['reasonCode']
-  #   assert !response.params['acsURL'].blank?
-  #   assert !response.params['paReq'].blank?
-  #   assert !response.params['xid'].blank?
-  #   assert !response.success?
-  # end
-  #
-  # def test_successful_3ds_requests_with_unenrolled_card
-  #   assert response = @gateway.purchase(1202, @three_ds_unenrolled_card, @options.merge(payer_auth_enroll_service: true))
-  #   assert response.success?
-  #
-  #   assert response = @gateway.authorize(1202, @three_ds_unenrolled_card, @options.merge(payer_auth_enroll_service: true))
-  #   assert response.success?
-  # end
-  #
-  # def test_successful_3ds_validate_purchase_request
-  #   assert response = @gateway.purchase(1202, @three_ds_enrolled_card, @options.merge(payer_auth_validate_service: true, pares: pares))
-  #   assert_equal '100', response.params['reasonCode']
-  #   assert_equal '0', response.params['authenticationResult']
-  #   assert response.success?
-  # end
-  #
-  # def test_failed_3ds_validate_purchase_request
-  #   assert response = @gateway.purchase(1202, @three_ds_invalid_card, @options.merge(payer_auth_validate_service: true, pares: pares))
-  #   assert_equal '476', response.params['reasonCode']
-  #   assert !response.success?
-  # end
-  #
-  # def test_successful_3ds_validate_authorize_request
-  #   assert response = @gateway.authorize(1202, @three_ds_enrolled_card, @options.merge(payer_auth_validate_service: true, pares: pares))
-  #   assert_equal '100', response.params['reasonCode']
-  #   assert_equal '0', response.params['authenticationResult']
-  #   assert response.success?
-  # end
-  #
-  # def test_failed_3ds_validate_authorize_request
-  #   assert response = @gateway.authorize(1202, @three_ds_invalid_card, @options.merge(payer_auth_validate_service: true, pares: pares))
-  #   assert_equal '476', response.params['reasonCode']
-  #   assert !response.success?
-  # end
+  def test_3ds_enroll_request_via_purchase
+    assert response = @gateway.purchase(1202, @three_ds_enrolled_card, @options.merge(payer_auth_enroll_service: true))
+    assert_equal '475', response.params['reasonCode']
+    assert !response.params['acsURL'].blank?
+    assert !response.params['paReq'].blank?
+    assert !response.params['xid'].blank?
+    assert !response.success?
+  end
+
+  def test_3ds_enroll_request_via_authorize
+    assert response = @gateway.authorize(1202, @three_ds_enrolled_card, @options.merge(payer_auth_enroll_service: true))
+    assert_equal '475', response.params['reasonCode']
+    assert !response.params['acsURL'].blank?
+    assert !response.params['paReq'].blank?
+    assert !response.params['xid'].blank?
+    assert !response.success?
+  end
+
+  def test_successful_3ds_requests_with_unenrolled_card
+    assert response = @gateway.purchase(1202, @three_ds_unenrolled_card, @options.merge(payer_auth_enroll_service: true))
+    assert response.success?
+
+    assert response = @gateway.authorize(1202, @three_ds_unenrolled_card, @options.merge(payer_auth_enroll_service: true))
+    assert response.success?
+  end
+
+  def test_successful_3ds_validate_purchase_request
+    assert response = @gateway.purchase(1202, @three_ds_enrolled_card, @options.merge(payer_auth_validate_service: true, pares: pares))
+    assert_equal '100', response.params['reasonCode']
+    assert_equal '0', response.params['authenticationResult']
+    assert response.success?
+  end
+
+  def test_failed_3ds_validate_purchase_request
+    assert response = @gateway.purchase(1202, @three_ds_invalid_card, @options.merge(payer_auth_validate_service: true, pares: pares))
+    assert_equal '476', response.params['reasonCode']
+    assert !response.success?
+  end
+
+  def test_successful_3ds_validate_authorize_request
+    assert response = @gateway.authorize(1202, @three_ds_enrolled_card, @options.merge(payer_auth_validate_service: true, pares: pares))
+    assert_equal '100', response.params['reasonCode']
+    assert_equal '0', response.params['authenticationResult']
+    assert response.success?
+  end
+
+  def test_failed_3ds_validate_authorize_request
+    assert response = @gateway.authorize(1202, @three_ds_invalid_card, @options.merge(payer_auth_validate_service: true, pares: pares))
+    assert_equal '476', response.params['reasonCode']
+    assert !response.success?
+  end
 
   def test_successful_first_unscheduled_cof_transaction
     @options[:stored_credential] = {
