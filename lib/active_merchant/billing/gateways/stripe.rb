@@ -130,6 +130,11 @@ module ActiveMerchant #:nodoc:
         post[:expand] = [:charge]
 
         MultiResponse.run(:first) do |r|
+          # If identification starts with pi_ then it is created with new payment intents API, so we need to fetch charge id from API
+          if identification =~ /\Api_/
+            r.process { commit(:get, "charges?payment_intent=#{CGI.escape(identification)}", nil, options) }
+            identification = r.responses.last.params["data"].first["id"]
+          end
           r.process { commit(:post, "charges/#{CGI.escape(identification)}/refunds", post, options) }
 
           return r unless options[:refund_fee_amount]
