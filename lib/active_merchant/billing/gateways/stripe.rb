@@ -536,7 +536,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def authorization_from(success, url, method, response)
-        return response["error"]["payment_intent"] unless success
+        return response.dig("error", "payment_intent", "id") unless success
 
         if url == "customers"
           [response["id"], response["sources"]["data"].first["id"]].join("|")
