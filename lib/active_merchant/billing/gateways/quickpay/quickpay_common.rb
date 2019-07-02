@@ -1,6 +1,4 @@
-
 module QuickpayCommon
-
   MD5_CHECK_FIELDS = {
     3 => {
       :authorize => %w(protocol msgtype merchant ordernumber amount
@@ -13,7 +11,7 @@ module QuickpayCommon
 
       :refund    => %w(protocol msgtype merchant amount transaction),
 
-      :subscribe => %w(protocol msgtype merchant ordernumber amount currency cardnumber
+      :subscribe => %w(protocol msgtype merchant ordernumber cardnumber
                        expirationdate cvd cardtypelock description testmode),
 
       :recurring => %w(protocol msgtype merchant ordernumber amount
@@ -38,7 +36,7 @@ module QuickpayCommon
 
       :refund    => %w(protocol msgtype merchant amount transaction apikey),
 
-      :subscribe => %w(protocol msgtype merchant ordernumber amount currency cardnumber
+      :subscribe => %w(protocol msgtype merchant ordernumber cardnumber
                        expirationdate cvd cardtypelock description testmode
                        fraud_remote_addr fraud_http_accept fraud_http_accept_language
                        fraud_http_accept_encoding fraud_http_accept_charset
@@ -66,7 +64,7 @@ module QuickpayCommon
 
       :refund    => %w(protocol msgtype merchant amount transaction apikey),
 
-      :subscribe => %w(protocol msgtype merchant ordernumber amount currency cardnumber
+      :subscribe => %w(protocol msgtype merchant ordernumber cardnumber
                        expirationdate cvd cardtypelock description testmode
                        fraud_remote_addr fraud_http_accept fraud_http_accept_language
                        fraud_http_accept_encoding fraud_http_accept_charset
@@ -95,7 +93,7 @@ module QuickpayCommon
 
       :refund    => %w(protocol msgtype merchant amount transaction apikey),
 
-      :subscribe => %w(protocol msgtype merchant ordernumber amount currency cardnumber
+      :subscribe => %w(protocol msgtype merchant ordernumber cardnumber
                        expirationdate cvd cardtypelock description testmode
                        fraud_remote_addr fraud_http_accept fraud_http_accept_language
                        fraud_http_accept_encoding fraud_http_accept_charset
@@ -175,7 +173,6 @@ module QuickpayCommon
     base.supported_countries = ['DE', 'DK', 'ES', 'FI', 'FR', 'FO', 'GB', 'IS', 'NO', 'SE']
     base.homepage_url = 'http://quickpay.net/'
     base.display_name = 'QuickPay'
-
   end
 
   def expdate(credit_card)
@@ -184,5 +181,4 @@ module QuickpayCommon
 
     "#{year}#{month}"
   end
-
 end
