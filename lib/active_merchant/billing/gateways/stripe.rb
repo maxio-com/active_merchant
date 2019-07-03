@@ -118,7 +118,7 @@ module ActiveMerchant #:nodoc:
       def void(identification, options = {})
         post = {}
         post[:expand] = [:charge]
-        commit(:post, "charges/#{CGI.escape(identification)}/refunds", post, options)
+        commit(:post, "charges/#{CGI.escape(payment_intent_id_to_charge_id(identification))}/refunds", post, options)
       end
 
       def refund(money, identification, options = {})
@@ -129,13 +129,8 @@ module ActiveMerchant #:nodoc:
         post[:metadata] = options[:metadata] if options[:metadata]
         post[:expand] = [:charge]
 
-        if identification =~ /\Api_/
-          result = commit(:get, "payment_intents/#{CGI.escape(identification)}", nil, options)
-          identification = result.params["charges"]["data"].first["id"]
-        end
-
         MultiResponse.run(:first) do |r|
-          r.process { commit(:post, "charges/#{CGI.escape(identification)}/refunds", post, options) }
+          r.process { commit(:post, "charges/#{CGI.escape(payment_intent_id_to_charge_id(identification))}/refunds", post, options) }
 
           return r unless options[:refund_fee_amount]
 
@@ -533,6 +528,13 @@ module ActiveMerchant #:nodoc:
         {
           requires_source_action: "Your card was declined. This transaction requires authentication."
         }.fetch(response["status"].to_sym, response["status"])
+      end
+
+      def payment_intent_id_to_charge_id(identification)
+        return identification unless identification =~ /\Api_/
+
+        result = commit(:get, "payment_intents/#{CGI.escape(identification)}", nil, options)
+        result.params["charges"]["data"].first["id"]
       end
 
       def authorization_from(success, url, method, response)
