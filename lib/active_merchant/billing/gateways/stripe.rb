@@ -90,6 +90,12 @@ module ActiveMerchant #:nodoc:
           return Response.new(false, direct_bank_error)
         end
 
+        if options[:payment_to_confirm]
+          r = commit(:post, "payment_intents/#{options[:payment_to_confirm]}/confirm", {}, options)
+          binding.pry
+          return r
+        end
+
         MultiResponse.run do |r|
           if payment.is_a?(ApplePayPaymentToken)
             r.process { tokenize_apple_pay_token(payment) }
