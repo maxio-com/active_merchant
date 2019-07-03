@@ -72,7 +72,7 @@ module ActiveMerchant #:nodoc:
             else
               post[:capture] = "false"
             end
-            commit(:post, 'charges', post, options)
+            commit(:post, 'payment_intents', post, options)
           end
         end.responses.last
       end
