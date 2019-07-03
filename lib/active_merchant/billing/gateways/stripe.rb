@@ -515,7 +515,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def success_response?(url, response)
-        if url == "payment_intents"
+        if url =~ /\Apayment_intents/
           !response.key?("error") && response["status"] == "succeeded"
         else
           !response.key?("error")
@@ -523,7 +523,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def response_message(success, url, response)
-        if url == "payment_intents"
+        if url =~ /\Apayment_intents/
           success ? "Transaction approved" : response.dig("error", "message") || response_status_to_response_message_mapper(response)
         else
           success ? "Transaction approved" : response["error"]["message"]
