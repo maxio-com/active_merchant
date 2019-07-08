@@ -531,7 +531,7 @@ module ActiveMerchant #:nodoc:
 
       def response_status_to_response_message_mapper(response)
         {
-          requires_source_action: "Your card was declined. This transaction requires authentication."
+          requires_source_action: "Your card was declined. This transaction requires 3D secure authentication."
         }.fetch(response["status"].to_sym, response["status"])
       end
 
