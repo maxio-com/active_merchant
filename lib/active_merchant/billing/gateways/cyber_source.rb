@@ -443,7 +443,7 @@ module ActiveMerchant #:nodoc:
       def add_purchase_data(xml, money = 0, include_grand_total = false, options={})
         xml.tag! 'purchaseTotals' do
           xml.tag! 'currency', options[:currency] || currency(money)
-          xml.tag!('grandTotalAmount', localized_amount(money.to_i, options[:currency] || default_currency))  if include_grand_total
+          xml.tag!('grandTotalAmount', localized_amount(money, options[:currency] || default_currency))  if include_grand_total
         end
       end
 
