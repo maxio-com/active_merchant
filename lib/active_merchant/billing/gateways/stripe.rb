@@ -92,7 +92,6 @@ module ActiveMerchant #:nodoc:
 
         if options[:payment_to_confirm]
           r = commit(:post, "payment_intents/#{options[:payment_to_confirm]}/confirm", {}, options)
-          binding.pry
           return r
         end
 
