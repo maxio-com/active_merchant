@@ -312,7 +312,7 @@ module ActiveMerchant #:nodoc:
         if action == 'capture'
           add_void_service(xml, request_id, request_token)
         else
-          add_purchase_data(xml, money, true, options.merge(:currency => currency || default_currency))
+          add_purchase_data(xml, money.to_i, true, options.merge(:currency => currency || default_currency))
           add_auth_reversal_service(xml, request_id, request_token)
         end
         xml.target!
