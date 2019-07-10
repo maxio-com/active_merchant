@@ -687,10 +687,14 @@ module ActiveMerchant #:nodoc:
       end
 
       def add_threeds_services(xml, options)
-        xml.tag! 'payerAuthEnrollService', {'run' => 'true'} if options[:payer_auth_enroll_service]
+        xml.tag! 'payerAuthEnrollService', {'run' => 'true'} do
+          xml.tag! 'authenticationTransactionID', options[:authentication_transaction_id]
+        end if options[:payer_auth_enroll_service]
+
         if options[:payer_auth_validate_service]
           xml.tag! 'payerAuthValidateService', {'run' => 'true'} do
-            xml.tag! 'signedPARes', options[:pares]
+            xml.tag! 'signedPARes', options[:pares] if options[:pares]
+            xml.tag! 'authenticationTransactionID', options[:authentication_transaction_id] if options[:authentication_transaction_id]
           end
         end
       end

@@ -435,6 +435,35 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
     assert !response.success?
   end
 
+  # HYBRID 2.0
+  # WIP
+  def test_3ds_pa_auth
+    card = credit_card('4000000000001091',
+                       verification_value: '111',
+                       month: '01',
+                       year: (Time.now.year + 3).to_s,
+                       brand: :visa
+    )
+
+    assert response = @gateway.purchase(1000, card, @options.merge(payer_auth_enroll_service: false, payer_auth_validate_service: true, authentication_transaction_id: '1w0zWt0jSs36O3mU9ax0', pares: "eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiI1ZDBiZTc3NGFmYTgwZDE0OGNmNTE3MTkiLCJpYXQiOjE1NjIxNTU2MjMsImV4cCI6MTU2MjE2MjgyMywianRpIjoiNWQ0YjQ1MjItNTNmNC00YzAzLWIzMzItNDc2MjRlOWEwOGI2IiwiQ29uc3VtZXJTZXNzaW9uSWQiOiIwXzg2OWVjMWUzLTM4M2QtNGFkZi05N2NlLTU3MjViMGRmZmFhMCIsImF1ZCI6IjE1NjIxNTU1NDMvOTU1MjY1Nnl3NnZsbWZldGx6ZXFteWxnMXRnOTZ2YjJod290a2ZtZjM2OXE3ZzRndThrbzh1d3ZzcWsxYWY3aCIsIlBheWxvYWQiOnsiUGF5bWVudCI6eyJUeXBlIjoiQ0NBIiwiUHJvY2Vzc29yVHJhbnNhY3Rpb25JZCI6IkZRWVpYZFFqekNLMm1YMnh3MXgwIn0sIkVycm9yTnVtYmVyIjowLCJFcnJvckRlc2NyaXB0aW9uIjoiU3VjY2VzcyJ9fQ.oPKaQT76CQ7PzMfAj9HYXSy2wAe2iTbzmxnEWS08cs8"))
+    pp response
+    assert response.success?
+    assert_equal '100', response.params['reasonCode']
+  end
+
+  def test_3ds_enroll
+    card = credit_card('4000000000001091',
+                       verification_value: '111',
+                       month: '01',
+                       year: (Time.now.year + 3).to_s,
+                       brand: :visa
+    )
+
+    assert response = @gateway.purchase(1000, card, @options.merge(payer_auth_enroll_service: true))
+    pp response
+  end
+  # /WIP
+
   def test_successful_first_unscheduled_cof_transaction
     @options[:stored_credential] = {
       :initiator => 'cardholder',
