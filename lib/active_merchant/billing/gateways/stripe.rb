@@ -72,7 +72,7 @@ module ActiveMerchant #:nodoc:
             else
               post[:capture] = "false"
             end
-            commit(:post, 'payment_intents', post, options)
+            commit(:post, 'charges', post, options)
           end
         end.responses.last
       end
@@ -102,7 +102,12 @@ module ActiveMerchant #:nodoc:
           end
           r.process do
             post = create_post_for_auth_or_purchase(money, payment, options)
-            commit(:post, 'payment_intents', post, options)
+
+            if options[:three_d_secure]
+              commit(:post, 'payment_intents', post, options)
+            else
+              commit(:post, 'charges', post, options)
+            end
           end
         end.responses.last
       end
@@ -302,8 +307,12 @@ module ActiveMerchant #:nodoc:
         add_metadata(post, options)
         add_application_fee(post, options)
         add_destination(post, options)
-        post[:confirmation_method] = "manual"
-        post[:confirm] = "true"
+
+        if options[:three_d_secure]
+          post[:confirmation_method] = "manual"
+          post[:confirm] = "true"
+        end
+
         post
       end
 
@@ -337,9 +346,10 @@ module ActiveMerchant #:nodoc:
         metadata_options = [:description, :ip, :user_agent, :referrer]
         post.update(options.slice(*metadata_options))
 
-        # TODO: check why this is not working and if we can just delete it?
-        # post[:external_id] = options[:order_id]
-        # post[:payment_user_agent] = "Stripe/v1 ActiveMerchantBindings/#{ActiveMerchant::VERSION}"
+        unless options[:three_d_secure]
+          post[:external_id] = options[:order_id]
+          post[:payment_user_agent] = "Stripe/v1 ActiveMerchantBindings/#{ActiveMerchant::VERSION}"
+        end
       end
 
       def add_address(post, options)
@@ -543,7 +553,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def authorization_from(success, url, method, response)
-        return response.dig("error", "payment_intent", "id") || response["id"] unless success
+        return response.dig("error", "payment_intent", "id") || response.dig("error", "charge") || response["id"] unless success
 
         if url == "customers"
           [response["id"], response["sources"]["data"].first["id"]].join("|")
