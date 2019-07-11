@@ -102,12 +102,7 @@ module ActiveMerchant #:nodoc:
           end
           r.process do
             post = create_post_for_auth_or_purchase(money, payment, options)
-
-            if options[:three_d_secure]
-              commit(:post, 'payment_intents', post, options)
-            else
-              commit(:post, 'charges', post, options)
-            end
+            commit(:post, options[:three_d_secure] ? 'payment_intents' : 'charges', post, options)
           end
         end.responses.last
       end
