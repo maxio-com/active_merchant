@@ -436,8 +436,8 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
   end
 
   # HYBRID 2.0
-  # WIP
-  def test_3ds_pa_auth
+  # `authentication_transaction_id` and `reference_id` are returned by MPI. Update those before run.
+  def test_3ds_payer_auth_request
     card = credit_card('4000000000001091',
                        verification_value: '111',
                        month: '01',
@@ -445,13 +445,12 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
                        brand: :visa
     )
 
-    assert response = @gateway.purchase(1000, card, @options.merge(payer_auth_enroll_service: false, payer_auth_validate_service: true, authentication_transaction_id: '1w0zWt0jSs36O3mU9ax0', pares: "eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiI1ZDBiZTc3NGFmYTgwZDE0OGNmNTE3MTkiLCJpYXQiOjE1NjIxNTU2MjMsImV4cCI6MTU2MjE2MjgyMywianRpIjoiNWQ0YjQ1MjItNTNmNC00YzAzLWIzMzItNDc2MjRlOWEwOGI2IiwiQ29uc3VtZXJTZXNzaW9uSWQiOiIwXzg2OWVjMWUzLTM4M2QtNGFkZi05N2NlLTU3MjViMGRmZmFhMCIsImF1ZCI6IjE1NjIxNTU1NDMvOTU1MjY1Nnl3NnZsbWZldGx6ZXFteWxnMXRnOTZ2YjJod290a2ZtZjM2OXE3ZzRndThrbzh1d3ZzcWsxYWY3aCIsIlBheWxvYWQiOnsiUGF5bWVudCI6eyJUeXBlIjoiQ0NBIiwiUHJvY2Vzc29yVHJhbnNhY3Rpb25JZCI6IkZRWVpYZFFqekNLMm1YMnh3MXgwIn0sIkVycm9yTnVtYmVyIjowLCJFcnJvckRlc2NyaXB0aW9uIjoiU3VjY2VzcyJ9fQ.oPKaQT76CQ7PzMfAj9HYXSy2wAe2iTbzmxnEWS08cs8"))
-    pp response
+    assert response = @gateway.purchase(1000, card, @options.merge(payer_auth_validate_service: true, authentication_transaction_id: 'MLK3OjdxxoYDT6RWK5r0'))
     assert response.success?
     assert_equal '100', response.params['reasonCode']
   end
 
-  def test_3ds_enroll
+  def test_3ds_payer_auth_enroll
     card = credit_card('4000000000001091',
                        verification_value: '111',
                        month: '01',
@@ -459,10 +458,14 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
                        brand: :visa
     )
 
-    assert response = @gateway.purchase(1000, card, @options.merge(payer_auth_enroll_service: true))
-    pp response
+    assert response = @gateway.purchase(1000, card, @options.merge(payer_auth_enroll_service: true, reference_id: '0_097aff87-17fe-42e9-a3b4-0d1b9df6c49d'))
+    assert_equal '475', response.params['reasonCode']
+    assert !response.params['acsURL'].blank?
+    assert !response.params['paReq'].blank?
+    assert_equal 'Y', response.params['veresEnrolled']
+    assert !response.success?
   end
-  # /WIP
+  # / HYBRID
 
   def test_successful_first_unscheduled_cof_transaction
     @options[:stored_credential] = {
