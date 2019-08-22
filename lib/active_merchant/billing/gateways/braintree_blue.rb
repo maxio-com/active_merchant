@@ -277,15 +277,20 @@ module ActiveMerchant #:nodoc:
           return Response.new(false, 'Braintree::NotFoundError') if braintree_credit_card.nil?
 
           options.merge!(:update_existing_token => braintree_credit_card.token)
-          credit_card_params = merge_credit_card_options({
-            :credit_card => {
-              :cardholder_name => creditcard.name,
-              :number => creditcard.number,
-              :cvv => creditcard.verification_value,
-              :expiration_month => creditcard.month.to_s.rjust(2, "0"),
-              :expiration_year => creditcard.year.to_s
-            }
-          }, options)[:credit_card]
+
+          if options[:payment_method_nonce]
+            credit_card_params = { payment_method_nonce: options[:payment_method_nonce] }
+          else
+            credit_card_params = merge_credit_card_options({
+               :credit_card => {
+                 :cardholder_name => creditcard.name,
+                 :number => creditcard.number,
+                 :cvv => creditcard.verification_value,
+                 :expiration_month => creditcard.month.to_s.rjust(2, "0"),
+                 :expiration_year => creditcard.year.to_s
+               }
+             }, options)[:credit_card]
+          end
 
           parameters = {
             :first_name => creditcard.first_name,
