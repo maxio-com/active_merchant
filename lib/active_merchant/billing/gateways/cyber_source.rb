@@ -155,25 +155,14 @@ module ActiveMerchant #:nodoc:
       # options[:setup_fee] => money
       def store(payment_method, options = {})
         setup_address_hash(options)
-
-        MultiResponse.run do |r|
-          r.process { commit(build_create_subscription_request(payment_method, options), :store, nil, options) }
-          r.process { authorize(0, r.authorization, options) } if options[:payer_auth_validate_service]
-        end
+        commit(build_create_subscription_request(payment_method, options), :store, nil, options)
       end
 
       # Updates a customer subscription/profile
       def update(reference, creditcard, options = {})
         requires!(options, :order_id)
         setup_address_hash(options)
-
-        commit(build_update_subscription_request(reference, creditcard, options), :update, nil, options).tap { |single| byebug }
-
-        # MultiResponse.run do |r|
-        #   r.process { commit(build_update_subscription_request(reference, creditcard, options), :update, nil, options) }
-        #   byebug
-        #   r.process { authorize(0, r.authorization, options) } if options[:payer_auth_validate_service]
-        # end.tap { |multi| byebug }
+        commit(build_update_subscription_request(reference, creditcard, options), :update, nil, options)
       end
 
       # Removes a customer subscription/profile
