@@ -635,7 +635,7 @@ module ActiveMerchant #:nodoc:
             parameters[:payment_method_token] = credit_card_or_vault_id
             options.delete(:billing_address)
           elsif options[:payment_method_nonce]
-            parameters[:payment_method_nonce] = credit_card_or_vault_id
+            parameters[:payment_method_nonce] = options[:payment_method_nonce]
           else
             parameters[:customer_id] = credit_card_or_vault_id
           end
