@@ -345,7 +345,7 @@ module ActiveMerchant #:nodoc:
         default_source = r.params["default_source"]
         return default_source if default_source&.start_with?("card_")
 
-        if payment_methods.count > 1 && !default_payment_method
+        if payment_methods&.count > 1 && !default_payment_method
           raise "Customer has more than one payment method but doesn't have default one."
         end
       end
