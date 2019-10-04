@@ -532,10 +532,13 @@ module ActiveMerchant #:nodoc:
       end
 
       def commerce_indicator(options)
-        return if options[:stored_credential][:initial_transaction]
+        return if options[:stored_credential][:initial_transaction] &&
+          options[:stored_credential][:reason_type] != 'internet'
+
         case options[:stored_credential][:reason_type]
         when 'installment' then 'install'
         when 'recurring' then 'recurring'
+        when 'internet' then 'internet'
         end
       end
 
