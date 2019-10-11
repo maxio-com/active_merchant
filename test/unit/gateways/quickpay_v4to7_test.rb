@@ -2,11 +2,11 @@ require 'test_helper'
 
 class QuickpayV4to7Test < Test::Unit::TestCase
   include CommStub
-  
+
   def merchant_id
-    "80000000000"  
+    "80000000000"
   end
-  
+
   def setup
     @gateway = QuickpayGateway.new(
       :login => merchant_id,
@@ -132,18 +132,6 @@ class QuickpayV4to7Test < Test::Unit::TestCase
     assert_equal  [ :dankort, :forbrugsforeningen, :visa, :master, :american_express, :diners_club, :jcb, :maestro ], klass.supported_cardtypes
   end
 
-  def test_add_testmode_does_not_add_testmode_if_transaction_id_present
-    post_hash = {:transaction => "12345"}
-    @gateway.send(:add_testmode, post_hash)
-    assert_equal nil, post_hash[:testmode]
-  end
-
-  def test_add_testmode_adds_a_testmode_param_if_transaction_id_not_present
-    post_hash = {}
-    @gateway.send(:add_testmode, post_hash)
-    assert_equal '1', post_hash[:testmode]
-  end
-
   def test_finalize_is_disabled_by_default
     stub_comms(@gateway, :ssl_request) do
       @gateway.capture(@amount, "12345")
@@ -158,6 +146,14 @@ class QuickpayV4to7Test < Test::Unit::TestCase
     end.check_request do |method, endpoint, data, headers|
       assert data =~ /finalize=1/
     end.respond_with(successful_capture_response)
+  end
+
+  def test_scrub
+    assert_equal @gateway.scrub(pre_scrubbed), post_scrubbed
+  end
+
+  def test_supports_scrubbing?
+    assert @gateway.supports_scrubbing?
   end
 
   private
@@ -199,7 +195,6 @@ class QuickpayV4to7Test < Test::Unit::TestCase
       "expirationdate"=>[expected_expiration_date],
       "ordernumber"=>["fa73664073e23597bbdd"],
       "description"=>["Storing Card"],
-      "testmode"=>["1"],
       "protocol"=>["6"],
       "msgtype"=>["subscribe"],
       "merchant"=>[merchant_id],
@@ -216,7 +211,6 @@ class QuickpayV4to7Test < Test::Unit::TestCase
       "expirationdate"=>[expected_expiration_date],
       "ordernumber"=>["ed7546cb4ceb8f017ea4"],
       "description"=>["Storing Card"],
-      "testmode"=>["1"],
       "protocol"=>["7"],
       "msgtype"=>["subscribe"],
       "merchant"=>[merchant_id],
@@ -230,5 +224,65 @@ class QuickpayV4to7Test < Test::Unit::TestCase
 
   def mock_md5_hash
     "mock_hash"
+  end
+
+  def pre_scrubbed
+    <<-PRE_SCRUBBED
+    opening connection to secure.quickpay.dk:443...
+    opened
+    starting SSL for secure.quickpay.dk:443...
+    SSL established
+    <- "POST /api HTTP/1.1\r\nContent-Type: application/x-www-form-urlencoded\r\nAccept-Encoding: gzip;q=1.0,deflate;q=0.6,identity;q=0.3\r\nAccept: */*\r\nUser-Agent: Ruby\r\nConnection: close\r\nHost: secure.quickpay.dk\r\nContent-Length: 227\r\n\r\n"
+    <- "cardnumber=1000000000000008&cvd=111&expirationdate=2402&amount=0&currency=USD&ordernumber=2019101013403177aa25&description=Longbob+Longsen&protocol=3&msgtype=subscribe&merchant=12345677777&apikey=fB46983ZwRadzy46A3r6ngDx7P37N5YTu1F4S9W2JKCs9v4t5L9m2Q8Mlbjpa2I1&md5check=ea118e189f9dc81d18c1c90f4c29b680"
+    -> "HTTP/1.1 200 OK\r\n"
+    -> "Server: nginx\r\n"
+    -> "Date: Thu, 10 Oct 2019 13:40:33 GMT\r\n"
+    -> "Content-Type: application/xml; charset=utf-8\r\n"
+    -> "Transfer-Encoding: chunked\r\n"
+    -> "Connection: close\r\n"
+    -> "Strict-Transport-Security: max-age=15768000\r\n"
+    -> "Strict-Transport-Security: max-age=15768000\r\n"
+    -> "\r\n"
+    -> "27e\r\n"
+    reading 638 bytes...
+    -> "<?xml version=\"1.0\" encoding=\"UTF-8\"?><response><msgtype>subscribe</msgtype><ordernumber>2019101013403177aa25</ordernumber><amount>0</amount><currency>USD</currency><time>191010134032</time><state>9</state><qpstat>000</qpstat><qpstatmsg>OK</qpstatmsg><chstat>20000</chstat><chstatmsg>Approved</chstatmsg><merchant>Chargify QuickPay Proxy</merchant><merchantemail>dev+quickpay-proxy@chargify.com</merchantemail><transaction>162719766</transaction><cardtype>visa-dk</cardtype><cardnumber>XXXXXXXXXXXX0008</cardnumber><cardexpire>2402</cardexpire><splitpayment>1</splitpayment><md5check>a480503384c5d3103a2081e852a83634</md5check></response>"
+    read 638 bytes
+    reading 2 bytes...
+    -> "\r\n"
+    read 2 bytes
+    -> "0\r\n"
+    -> "\r\n"
+    Conn close
+    PRE_SCRUBBED
+  end
+
+  def post_scrubbed
+    <<-POST_SCRUBBED
+    opening connection to secure.quickpay.dk:443...
+    opened
+    starting SSL for secure.quickpay.dk:443...
+    SSL established
+    <- "POST /api HTTP/1.1\r\nContent-Type: application/x-www-form-urlencoded\r\nAccept-Encoding: gzip;q=1.0,deflate;q=0.6,identity;q=0.3\r\nAccept: */*\r\nUser-Agent: Ruby\r\nConnection: close\r\nHost: secure.quickpay.dk\r\nContent-Length: 227\r\n\r\n"
+    <- "cardnumber=[FILTERED]&cvd=[FILTERED]&expirationdate=2402&amount=0&currency=USD&ordernumber=2019101013403177aa25&description=Longbob+Longsen&protocol=3&msgtype=subscribe&merchant=[FILTERED]&apikey=[FILTERED]&md5check=ea118e189f9dc81d18c1c90f4c29b680"
+    -> "HTTP/1.1 200 OK\r\n"
+    -> "Server: nginx\r\n"
+    -> "Date: Thu, 10 Oct 2019 13:40:33 GMT\r\n"
+    -> "Content-Type: application/xml; charset=utf-8\r\n"
+    -> "Transfer-Encoding: chunked\r\n"
+    -> "Connection: close\r\n"
+    -> "Strict-Transport-Security: max-age=15768000\r\n"
+    -> "Strict-Transport-Security: max-age=15768000\r\n"
+    -> "\r\n"
+    -> "27e\r\n"
+    reading 638 bytes...
+    -> "<?xml version=\"1.0\" encoding=\"UTF-8\"?><response><msgtype>subscribe</msgtype><ordernumber>2019101013403177aa25</ordernumber><amount>0</amount><currency>USD</currency><time>191010134032</time><state>9</state><qpstat>000</qpstat><qpstatmsg>OK</qpstatmsg><chstat>20000</chstat><chstatmsg>Approved</chstatmsg><merchant>Chargify QuickPay Proxy</merchant><merchantemail>dev+quickpay-proxy@chargify.com</merchantemail><transaction>162719766</transaction><cardtype>visa-dk</cardtype><cardnumber>XXXXXXXXXXXX0008</cardnumber><cardexpire>2402</cardexpire><splitpayment>1</splitpayment><md5check>a480503384c5d3103a2081e852a83634</md5check></response>"
+    read 638 bytes
+    reading 2 bytes...
+    -> "\r\n"
+    read 2 bytes
+    -> "0\r\n"
+    -> "\r\n"
+    Conn close
+    POST_SCRUBBED
   end
 end
