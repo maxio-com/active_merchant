@@ -107,6 +107,12 @@ module ActiveMerchant
       yield
     end
 
+    def assert_three_ds_required(response, message=nil)
+      clean_backtrace do
+        assert response.three_ds_required?, build_message(nil, "#{message + "\n" if message}Response expected to succeed: <?>", response)
+      end
+    end
+
     def refute(value, message = nil)
       assert(!value, message)
     end

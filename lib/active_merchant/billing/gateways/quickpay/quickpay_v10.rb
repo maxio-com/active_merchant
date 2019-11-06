@@ -76,9 +76,15 @@ module ActiveMerchant
       end
 
       def store(credit_card, options = {})
+        subscription = options.fetch(:subscription, false)
         MultiResponse.run do |r|
-          r.process { create_store(options) }
-          r.process { authorize_store(r.authorization, credit_card, options)}
+          if subscription
+            r.process { create_subscription(options) }
+            r.process { authorize_subscription(r.authorization, credit_card, options)}
+          else
+            r.process { create_store(options) }
+            r.process { authorize_store(r.authorization, credit_card, options)}
+          end
         end
       end
 
@@ -123,11 +129,28 @@ module ActiveMerchant
           commit('/cards', post)
         end
 
+        def create_subscription(options = {})
+          post = {}
+          add_currency(post, nil, options)
+          add_order_id(post, options)
+          add_description(post, options)
+          commit('/subscriptions', post)
+        end
+
         def authorize_store(identification, credit_card, options = {})
           post = {}
 
           add_credit_card_or_reference(post, credit_card, options)
           commit(synchronized_path("/cards/#{identification}/authorize"), post)
+        end
+
+        def authorize_subscription(identification, credit_card, options = {})
+          post = {}
+          add_amount(post, nil, options)
+
+          add_credit_card_or_reference(post, credit_card, options)
+          post[:acquirer] = "clearhaus"
+          commit(synchronized_path("/subscriptions/#{identification}/authorize"), post)
         end
 
         def create_token(identification, options)
@@ -183,6 +206,10 @@ module ActiveMerchant
         def add_order_id(post, options)
           requires!(options, :order_id)
           post[:order_id] = format_order_id(options[:order_id])
+        end
+
+        def add_description(post, options)
+          post[:description] = format_order_id(options[:description])
         end
 
         def add_invoice(post, options)
@@ -293,8 +320,6 @@ module ActiveMerchant
         def synchronized_path(path)
           "#{path}?synchronized"
         end
-
     end
-
   end
 end
