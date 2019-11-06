@@ -149,7 +149,7 @@ module ActiveMerchant
           add_amount(post, nil, options)
 
           add_credit_card_or_reference(post, credit_card, options)
-          post[:acquirer] = 'clearhaus'
+          post[:acquirer] = 'clearhaus' # TODO: Move it from here
           commit(synchronized_path("/subscriptions/#{identification}/authorize"), post)
         end
 
