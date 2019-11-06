@@ -97,12 +97,12 @@ class QuickpayV10Test < Test::Unit::TestCase
   end
 
   def test_successful_store_subscription
-    @options.merge!(subscription: true)
+    updated_options = @options.merge(subscription: true)
     stub_comms do
-      assert response = @gateway.store(@credit_card, @options)
+      assert response = @gateway.store(@credit_card, updated_options)
       assert_success response
       assert response.test?
-    end.check_request do |endpoint, data, headers|
+    end.check_request do |endpoint, _, _|
       assert_match %r{/subscriptions}, endpoint
     end.respond_with(successful_store_response, successful_sauthorize_response)
   end

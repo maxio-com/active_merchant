@@ -80,10 +80,10 @@ module ActiveMerchant
         MultiResponse.run do |r|
           if subscription
             r.process { create_subscription(options) }
-            r.process { authorize_subscription(r.authorization, credit_card, options)}
+            r.process { authorize_subscription(r.authorization, credit_card, options) }
           else
             r.process { create_store(options) }
-            r.process { authorize_store(r.authorization, credit_card, options)}
+            r.process { authorize_store(r.authorization, credit_card, options) }
           end
         end
       end
@@ -149,7 +149,7 @@ module ActiveMerchant
           add_amount(post, nil, options)
 
           add_credit_card_or_reference(post, credit_card, options)
-          post[:acquirer] = "clearhaus"
+          post[:acquirer] = 'clearhaus'
           commit(synchronized_path("/subscriptions/#{identification}/authorize"), post)
         end
 
