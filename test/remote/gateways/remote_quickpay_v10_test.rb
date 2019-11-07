@@ -168,9 +168,9 @@ class RemoteQuickPayV10Test < Test::Unit::TestCase
     assert_success response
   end
 
-  def test_successful_store_for_subscription
-    updated_options = @options.merge(subscription: true, amount: @amount)
-    assert response = @gateway.store(@three_ds_required_card, updated_options)
+  def test_successful_store_subscription
+    updated_options = @options.merge(amount: @amount)
+    assert response = @gateway.store_subscription(@three_ds_required_card, updated_options)
     assert_failure response
     assert_three_ds_required response
   end

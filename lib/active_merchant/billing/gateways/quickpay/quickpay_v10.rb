@@ -76,15 +76,16 @@ module ActiveMerchant
       end
 
       def store(credit_card, options = {})
-        subscription = options.fetch(:subscription, false)
         MultiResponse.run do |r|
-          if subscription
-            r.process { create_subscription(options) }
-            r.process { authorize_subscription(r.authorization, credit_card, options) }
-          else
-            r.process { create_store(options) }
-            r.process { authorize_store(r.authorization, credit_card, options) }
-          end
+          r.process { create_store(options) }
+          r.process { authorize_store(r.authorization, credit_card, options) }
+        end
+      end
+
+      def store_subscription(credit_card, options = {})
+        MultiResponse.run do |r|
+          r.process { create_subscription(options) }
+          r.process { authorize_subscription_store(r.authorization, credit_card, options) }
         end
       end
 
@@ -148,7 +149,7 @@ module ActiveMerchant
           commit(synchronized_path("/cards/#{identification}/authorize"), post)
         end
 
-        def authorize_subscription(identification, credit_card, options = {})
+        def authorize_subscription_store(identification, credit_card, options = {})
           post = {}
           add_amount(post, nil, options)
 
