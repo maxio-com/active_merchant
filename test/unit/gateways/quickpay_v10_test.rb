@@ -117,6 +117,16 @@ class QuickpayV10Test < Test::Unit::TestCase
     end.respond_with({'id' => '123'}.to_json)
   end
 
+  def test_successful_unstore_subscription
+    stub_comms do
+      assert response = @gateway.unstore_subscription('123')
+      assert_success response
+      assert response.test?
+    end.check_request do |endpoint, data, headers|
+      assert_match %r{/subscriptions/\d+/cancel}, endpoint
+    end.respond_with({'id' => '123'}.to_json)
+  end
+
   def test_successful_verify
     response = stub_comms do
       @gateway.verify(@credit_card, @options)

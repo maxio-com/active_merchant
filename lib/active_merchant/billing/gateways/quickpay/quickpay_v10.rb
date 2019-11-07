@@ -92,6 +92,10 @@ module ActiveMerchant
         commit(synchronized_path "/cards/#{identification}/cancel")
       end
 
+      def unstore_subscription(identification)
+        commit(synchronized_path "/subscriptions/#{identification}/cancel")
+      end
+
       def supports_scrubbing?
         true
       end
