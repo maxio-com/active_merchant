@@ -128,7 +128,6 @@ class QuickpayV10Test < Test::Unit::TestCase
 
   def test_failed_get_payment_link
     pend
-    pend
     response = stub_comms do
       @gateway.get_payment_link(@credit_card, @options)
     end.respond_with(failed_get_payment_link_response)
