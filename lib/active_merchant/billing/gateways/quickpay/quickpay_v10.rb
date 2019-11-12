@@ -33,6 +33,14 @@ module ActiveMerchant
         end
       end
 
+      def purchase_subscription(money, subscription_id, options = {})
+        post ={}
+        add_autocapture(post, true) # or false?
+        add_order_id(post, options)
+        add_amount(post, money, options)
+        commit(synchronized_path("/subscriptions/#{subscription_id}/recurring"), post)
+      end
+
       def authorize(money, credit_card_or_reference, options = {})
         MultiResponse.run(true) do |r|
           if credit_card_or_reference.is_a?(String)
@@ -91,6 +99,7 @@ module ActiveMerchant
       def store_subscription(credit_card, options = {})
         MultiResponse.run do |r|
           r.process { create_subscription(options) }
+          # TODO: remove authorize_subscription_store - it doesn't work anyway
           r.process { authorize_subscription_store(r.authorization, credit_card, options) }
         end
       end
@@ -156,7 +165,6 @@ module ActiveMerchant
           add_amount(post, nil, options)
 
           add_credit_card_or_reference(post, credit_card, options)
-          post[:acquirer] = 'clearhaus' # TODO: Move it from here
           commit(synchronized_path("/subscriptions/#{identification}/authorize"), post)
         end
 
