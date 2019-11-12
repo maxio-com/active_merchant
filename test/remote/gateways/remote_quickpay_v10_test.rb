@@ -207,15 +207,13 @@ class RemoteQuickPayV10Test < Test::Unit::TestCase
     assert_success response
   end
 
-  def test_successful_unstore_subscription
-    updated_options = @options.merge(subscription: true, amount: @amount)
-    assert response = @gateway.store(@valid_card, updated_options)
-    assert_success response
-
-    # TODO: authorize subscription
-
-    assert response = @gateway.unstore_subscription(response.authorization)
-    assert_success response
+  def test_get_payment_link_for_subscription
+    updated_options = @options.merge(amount: @amount)
+    assert store = @gateway.store_subscription(@valid_card, updated_options)
+    assert_failure store
+    assert link = @gateway.get_payment_link(@amount, store.authorization, updated_options)
+    puts link.inspect
+    assert_success link
   end
 
   def test_invalid_login

@@ -47,6 +47,12 @@ module ActiveMerchant
         end
       end
 
+      def get_payment_link(money, subsciption_id, options = {})
+        put = {}
+        add_amount(put, money, options)
+        commit("/subscriptions/#{subsciption_id}/link", put, :put)
+      end
+
       def void(identification, _options = {})
         commit(synchronized_path "/payments/#{identification}/cancel")
       end
@@ -171,10 +177,15 @@ module ActiveMerchant
           commit('/payments', post)
         end
 
-        def commit(action, params = {})
+        def commit(action, params = {}, method = :post)
           success = false
           begin
-            response = parse(ssl_post(self.live_url + action, params.to_json, headers))
+            response = case method
+                       when :post
+                         parse(ssl_post(self.live_url + action, params.to_json, headers))
+                       when :put
+                         parse(ssl_put(self.live_url + action, params.to_json, headers))
+                       end
             success = successful?(response)
           rescue ResponseError => e
             response = response_error(e.response.body)
@@ -183,8 +194,8 @@ module ActiveMerchant
           end
 
           Response.new(success, message_from(success, response), response,
-            :test => test?,
-            :authorization => authorization_from(response)
+                       :test => test?,
+                       :authorization => authorization_from(response)
           )
         end
 
