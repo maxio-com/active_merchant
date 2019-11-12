@@ -47,10 +47,10 @@ module ActiveMerchant
         end
       end
 
-      def get_payment_link(money, subsciption_id, options = {})
+      def get_payment_link(money, subscription_id, options = {})
         put = {}
         add_amount(put, money, options)
-        commit("/subscriptions/#{subsciption_id}/link", put, :put)
+        commit("/subscriptions/#{subscription_id}/link", put, :put)
       end
 
       def void(identification, _options = {})
