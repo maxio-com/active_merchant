@@ -93,7 +93,7 @@ class QuickpayV10Test < Test::Unit::TestCase
       assert response.test?
     end.check_request do |endpoint, data, headers|
       assert_match %r{/card}, endpoint
-    end.respond_with(successful_store_response, successful_sauthorize_response)
+    end.respond_with(successful_store_response, successful_authorize_response)
   end
 
   def test_successful_store_subscription
@@ -103,7 +103,7 @@ class QuickpayV10Test < Test::Unit::TestCase
       assert response.test?
     end.check_request do |endpoint, _, _|
       assert_match %r{/subscriptions}, endpoint
-    end.respond_with(successful_store_response, successful_sauthorize_response)
+    end.respond_with(successful_store_response, successful_authorize_response)
   end
 
   def test_successful_unstore
@@ -116,14 +116,24 @@ class QuickpayV10Test < Test::Unit::TestCase
     end.respond_with({'id' => '123'}.to_json)
   end
 
-  def test_successful_unstore_subscription
-    stub_comms do
-      assert response = @gateway.unstore_subscription('123')
-      assert_success response
-      assert response.test?
-    end.check_request do |endpoint, data, headers|
-      assert_match %r{/subscriptions/\d+/cancel}, endpoint
-    end.respond_with({'id' => '123'}.to_json)
+  def test_successful_get_payment_link
+    pend
+    subscription_id = "123456789"
+    response = stub_comms do
+      @gateway.get_payment_link(@amount, subscription_id, @options)
+    end.respond_with(successful_get_payment_link_response)
+    assert_success response
+    assert_equal "OK", response.message
+  end
+
+  def test_failed_get_payment_link
+    pend
+    pend
+    response = stub_comms do
+      @gateway.get_payment_link(@credit_card, @options)
+    end.respond_with(failed_get_payment_link_response)
+    assert_success response
+    assert_equal "OK", response.message
   end
 
   def test_successful_verify
@@ -208,6 +218,10 @@ class QuickpayV10Test < Test::Unit::TestCase
     }.to_json
   end
 
+  def successful_get_payment_link_response
+    {}
+  end
+
   def successful_capture_response
     {
       "id"          =>1145,
@@ -278,7 +292,7 @@ class QuickpayV10Test < Test::Unit::TestCase
     }.to_json
   end
 
-  def successful_sauthorize_response
+  def successful_authorize_response
     {
       'id' => 834,
       'order_id' => '310affr'

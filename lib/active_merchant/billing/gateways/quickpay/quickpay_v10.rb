@@ -99,10 +99,6 @@ module ActiveMerchant
         commit(synchronized_path "/cards/#{identification}/cancel")
       end
 
-      def unstore_subscription(identification)
-        commit(synchronized_path "/subscriptions/#{identification}/cancel")
-      end
-
       def supports_scrubbing?
         true
       end
@@ -180,12 +176,11 @@ module ActiveMerchant
         def commit(action, params = {}, method = :post)
           success = false
           begin
-            response = case method
-                       when :post
-                         parse(ssl_post(self.live_url + action, params.to_json, headers))
-                       when :put
-                         parse(ssl_put(self.live_url + action, params.to_json, headers))
-                       end
+            ssl_response = case method
+                           when :post then ssl_post(self.live_url + action, params.to_json, headers)
+                           when :put then ssl_put(self.live_url + action, params.to_json, headers)
+                           end
+            response = parse(ssl_response)
             success = successful?(response)
           rescue ResponseError => e
             response = response_error(e.response.body)
