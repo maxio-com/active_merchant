@@ -97,11 +97,7 @@ module ActiveMerchant
       end
 
       def store_subscription(credit_card, options = {})
-        MultiResponse.run do |r|
-          r.process { create_subscription(options) }
-          # TODO: remove authorize_subscription_store - it doesn't work anyway
-          r.process { authorize_subscription_store(r.authorization, credit_card, options) }
-        end
+        create_subscription(options)
       end
 
       def unstore(identification)

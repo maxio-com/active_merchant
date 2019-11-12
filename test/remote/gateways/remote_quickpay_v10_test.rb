@@ -171,8 +171,7 @@ class RemoteQuickPayV10Test < Test::Unit::TestCase
   def test_successful_store_subscription
     updated_options = @options.merge(amount: @amount)
     assert response = @gateway.store_subscription(@three_ds_required_card, updated_options)
-    assert_failure response
-    assert_three_ds_required response
+    assert_success response
   end
 
   def test_successful_store_and_reference_purchase
@@ -210,7 +209,7 @@ class RemoteQuickPayV10Test < Test::Unit::TestCase
   def test_get_payment_link_for_subscription
     updated_options = @options.merge(amount: @amount)
     assert store = @gateway.store_subscription(@valid_card, updated_options)
-    assert_failure store
+    assert_success store
     assert link = @gateway.get_payment_link(@amount, store.authorization, updated_options)
     assert_success link
   end
