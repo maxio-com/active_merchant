@@ -96,8 +96,12 @@ module ActiveMerchant
         end
       end
 
-      def store_subscription(credit_card, options = {})
-        create_subscription(options)
+      def store_subscription(options = {})
+        post = {}
+        add_currency(post, nil, options)
+        add_order_id(post, options)
+        add_description(post, options)
+        commit('/subscriptions', post)
       end
 
       def unstore(identification)
@@ -139,14 +143,6 @@ module ActiveMerchant
         def create_store(options = {})
           post = {}
           commit('/cards', post)
-        end
-
-        def create_subscription(options = {})
-          post = {}
-          add_currency(post, nil, options)
-          add_order_id(post, options)
-          add_description(post, options)
-          commit('/subscriptions', post)
         end
 
         def authorize_store(identification, credit_card, options = {})

@@ -15,7 +15,6 @@ class RemoteQuickPayV10Test < Test::Unit::TestCase
     @expired_card = credit_card('1000000000000024')
     @capture_rejected_card = credit_card('1000000000000032')
     @refund_rejected_card = credit_card('1000000000000040')
-    @three_ds_required_card = credit_card('1000000000000073')
 
     @valid_address   = address(:phone => '4500000001')
     @invalid_address = address(:phone => '4500000002')
@@ -170,7 +169,7 @@ class RemoteQuickPayV10Test < Test::Unit::TestCase
 
   def test_successful_store_subscription
     updated_options = @options.merge(amount: @amount)
-    assert response = @gateway.store_subscription(@three_ds_required_card, updated_options)
+    assert response = @gateway.store_subscription(updated_options)
     assert_success response
   end
 
