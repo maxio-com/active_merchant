@@ -98,12 +98,12 @@ class QuickpayV10Test < Test::Unit::TestCase
 
   def test_successful_store_subscription
     stub_comms do
-      assert response = @gateway.store_subscription(@credit_card, @options)
+      assert response = @gateway.store_subscription(@options)
       assert_success response
       assert response.test?
     end.check_request do |endpoint, _, _|
       assert_match %r{/subscriptions}, endpoint
-    end.respond_with(successful_store_response, successful_authorize_response)
+    end.respond_with(successful_store_subscription_response)
   end
 
   def test_successful_unstore
@@ -275,6 +275,14 @@ class QuickpayV10Test < Test::Unit::TestCase
     {
       'id' => 834,
       'order_id' => '310affr'
+    }.to_json
+  end
+
+  def successful_store_subscription_response
+    {
+      'id' => 834,
+      'order_id' => '310affr',
+      'type' => 'Subscription'
     }.to_json
   end
 

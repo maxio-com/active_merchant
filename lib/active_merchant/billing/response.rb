@@ -80,10 +80,6 @@ module ActiveMerchant #:nodoc:
         (primary_response ? primary_response.success? : true)
       end
 
-      def three_ds_required?
-        primary_response.params['operations'].first['qp_status_code'] == '30100'
-      end
-
       %w(params message test authorization avs_result cvv_result error_code emv_authorization test? fraud_review?).each do |m|
         class_eval %(
           def #{m}
