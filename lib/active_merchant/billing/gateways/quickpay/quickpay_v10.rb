@@ -156,14 +156,6 @@ module ActiveMerchant
           commit(synchronized_path("/cards/#{identification}/authorize"), post)
         end
 
-        def authorize_subscription_store(identification, credit_card, options = {})
-          post = {}
-          add_amount(post, nil, options)
-
-          add_credit_card_or_reference(post, credit_card, options)
-          commit(synchronized_path("/subscriptions/#{identification}/authorize"), post)
-        end
-
         def create_token(identification, options)
           post = {}
           post[:id] = options[:id]
