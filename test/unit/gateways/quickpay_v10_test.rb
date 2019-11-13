@@ -117,22 +117,14 @@ class QuickpayV10Test < Test::Unit::TestCase
   end
 
   def test_successful_get_payment_link
-    pend
-    subscription_id = "123456789"
-    response = stub_comms do
-      @gateway.get_payment_link(@amount, subscription_id, @options)
+    puts @options.inspect
+    stub_comms(@gateway, :ssl_put) do
+      assert response = @gateway.get_payment_link(@amount, "123456789", @options)
+      assert_success response
+      assert response.test?
+    end.check_request do |endpoint, data, headers|
+      assert_match %r{/subscriptions/\d+/link}, endpoint
     end.respond_with(successful_get_payment_link_response)
-    assert_success response
-    assert_equal "OK", response.message
-  end
-
-  def test_failed_get_payment_link
-    pend
-    response = stub_comms do
-      @gateway.get_payment_link(@credit_card, @options)
-    end.respond_with(failed_get_payment_link_response)
-    assert_success response
-    assert_equal "OK", response.message
   end
 
   def test_successful_verify
@@ -295,6 +287,18 @@ class QuickpayV10Test < Test::Unit::TestCase
     {
       'id' => 834,
       'order_id' => '310affr'
+    }.to_json
+  end
+
+  def successful_get_payment_link_response
+    {
+      "url" => "https://payment.quickpay.net/subscriptions/b0959bfb13e600a4a1ef2ddd9c60e251fb90c52906d4899f7ff66eaf8b700bed"
+    }.to_json
+  end
+
+  def failed_get_payment_link_response
+    {
+      "message" => "Not found: No such transaction: Subscription 123"
     }.to_json
   end
 
