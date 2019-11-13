@@ -217,7 +217,7 @@ class RemoteQuickPayV10Test < Test::Unit::TestCase
     updated_options = @options.merge(amount: @amount)
     assert store = @gateway.store_subscription(@valid_card, updated_options)
     assert_success store
-    assert link = @gateway.get_payment_link(@amount, "123", updated_options)
+    assert link = @gateway.get_payment_link(@amount, '123', updated_options)
     puts link.inspect
     assert_equal 'Not found: No such transaction: Subscription 123', link.message
     assert_failure link
