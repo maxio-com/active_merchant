@@ -2,6 +2,7 @@ require 'rexml/document'
 require 'digest/md5'
 
 require 'active_merchant/billing/gateways/quickpay/quickpay_v10'
+require 'active_merchant/billing/gateways/quickpay/quickpay_v10_subscription_api'
 require 'active_merchant/billing/gateways/quickpay/quickpay_v4to7'
 
 module ActiveMerchant #:nodoc:
@@ -16,10 +17,9 @@ module ActiveMerchant #:nodoc:
         if version <= 7
           QuickpayV4to7Gateway.new(options)
         else
-          QuickpayV10Gateway.new(options)     
+          options[:subscription_api] ? QuickpayV10SubscriptionApiGateway.new(options) : QuickpayV10Gateway.new(options)
         end
       end
-      
     end
   end
 end
