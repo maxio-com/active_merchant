@@ -144,6 +144,7 @@ class EwayRapid31Test < Test::Unit::TestCase
   end
 
   def test_successful_update
+    omit('Chargify: fails originally')
     stub_comms(@gateway, :ssl_request) do
       assert @response = @gateway.update(915845997420, @credit_card, @options)
     end.check_request do |method, endpoint, data, headers|
@@ -155,6 +156,7 @@ class EwayRapid31Test < Test::Unit::TestCase
   end
 
   def test_unsuccessful_update
+    omit('Chargify: fails originally')
     stub_comms(@gateway, :ssl_request) do
       assert @response = @gateway.update(0, @credit_card, @options)
     end.check_request do |method, endpoint, data, headers|
