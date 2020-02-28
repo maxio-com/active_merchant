@@ -402,6 +402,7 @@ class RemoteAdyenTest < Test::Unit::TestCase
   end
 
   def test_succesful_purchase_with_brand_override
+    omit "support for brand override is not something we provide"
     response = @gateway.purchase(@amount, @improperly_branded_maestro, @options.merge({overwrite_brand: true, selected_brand: 'maestro'}))
     assert_success response
     assert_equal '[capture-received]', response.message
@@ -420,6 +421,7 @@ class RemoteAdyenTest < Test::Unit::TestCase
   end
 
   def test_successful_purchase_with_cabal_card
+    omit "we do not support cabal cards"
     response = @gateway.purchase(@amount, @cabal_credit_card, @options.merge(currency: 'ARS'))
     assert_success response
     assert_equal '[capture-received]', response.message
@@ -438,6 +440,7 @@ class RemoteAdyenTest < Test::Unit::TestCase
   end
 
   def test_failed_purchase_with_invalid_cabal_card
+    omit "we do not support cabal cards"
     response = @gateway.purchase(@amount, @invalid_cabal_credit_card, @options)
     assert_failure response
     assert_equal 'Invalid card number', response.message
@@ -468,6 +471,7 @@ class RemoteAdyenTest < Test::Unit::TestCase
   end
 
   def test_successful_authorize_and_capture_with_cabal_card
+    omit "we do not support cabal cards"
     auth = @gateway.authorize(@amount, @cabal_credit_card, @options)
     assert_success auth
 
@@ -518,6 +522,7 @@ class RemoteAdyenTest < Test::Unit::TestCase
   end
 
   def test_successful_refund_with_cabal_card
+    omit "we do not support cabal cards"
     purchase = @gateway.purchase(@amount, @cabal_credit_card, @options)
     assert_success purchase
 
@@ -568,6 +573,7 @@ class RemoteAdyenTest < Test::Unit::TestCase
   end
 
   def test_successful_void_with_cabal_card
+    omit "we do not support cabal cards"
     auth = @gateway.authorize(@amount, @cabal_credit_card, @options)
     assert_success auth
 
@@ -623,6 +629,7 @@ class RemoteAdyenTest < Test::Unit::TestCase
 
   # Requires Adyen to set your test account to Synchronous Adjust mode.
   def test_successful_synchronous_adjust_using_adjust_data
+    omit "account not configured for this, not a feature we are using currently"
     authorize = @gateway.authorize(@amount, @credit_card, @options.merge(authorisation_type: 'PreAuth', shopper_statement: 'statement note'))
     assert_success authorize
 
@@ -634,6 +641,7 @@ class RemoteAdyenTest < Test::Unit::TestCase
 
   # Requires Adyen to set your test account to Synchronous Adjust mode.
   def test_successful_synchronous_adjust_and_capture
+    omit "account not configured for this, not a feature we are using currently"
     authorize = @gateway.authorize(@amount, @credit_card, @options.merge(authorisation_type: 'PreAuth'))
     assert_success authorize
 
@@ -648,6 +656,7 @@ class RemoteAdyenTest < Test::Unit::TestCase
 
   # Requires Adyen to set your test account to Synchronous Adjust mode.
   def test_failed_synchronous_adjust_using_adjust_data
+    omit "account not configured for this, not a feature we are using currently"
     authorize = @gateway.authorize(@amount, @credit_card, @options.merge(authorisation_type: 'PreAuth'))
     assert_success authorize
 
@@ -722,6 +731,7 @@ class RemoteAdyenTest < Test::Unit::TestCase
 
   # Adyen does not currently support recurring transactions with Cabal cards
   def test_failed_store_with_cabal_card
+    omit "we do not support cabal cards"
     assert response = @gateway.store(@cabal_credit_card, @options)
     assert_failure response
     assert_equal 'Recurring transactions are not supported for this card type.', response.message
