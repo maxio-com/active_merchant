@@ -15,6 +15,9 @@ module ActiveMerchant #:nodoc:
       self.display_name = 'Adyen'
 
       PAYMENTS_API_VERSION = 'v51'
+      PAL_API_VERSION = 'v51'
+      PAL_TEST_URL = 'https://pal-test.adyen.com/pal/servlet/'
+      PAL_LIVE_URL = 'https://pal-live.adyen.com/pal/servlet/'
 
       STANDARD_ERROR_CODE_MAPPING = {
           '101' => STANDARD_ERROR_CODE[:incorrect_number],
@@ -41,7 +44,6 @@ module ActiveMerchant #:nodoc:
         commit('payments', post, options)
       end
 
-      # Not implemented yet
       def refund(money, authorization, options={})
         post = init_post(options)
         add_invoice_for_modification(post, money, options)
@@ -296,7 +298,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def add_original_reference(post, authorization, options = {})
-        original_psp_reference, _, _ = authorization.split('#')
+        _, original_psp_reference, _ = authorization.split('#')
         post[:originalReference] = single_reference(authorization) || original_psp_reference
       end
 
@@ -331,7 +333,7 @@ module ActiveMerchant #:nodoc:
             success,
             message_from(action, response),
             response,
-            authorization: authorization_from(action, parameters, response),
+            authorization: authorization_from(parameters, response),
             test: test?,
             error_code: success ? nil : error_code_from(response),
             avs_result: AVSResult.new(:code => avs_code_from(response)),
@@ -347,17 +349,21 @@ module ActiveMerchant #:nodoc:
         CVC_MAPPING[response['additionalData']['cvcResult'][0]] if response.dig('additionalData', 'cvcResult')
       end
 
+      def refund?(action)
+        action == "refund"
+      end
+
       def endpoint(action)
-        "#{PAYMENTS_API_VERSION}/#{action}"
+        refund?(action) ? "Payment/#{PAL_API_VERSION}/#{action}" : "#{PAYMENTS_API_VERSION}/#{action}"
       end
 
       def url(action)
         if test?
-          "#{test_url}#{endpoint(action)}"
+          refund?(action) ? "#{PAL_TEST_URL}#{endpoint(action)}" : "#{test_url}#{endpoint(action)}"
         elsif @options[:subdomain]
           "https://#{@options[:subdomain]}-pal-live.adyenpayments.com/pal/servlet/#{endpoint(action)}"
         else
-          "#{live_url}#{endpoint(action)}"
+          refund?(action) ? "#{PAL_LIVE_URL}#{endpoint(action)}" : "#{live_url}#{endpoint(action)}"
         end
       end
 
@@ -388,7 +394,7 @@ module ActiveMerchant #:nodoc:
       def message_from(action, response)
         return authorize_message_from(response) if action.to_s == 'authorise' || action.to_s == 'authorise3d'
 
-        response['response'] || response['message'] || response['result']
+        response['response'] || response['message'] || refusal_code_and_reason(response)
       end
 
       def authorize_message_from(response)
@@ -399,11 +405,18 @@ module ActiveMerchant #:nodoc:
         end
       end
 
-      def authorization_from(action, parameters, response)
+      def refusal_code_and_reason(response)
+        if response['refusalReason'].present?
+          "#{response['resultCode']} | #{response['refusalReason']}"
+        else
+          response['resultCode']
+        end
+      end
+
+      def authorization_from(parameters, response)
         return nil if response['pspReference'].nil?
 
         recurring = response['additionalData']['recurring.recurringDetailReference'] if response['additionalData']
-        recurring = response['recurringDetailReference'] if action == 'storeToken'
 
         "#{parameters[:originalReference]}##{response['pspReference']}##{recurring}"
       end
