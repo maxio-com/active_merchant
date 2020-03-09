@@ -38,7 +38,7 @@ module ActiveMerchant #:nodoc:
       def purchase(money, payment, options={})
         post = init_post(options)
         add_invoice(post, money, options)
-        add_token(post, payment)
+        add_payment(post, payment)
         add_stored_credentials(post, payment, options)
         add_shopper_reference(post, options)
         commit('payments', post, options)
@@ -55,7 +55,7 @@ module ActiveMerchant #:nodoc:
         requires!(options, :order_id)
         post = init_post(options)
         add_invoice(post, 0, options)
-        add_payment(post, credit_card, options)
+        add_payment(post, credit_card)
         add_extra_data(post, credit_card, options)
         add_stored_credentials(post, credit_card, options)
         add_address(post, options)
@@ -262,11 +262,13 @@ module ActiveMerchant #:nodoc:
         post[:modificationAmount] = amount
       end
 
-      def add_payment(post, payment, options)
+      def add_payment(post, payment)
         if payment.is_a?(String)
-          _, _, recurring_detail_reference = payment.split('#')
-          post[:selectedRecurringDetailReference] = recurring_detail_reference
-          options[:recurring_contract_type] ||= 'RECURRING'
+          payment_method = {
+              type: "scheme",
+              storedPaymentMethodId: payment
+          }
+          post[:paymentMethod] = payment_method
         else
           add_mpi_data_for_network_tokenization_card(post, payment) if payment.is_a?(NetworkTokenizationCreditCard)
           add_card(post, payment)
@@ -287,14 +289,6 @@ module ActiveMerchant #:nodoc:
         card[:holderName] ||= 'Not Provided' if credit_card.is_a?(NetworkTokenizationCreditCard)
         requires!(card, :expiryMonth, :expiryYear, :holderName, :number)
         post[:paymentMethod] = card
-      end
-
-      def add_token(post, payment)
-        payment_method = {
-            type: "scheme",
-            storedPaymentMethodId: payment
-        }
-        post[:paymentMethod] = payment_method
       end
 
       def add_original_reference(post, authorization, options = {})
