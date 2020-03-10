@@ -123,12 +123,6 @@ module ActiveMerchant #:nodoc:
           '6' => 'P'  # No CVC/CVV provided
       }
 
-      NETWORK_TOKENIZATION_CARD_SOURCE = {
-          'apple_pay' => 'applepay',
-          'android_pay' => 'androidpay',
-          'google_pay' => 'paywithgoogle'
-      }
-
       def add_extra_data(post, payment, options)
         post[:telephoneNumber] = options[:billing_address][:phone] if options.dig(:billing_address, :phone)
         post[:shopperEmail] = options[:shopper_email] if options[:shopper_email]
@@ -136,14 +130,12 @@ module ActiveMerchant #:nodoc:
         post[:shopperStatement] = options[:shopper_statement] if options[:shopper_statement]
         post[:fraudOffset] = options[:fraud_offset] if options[:fraud_offset]
         post[:selectedBrand] = options[:selected_brand] if options[:selected_brand]
-        post[:selectedBrand] ||= NETWORK_TOKENIZATION_CARD_SOURCE[payment.source.to_s] if payment.is_a?(NetworkTokenizationCreditCard)
         post[:deliveryDate] = options[:delivery_date] if options[:delivery_date]
         post[:merchantOrderReference] = options[:merchant_order_reference] if options[:merchant_order_reference]
         post[:captureDelayHours] = options[:capture_delay_hours] if options[:capture_delay_hours]
         post[:additionalData] ||= {}
         post[:additionalData][:overwriteBrand] = normalize(options[:overwrite_brand]) if options[:overwrite_brand]
         post[:additionalData][:customRoutingFlag] = options[:custom_routing_flag] if options[:custom_routing_flag]
-        post[:additionalData]['paymentdatasource.type'] = NETWORK_TOKENIZATION_CARD_SOURCE[payment.source.to_s] if payment.is_a?(NetworkTokenizationCreditCard)
         post[:additionalData][:authorisationType] = options[:authorisation_type] if options[:authorisation_type]
         post[:additionalData][:adjustAuthorisationData] = options[:adjust_authorisation_data] if options[:adjust_authorisation_data]
         post[:additionalData][:industryUsage] = options[:industry_usage] if options[:industry_usage]
@@ -196,7 +188,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def add_shopper_interaction(post, payment, options={})
-        if options.dig(:stored_credential, :initial_transaction) || (payment.respond_to?(:verification_value) && payment.verification_value) || payment.is_a?(NetworkTokenizationCreditCard)
+        if options.dig(:stored_credential, :initial_transaction) || (payment.respond_to?(:verification_value) && payment.verification_value)
           shopper_interaction = 'Ecommerce'
         else
           shopper_interaction = 'ContAuth'
@@ -270,7 +262,6 @@ module ActiveMerchant #:nodoc:
           }
           post[:paymentMethod] = payment_method
         else
-          add_mpi_data_for_network_tokenization_card(post, payment) if payment.is_a?(NetworkTokenizationCreditCard)
           add_card(post, payment)
         end
       end
@@ -286,7 +277,6 @@ module ActiveMerchant #:nodoc:
         }
 
         card.delete_if { |k, v| v.blank? }
-        card[:holderName] ||= 'Not Provided' if credit_card.is_a?(NetworkTokenizationCreditCard)
         requires!(card, :expiryMonth, :expiryYear, :holderName, :number)
         post[:paymentMethod] = card
       end
@@ -294,14 +284,6 @@ module ActiveMerchant #:nodoc:
       def add_original_reference(post, authorization, options = {})
         _, original_psp_reference, _ = authorization.split('#')
         post[:originalReference] = single_reference(authorization) || original_psp_reference
-      end
-
-      def add_mpi_data_for_network_tokenization_card(post, payment)
-        post[:mpiData] = {}
-        post[:mpiData][:authenticationResponse] = 'Y'
-        post[:mpiData][:cavv] = payment.payment_cryptogram
-        post[:mpiData][:directoryResponse] = 'Y'
-        post[:mpiData][:eci] = payment.eci || '07'
       end
 
       def single_reference(authorization)
