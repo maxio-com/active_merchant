@@ -140,7 +140,7 @@ class AdyenTest < Test::Unit::TestCase
   def test_successful_store
     response = stub_comms do
       @gateway.store(@credit_card, @options)
-    end.check_request do |endpoint, data, headers|
+    end.check_request do |_endpoint, data, _headers|
       assert_equal 'CardOnFile', JSON.parse(data)['recurringProcessingModel']
     end.respond_with(successful_store_response)
     assert_success response

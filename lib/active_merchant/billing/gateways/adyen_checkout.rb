@@ -47,7 +47,7 @@ module ActiveMerchant #:nodoc:
       def refund(money, authorization, options={})
         post = init_post(options)
         add_invoice_for_modification(post, money, options)
-        add_original_reference(post, authorization, options)
+        add_original_reference(post, authorization)
         commit('refund', post, options)
       end
 
@@ -56,7 +56,7 @@ module ActiveMerchant #:nodoc:
         post = init_post(options)
         add_invoice(post, 0, options)
         add_payment(post, credit_card)
-        add_extra_data(post, credit_card, options)
+        add_extra_data(post, options)
         add_stored_credentials(post, credit_card, options)
         add_address(post, options)
 
@@ -123,7 +123,7 @@ module ActiveMerchant #:nodoc:
           '6' => 'P'  # No CVC/CVV provided
       }
 
-      def add_extra_data(post, payment, options)
+      def add_extra_data(post, options)
         post[:telephoneNumber] = options[:billing_address][:phone] if options.dig(:billing_address, :phone)
         post[:shopperEmail] = options[:shopper_email] if options[:shopper_email]
         post[:shopperIP] = options[:shopper_ip] if options[:shopper_ip]
@@ -276,18 +276,18 @@ module ActiveMerchant #:nodoc:
             type: "scheme"
         }
 
-        card.delete_if { |k, v| v.blank? }
+        card.delete_if { |_k, v| v.blank? }
         requires!(card, :expiryMonth, :expiryYear, :holderName, :number)
         post[:paymentMethod] = card
       end
 
-      def add_original_reference(post, authorization, options = {})
+      def add_original_reference(post, authorization)
         _, original_psp_reference, _ = authorization.split('#')
         post[:originalReference] = single_reference(authorization) || original_psp_reference
       end
 
       def single_reference(authorization)
-        authorization if !authorization.include?('#')
+        authorization unless authorization.include?('#')
       end
 
       def parse(body)
@@ -404,7 +404,7 @@ module ActiveMerchant #:nodoc:
         post
       end
 
-      def post_data(action, parameters = {})
+      def post_data(_action, parameters = {})
         JSON.generate(parameters)
       end
 
