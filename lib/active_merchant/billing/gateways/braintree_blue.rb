@@ -315,7 +315,6 @@ module ActiveMerchant #:nodoc:
 
           # Delete the customers existing payment methods
           customer.paypal_accounts.each { |pp| @braintree_gateway.paypal_account.delete(pp.token) }
-          # Updating apple pay accounts is tested in Chargify
           customer.apple_pay_cards.each { |pp| @braintree_gateway.payment_method.delete(pp.token) }
 
           # Update it with the new nonce
