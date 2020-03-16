@@ -54,11 +54,12 @@ module ActiveMerchant #:nodoc:
       def store(credit_card, options={})
         requires!(options, :order_id)
         post = init_post(options)
-        add_invoice(post, 0, options)
+        add_invoice(post, 1000, options) # Modified to 1000 to test 3ds workflow
         add_payment(post, credit_card)
         add_extra_data(post, options)
         add_stored_credentials(post, credit_card, options)
         add_address(post, options)
+        add_3ds_data(post, options)
 
         initial_response = commit('payments', post, options)
 
@@ -153,6 +154,28 @@ module ActiveMerchant #:nodoc:
         end
       end
 
+      def add_3ds_data(post, options)
+        post[:additionalData] ||= {}
+        post[:additionalData][:allow3DS2] = options[:allow3DS2] if options[:allow3DS2]
+        post[:channel] = options[:channel] if options[:channel]
+        post[:origin] = options[:origin] if options[:origin]
+        post[:shopperIP] = options[:shopperIP] if options[:shopperIP]
+        add_browser_info(post) # Values in the method hardcoded for testing purposes
+      end
+
+      def add_browser_info(post)
+        post[:browserInfo] = {
+            acceptHeader: "text\/html,application\/xhtml+xml,application\/xml;q=0.9,image\/webp,image\/apng,*\/*;q=0.8",
+            colorDepth: 24,
+            javaEnabled: true,
+            language: "en-US",
+            screenHeight: 723,
+            screenWidth: 1536,
+            timeZoneOffset: 0,
+            userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.116 Safari/537.36"
+        }
+      end
+
       def add_splits(post, options)
         return unless split_data = options[:splits]
 
@@ -219,9 +242,9 @@ module ActiveMerchant #:nodoc:
           post[:deliveryAddress][:stateOrProvince] = get_state(address)
           post[:deliveryAddress][:country] = address[:country] if address[:country]
         end
-        return unless post[:card]&.kind_of?(Hash)
+        return unless post[:paymentMethod]&.kind_of?(Hash)
 
-        if (address = options[:billing_address] || options[:address]) && address[:country]
+        if (address = options[:billing_address] || options[:address]) && address[:country].present?
           post[:billingAddress] = {}
           post[:billingAddress][:street] = address[:address1] || 'NA'
           post[:billingAddress][:houseNumberOrName] = address[:address2] || 'NA'
