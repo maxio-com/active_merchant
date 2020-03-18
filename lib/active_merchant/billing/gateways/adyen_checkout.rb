@@ -54,20 +54,28 @@ module ActiveMerchant #:nodoc:
       def store(credit_card, options={})
         requires!(options, :order_id)
         post = init_post(options)
-        add_invoice(post, 1000, options) # Modified to 1000 to test 3ds workflow
+        add_invoice(post, 0, options)
         add_payment(post, credit_card)
         add_extra_data(post, options)
         add_stored_credentials(post, credit_card, options)
         add_address(post, options)
         add_3ds_data(post, options)
 
-        initial_response = commit('payments', post, options)
+        initial_response = three_ds_auth?(options) ? commit('payments/details', payment_details_post(options), options) : commit('payments', post, options)
 
         if initial_response.success? && card_not_stored?(initial_response)
           unsupported_failure_response(initial_response)
         else
           initial_response
         end
+      end
+
+      def three_ds_auth?(options)
+        options[:three_ds_auth]
+      end
+
+      def payment_details_post(options)
+        options[:three_ds_data]
       end
 
       def supports_scrubbing?
