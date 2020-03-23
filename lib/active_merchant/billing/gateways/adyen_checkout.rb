@@ -74,7 +74,7 @@ module ActiveMerchant #:nodoc:
 
       def details(options)
         post = {}
-        add_3ds_details_data(post, options)
+        add_3ds_details(post, options)
         commit('payments/details', post, options)
       end
 
@@ -167,25 +167,11 @@ module ActiveMerchant #:nodoc:
         post[:additionalData][:allow3DS2] = options[:allow3DS2] if options[:allow3DS2]
         post[:channel] = options[:channel] if options[:channel]
         post[:origin] = options[:origin] if options[:origin]
-        post[:shopperIP] = options[:shopperIP] if options[:shopperIP]
-        add_browser_info(post) # Values in the method hardcoded for testing purposes
+        post[:browserInfo] = options[:browser_info] if options[:browser_info] # Autopopulated with `populateBrowserInfoFor3ds` service enabled
       end
 
-      def add_browser_info(post)
-        post[:browserInfo] = {
-            acceptHeader: "text\/html,application\/xhtml+xml,application\/xml;q=0.9,image\/webp,image\/apng,*\/*;q=0.8",
-            colorDepth: 24,
-            javaEnabled: true,
-            language: "en-US",
-            screenHeight: 723,
-            screenWidth: 1536,
-            timeZoneOffset: 0,
-            userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.116 Safari/537.36"
-        }
-      end
-
-      def add_3ds_details_data(post, options)
-        post[:paymentData] = options[:three_ds_data][:paymentData]
+      def add_3ds_details(post, options)
+        post[:paymentData] = options[:three_ds_data][:payment_data]
         post[:details] = options[:three_ds_data][:details]
       end
 
@@ -257,7 +243,7 @@ module ActiveMerchant #:nodoc:
         end
         return unless post[:paymentMethod]&.kind_of?(Hash)
 
-        if (address = options[:billing_address] || options[:address]) && address[:country].present?
+        if (address = options[:billing_address] || options[:address]) && address[:country]
           post[:billingAddress] = {}
           post[:billingAddress][:street] = address[:address1] || 'NA'
           post[:billingAddress][:houseNumberOrName] = address[:address2] || 'NA'
