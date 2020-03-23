@@ -52,6 +52,8 @@ module ActiveMerchant #:nodoc:
       end
 
       def store(credit_card, options={})
+        return details(options) if options[:three_ds_data]
+
         requires!(options, :order_id)
         post = init_post(options)
         add_invoice(post, 0, options)
@@ -61,7 +63,7 @@ module ActiveMerchant #:nodoc:
         add_address(post, options)
         add_3ds_data(post, options)
 
-        initial_response = three_ds_auth?(options) ? commit('payments/details', payment_details_post(options), options) : commit('payments', post, options)
+        initial_response = commit('payments', post, options)
 
         if initial_response.success? && card_not_stored?(initial_response)
           unsupported_failure_response(initial_response)
@@ -70,12 +72,10 @@ module ActiveMerchant #:nodoc:
         end
       end
 
-      def three_ds_auth?(options)
-        options[:three_ds_auth]
-      end
-
-      def payment_details_post(options)
-        options[:three_ds_data]
+      def details(options)
+        post = {}
+        add_3ds_details_data(post, options)
+        commit('payments/details', post, options)
       end
 
       def supports_scrubbing?
@@ -182,6 +182,11 @@ module ActiveMerchant #:nodoc:
             timeZoneOffset: 0,
             userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.116 Safari/537.36"
         }
+      end
+
+      def add_3ds_details_data(post, options)
+        post[:paymentData] = options[:three_ds_data][:paymentData]
+        post[:details] = options[:three_ds_data][:details]
       end
 
       def add_splits(post, options)
