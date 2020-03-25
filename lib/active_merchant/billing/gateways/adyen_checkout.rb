@@ -171,8 +171,8 @@ module ActiveMerchant #:nodoc:
       end
 
       def add_3ds_details(post, options)
-        post[:paymentData] = options[:three_ds_data][:payment_data]
-        post[:details] = options[:three_ds_data][:details]
+        post[:paymentData] = options[:three_ds_data]['paymentData']
+        post[:details] = options[:three_ds_data]['details']
       end
 
       def add_splits(post, options)
