@@ -380,6 +380,8 @@ module ActiveMerchant #:nodoc:
 
       def success_from(action, response)
         case action.to_s
+        when 'payments/details'
+          response['resultCode'] == 'Authorised'
         when 'payments'
           ['Authorised', 'Received', 'RedirectShopper'].include?(response['resultCode'])
         when 'refund'

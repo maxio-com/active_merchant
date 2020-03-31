@@ -165,7 +165,7 @@ class AdyenTest < Test::Unit::TestCase
   end
 
   def test_add_address
-    post = {:card => {:billingAddress => {}}}
+    post = {:paymentMethod => {:billingAddress => {}}}
     @options[:billing_address].delete(:address1)
     @options[:billing_address].delete(:address2)
     @options[:billing_address].delete(:state)
