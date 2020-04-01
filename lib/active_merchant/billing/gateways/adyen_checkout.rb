@@ -61,7 +61,7 @@ module ActiveMerchant #:nodoc:
         add_extra_data(post, options)
         add_stored_credentials(post, credit_card, options)
         add_address(post, options)
-        add_3ds_data(post, options) if options[:three_ds_data]
+        add_3ds_data(post, options) if options[:allow3DS2]
 
         initial_response = commit('payments', post, options)
 
