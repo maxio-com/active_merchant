@@ -439,7 +439,7 @@ module ActiveMerchant #:nodoc:
       def unsupported_failure_response(initial_response)
         Response.new(
             false,
-            'Recurring transactions are not supported for this card type.',
+            unsupported_failure_message(initial_response),
             initial_response.params,
             authorization: initial_response.authorization,
             test: initial_response.test,
@@ -447,6 +447,12 @@ module ActiveMerchant #:nodoc:
             avs_result: initial_response.avs_result,
             cvv_result: initial_response.cvv_result[:code]
         )
+      end
+
+      def unsupported_failure_message(initial_response)
+        return "This card requires 3DSecure verification." if initial_response.params['resultCode'] == 'RedirectShopper'
+
+        'Recurring transactions are not supported for this card type.'
       end
 
       def card_not_stored?(response)
