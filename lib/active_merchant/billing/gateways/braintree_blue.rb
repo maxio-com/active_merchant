@@ -421,7 +421,7 @@ module ActiveMerchant #:nodoc:
         params = {}
         params[:customer_vault_id] = result.transaction.customer_details.id if result.success?
         params[:braintree_transaction] = transaction_hash(result)
-        params[:descriptor] = result.transaction.descriptor.as_json if result.transaction
+        params[:descriptor] = JSON.parse(result.transaction.descriptor.to_json) if result.transaction&.descriptor
         params
       end
 
