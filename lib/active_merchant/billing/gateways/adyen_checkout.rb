@@ -61,7 +61,7 @@ module ActiveMerchant #:nodoc:
         add_extra_data(post, options)
         add_stored_credentials(post, credit_card, options)
         add_address(post, options)
-        add_3ds_data(post, options) if options[:allow3DS2]
+        add_three_ds_data(post, options) if options[:allow3DS2]
 
         initial_response = commit('payments', post, options)
 
@@ -74,7 +74,7 @@ module ActiveMerchant #:nodoc:
 
       def details(options)
         post = {}
-        add_3ds_details(post, options)
+        add_three_ds_details(post, options)
         commit('payments/details', post, options)
       end
 
@@ -162,7 +162,7 @@ module ActiveMerchant #:nodoc:
         end
       end
 
-      def add_3ds_data(post, options)
+      def add_three_ds_data(post, options)
         post[:additionalData] ||= {}
         post[:additionalData][:allow3DS2] = options[:allow3DS2] if options[:allow3DS2]
         post[:channel] = options[:channel] if options[:channel]
@@ -170,7 +170,7 @@ module ActiveMerchant #:nodoc:
         post[:browserInfo] = options[:browser_info] if options[:browser_info] # Autopopulated with `populateBrowserInfoFor3ds` service enabled
       end
 
-      def add_3ds_details(post, options)
+      def add_three_ds_details(post, options)
         post[:paymentData] = options[:three_ds_data]['paymentData']
         post[:details] = options[:three_ds_data]['details']
       end
