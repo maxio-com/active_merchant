@@ -44,8 +44,7 @@ class AdyenTest < Test::Unit::TestCase
         shipping_address: address(),
         shopper_reference: 'John Smith',
         order_id: '345123',
-        installments: 2,
-        stored_credential: {reason_type: 'unscheduled'}
+        installments: 2
     }
 
     @normalized_initial_stored_credential = {
@@ -66,6 +65,8 @@ class AdyenTest < Test::Unit::TestCase
   def test_successful_purchase
     response = stub_comms do
       @gateway.purchase(@amount, @credit_card, @options)
+    end.check_request do |_endpoint, data, _headers|
+      assert_equal 'Subscription', JSON.parse(data)['recurringProcessingModel']
     end.respond_with(successful_authorize_response, successful_capture_response)
     assert_success response
     assert_equal '#7914775043909934#', response.authorization
@@ -141,7 +142,7 @@ class AdyenTest < Test::Unit::TestCase
     response = stub_comms do
       @gateway.store(@credit_card, @options)
     end.check_request do |_endpoint, data, _headers|
-      assert_equal 'CardOnFile', JSON.parse(data)['recurringProcessingModel']
+      assert_equal 'Subscription', JSON.parse(data)['recurringProcessingModel']
     end.respond_with(successful_store_response)
     assert_success response
     assert_equal '#8835205392522157#8315202663743702', response.authorization
