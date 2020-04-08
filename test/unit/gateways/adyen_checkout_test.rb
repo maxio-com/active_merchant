@@ -148,6 +148,31 @@ class AdyenTest < Test::Unit::TestCase
     assert_equal '#8835205392522157#8315202663743702', response.authorization
   end
 
+  def test_successful_store_with_add_3ds_data
+    response = stub_comms do
+      @gateway.store(@credit_card, @options.merge(allow3DS2: true, origin: 'http://localhost', channel: 'web', browser_info: {}))
+    end.check_request do |_endpoint, data, _headers|
+      assert_equal true, JSON.parse(data)['additionalData']['allow3DS2']
+      assert_equal 'web', JSON.parse(data)['channel']
+      assert_equal 'http://localhost', JSON.parse(data)['origin']
+      assert_equal Hash.new, JSON.parse(data)['browserInfo']
+    end.respond_with(successful_store_response)
+    assert_success response
+    assert_equal '#8835205392522157#8315202663743702', response.authorization
+  end
+
+  def test_successful_store_with_three_ds_data
+    response = stub_comms do
+      @gateway.store(@credit_card, @options.merge(three_ds_data: { paymentData: 'fake', details: 'fake' }))
+    end.check_request do |endpoint, data, _headers|
+      r = { "paymentData" => nil, "details" => nil }
+      assert_equal r, JSON.parse(data)
+      assert_equal "https://checkout-test.adyen.com/v51/payments/details", endpoint
+    end.respond_with(successful_store_response)
+    assert_success response
+    assert_equal '#8835205392522157#8315202663743702', response.authorization
+  end
+
   def test_failed_store
     @gateway.expects(:ssl_post).returns(failed_store_response)
     response = @gateway.store(@credit_card, @options)
