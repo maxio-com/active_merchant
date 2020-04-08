@@ -220,6 +220,8 @@ module ActiveMerchant #:nodoc:
       end
 
       def add_recurring_processing_model(post, options)
+        return unless options.dig(:stored_credential, :reason_type) || options[:recurring_processing_model]
+
         if options.dig(:stored_credential, :reason_type) && options[:stored_credential][:reason_type] == 'unscheduled'
           recurring_processing_model = 'CardOnFile'
         else

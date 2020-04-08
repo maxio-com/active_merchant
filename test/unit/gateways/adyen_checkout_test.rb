@@ -64,7 +64,7 @@ class AdyenTest < Test::Unit::TestCase
 
   def test_successful_purchase
     response = stub_comms do
-      @gateway.purchase(@amount, @credit_card, @options)
+      @gateway.purchase(@amount, @credit_card, @options.merge(recurring_processing_model: 'Subscription'))
     end.check_request do |_endpoint, data, _headers|
       assert_equal 'Subscription', JSON.parse(data)['recurringProcessingModel']
     end.respond_with(successful_authorize_response, successful_capture_response)
@@ -140,7 +140,7 @@ class AdyenTest < Test::Unit::TestCase
 
   def test_successful_store
     response = stub_comms do
-      @gateway.store(@credit_card, @options)
+      @gateway.store(@credit_card, @options.merge(recurring_processing_model: 'Subscription'))
     end.check_request do |_endpoint, data, _headers|
       assert_equal 'Subscription', JSON.parse(data)['recurringProcessingModel']
     end.respond_with(successful_store_response)
