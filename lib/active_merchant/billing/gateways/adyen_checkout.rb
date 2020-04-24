@@ -57,7 +57,11 @@ module ActiveMerchant #:nodoc:
         requires!(options, :order_id)
         post = init_post(options)
         add_invoice(post, 0, options)
-        add_payment(post, credit_card)
+        if options[:update_card_details]
+          add_update_card_details(post, credit_card, options[:stored_payment_method_id])
+        else
+          add_payment(post, credit_card)
+        end
         add_extra_data(post, options)
         add_stored_credentials(post, credit_card, options)
         add_address(post, options)
@@ -286,6 +290,16 @@ module ActiveMerchant #:nodoc:
         else
           add_card(post, payment)
         end
+      end
+
+      def add_update_card_details(post, credit_card, stored_payment_method_id)
+        card = {
+          expiryMonth: credit_card.month,
+          expiryYear: credit_card.year,
+          holderName: credit_card.name,
+          storedPaymentMethodId: stored_payment_method_id
+        }
+        post[:paymentMethod] = card
       end
 
       def add_card(post, credit_card)
