@@ -15,7 +15,7 @@ module ActiveMerchant #:nodoc:
       self.display_name = 'Adyen'
 
       PAYMENTS_API_VERSION = 'v51'
-      PAL_API_VERSION = 'v51'
+      PAL_API_VERSION = 'v49'
       PAL_TEST_URL = 'https://pal-test.adyen.com/pal/servlet/'
       PAL_LIVE_URL = 'https://pal-live.adyen.com/pal/servlet/'
 
@@ -74,6 +74,13 @@ module ActiveMerchant #:nodoc:
         else
           initial_response
         end
+      end
+
+      def unstore(identification, options = {})
+        post = init_post(identification)
+        post[:shopperReference] = identification[:customer_profile_token]
+        post[:recurringDetailReference] = identification[:payment_profile_token]
+        commit('disable', post, options)
       end
 
       def details(options)
@@ -361,21 +368,24 @@ module ActiveMerchant #:nodoc:
         CVC_MAPPING[response['additionalData']['cvcResult'][0]] if response.dig('additionalData', 'cvcResult')
       end
 
-      def refund?(action)
-        action == "refund"
+      def should_use_pal_endpoint?(action)
+        action == "refund" || action == "disable"
       end
 
       def endpoint(action)
-        refund?(action) ? "Payment/#{PAL_API_VERSION}/#{action}" : "#{PAYMENTS_API_VERSION}/#{action}"
+        return "Payment/#{PAL_API_VERSION}/#{action}" if action == "refund"
+        return "Recurring/#{PAL_API_VERSION}/#{action}" if action == "disable"
+
+        "#{PAYMENTS_API_VERSION}/#{action}"
       end
 
       def url(action)
         if test?
-          refund?(action) ? "#{PAL_TEST_URL}#{endpoint(action)}" : "#{test_url}#{endpoint(action)}"
+          should_use_pal_endpoint?(action) ? "#{PAL_TEST_URL}#{endpoint(action)}" : "#{test_url}#{endpoint(action)}"
         elsif @options[:subdomain]
           "https://#{@options[:subdomain]}-pal-live.adyenpayments.com/pal/servlet/#{endpoint(action)}"
         else
-          refund?(action) ? "#{PAL_LIVE_URL}#{endpoint(action)}" : "#{live_url}#{endpoint(action)}"
+          should_use_pal_endpoint?(action) ? "#{PAL_LIVE_URL}#{endpoint(action)}" : "#{live_url}#{endpoint(action)}"
         end
       end
 
@@ -400,6 +410,8 @@ module ActiveMerchant #:nodoc:
           ['Authorised', 'Received', 'RedirectShopper'].include?(response['resultCode'])
         when 'refund'
           response['response'] == "[#{action}-received]"
+        when 'disable'
+          response['response'] == "[detail-successfully-disabled]"
         else
           false
         end

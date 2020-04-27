@@ -200,4 +200,20 @@ class RemoteAdyenCheckoutTest < Test::Unit::TestCase
     assert_failure response
     assert_match Gateway::STANDARD_ERROR_CODE[:invalid_cvc], response.error_code
   end
+
+  def test_successful_unstore
+    assert response = @gateway.store(@credit_card, @options)
+
+    assert_success response
+    assert !response.authorization.split('#')[2].nil?
+    assert_equal 'Authorised', response.message
+
+    unstore_token = {
+      customer_profile_token: response.params["additionalData"]["recurring.shopperReference"],
+      payment_profile_token: response.params["additionalData"]["recurring.recurringDetailReference"],
+    }
+
+    assert response = @gateway.unstore(unstore_token, {})
+    assert_success response
+  end
 end

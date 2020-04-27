@@ -229,6 +229,15 @@ class AdyenTest < Test::Unit::TestCase
     assert_equal @options[:shipping_address][:country], post[:deliveryAddress][:country]
   end
 
+  def test_unstore
+    response = stub_comms do
+      @gateway.unstore(unstore_token, {})
+    end.check_request do |_endpoint, data, _headers|
+      assert_equal unstore_data, JSON.parse(data)
+    end.respond_with(successful_unstore_response)
+    assert_success response
+  end
+
   private
 
   def pre_scrubbed
@@ -457,5 +466,30 @@ class AdyenTest < Test::Unit::TestCase
       "holderName" => "Test Card",
       "storedPaymentMethodId" => "8415877192784258"
     }
+  end
+
+  def unstore_token
+    @unstore_token ||= mock.tap do |mock_token|
+      mock_token.expects(:[], :payment_profile_token).returns("120731391")
+      mock_token.expects(:[], :customer_profile_token).returns("chargify_5")
+      mock_token.expects(:[], :merchant_account).returns(nil)
+      mock_token.expects(:[], :order_id).returns(nil)
+    end
+  end
+
+  def unstore_data
+    {
+      "merchantAccount" => "merchantAccount",
+      "shopperReference" => "chargify_5",
+      "recurringDetailReference" => "120731391"
+    }
+  end
+
+  def successful_unstore_response
+    <<-RESPONSE
+    {
+      "response": "[detail-successfully-disabled]"
+    }
+    RESPONSE
   end
 end
