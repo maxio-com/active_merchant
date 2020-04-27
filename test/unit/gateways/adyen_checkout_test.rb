@@ -148,6 +148,22 @@ class AdyenTest < Test::Unit::TestCase
     assert_equal '#8835205392522157#8315202663743702', response.authorization
   end
 
+  def test_successful_update_card_details_store
+    response = stub_comms do
+      @gateway.store(
+        @credit_card,
+        @options.merge(
+          update_card_details: true,
+          stored_payment_method_id: "8415877192784258",
+          recurring_processing_model: 'Subscription')
+        )
+    end.check_request do |_endpoint, data, _headers|
+      assert_equal payment_method_for_update_card_details, JSON.parse(data)['paymentMethod']
+    end.respond_with(successful_store_response)
+    assert_success response
+    assert_equal '#8835205392522157#8315202663743702', response.authorization
+  end
+
   def test_successful_store_with_add_3ds_data
     response = stub_comms do
       @gateway.store(@credit_card, @options.merge(allow3DS2: true, origin: 'http://localhost', channel: 'web', browser_info: {}))
@@ -432,5 +448,14 @@ class AdyenTest < Test::Unit::TestCase
     <<-RESPONSE
     {"pspReference":"8835205393394754","refusalReason":"Refused","resultCode":"Refused"}
     RESPONSE
+  end
+
+  def payment_method_for_update_card_details
+    {
+      "expiryMonth" => 8,
+      "expiryYear" => 2018,
+      "holderName" => "Test Card",
+      "storedPaymentMethodId" => "8415877192784258"
+    }
   end
 end
