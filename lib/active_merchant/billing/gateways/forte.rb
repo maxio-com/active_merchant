@@ -5,8 +5,8 @@ module ActiveMerchant #:nodoc:
     class ForteGateway < Gateway
       include Empty
 
-      self.test_url = 'https://sandbox.forte.net/api/v2'
-      self.live_url = 'https://api.forte.net/v2'
+      self.test_url = 'https://sandbox.forte.net/api/v3'
+      self.live_url = 'https://api.forte.net/v3'
 
       self.supported_countries = ['US']
       self.default_currency = 'USD'
