@@ -90,7 +90,7 @@ module ActiveMerchant #:nodoc:
         end
       end
 
-      def verify(paysource, options = {})
+      def verify(paysource, _options = {})
         case normalize(paysource)
         when /1$/
           Response.new(true, SUCCESS_MESSAGE, {:billingid => '1'}, :test => true, :authorization => AUTHORIZATION)
