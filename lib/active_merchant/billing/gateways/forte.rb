@@ -74,6 +74,13 @@ module ActiveMerchant #:nodoc:
         commit(:post, post)
       end
 
+      def store(credit_card, options = {})
+        post = {}
+        add_payment_method(post, credit_card)
+
+        commit(:post, post)
+      end
+
       def void(authorization, options={})
         post = {}
         post[:transaction_id] = transaction_id_from(authorization)
@@ -181,8 +188,8 @@ module ActiveMerchant #:nodoc:
       def commit(type, parameters)
         add_auth(parameters)
 
-        url = (test? ? test_url : live_url)
-        response = parse(handle_resp(raw_ssl_request(type, url + endpoint, parameters.to_json, headers)))
+        url = (test? ? test_url : live_url) + endpoint(parameters)
+        response = parse(handle_resp(raw_ssl_request(type, url, parameters.to_json, headers)))
 
         Response.new(
           success_from(response),
@@ -209,7 +216,8 @@ module ActiveMerchant #:nodoc:
       end
 
       def success_from(response)
-        response['response']['response_code'] == 'A01'
+        response['response']['response_code'] == 'A01' ||
+          response['response']['response_desc'] == "Create Successful."
       end
 
       def message_from(response)
@@ -224,8 +232,12 @@ module ActiveMerchant #:nodoc:
         end
       end
 
-      def endpoint
-        "/accounts/act_#{@options[:account_id].strip}/locations/loc_#{@options[:location_id].strip}/transactions/"
+      def endpoint(parameters)
+        if parameters[:action].present?
+          "/accounts/act_#{@options[:account_id].strip}/locations/loc_#{@options[:location_id].strip}/transactions/"
+        else
+          "/accounts/act_#{@options[:account_id].strip}/locations/loc_#{@options[:location_id].strip}/paymethods/"
+        end
       end
 
       def headers

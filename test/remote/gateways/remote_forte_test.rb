@@ -190,6 +190,14 @@ class RemoteForteTest < Test::Unit::TestCase
     assert_match %r{INVALID CREDIT CARD NUMBER}, response.message
   end
 
+  def test_successful_store
+    response = @gateway.store(@credit_card)
+    assert_success response
+    assert_equal 'Create Successful.', response.message
+    assert response.params['paymethod_token'].present?
+    @data_key = response.params['paymethod_token']
+  end
+
   def test_transcript_scrubbing
     @credit_card.verification_value = 789
     transcript = capture_transcript(@gateway) do
