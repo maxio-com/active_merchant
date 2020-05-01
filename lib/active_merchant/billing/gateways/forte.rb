@@ -25,8 +25,8 @@ module ActiveMerchant #:nodoc:
         add_amount(post, money, options)
         add_invoice(post, options)
         add_payment_method(post, payment_method)
-        add_billing_address(post, payment_method, options)
-        add_shipping_address(post, options)
+        add_billing_address(post, payment_method, options) unless payment_method.kind_of?(String)
+        add_shipping_address(post, options) unless payment_method.kind_of?(String)
         post[:action] = 'sale'
 
         commit(:post, post)
@@ -76,7 +76,9 @@ module ActiveMerchant #:nodoc:
 
       def store(credit_card, options = {})
         post = {}
-        add_payment_method(post, credit_card)
+        add_customer(post, credit_card, options)
+        add_customer_paymethod(post, credit_card)
+        add_customer_billing_address(post, options)
 
         commit(:post, post)
       end
@@ -123,6 +125,37 @@ module ActiveMerchant #:nodoc:
         post[:authorization_amount] = amount(money)
       end
 
+      def add_customer(post, payment_method, options)
+        post[:first_name] = payment_method.first_name
+        post[:last_name] = payment_method.last_name
+      end
+
+      def add_customer_paymethod(post, payment_method)
+        post[:paymethod] = {}
+        post[:paymethod][:card] = {}
+        post[:paymethod][:card][:card_type] = format_card_brand(payment_method.brand)
+        post[:paymethod][:card][:name_on_card] = payment_method.name
+        post[:paymethod][:card][:account_number] = payment_method.number
+        post[:paymethod][:card][:expire_month] = payment_method.month
+        post[:paymethod][:card][:expire_year] = payment_method.year
+        post[:paymethod][:card][:card_verification_value] = payment_method.verification_value
+      end
+
+      def add_customer_billing_address(post, options)
+        post[:addresses] = []
+        if address = options[:billing_address] || options[:address]
+          billing_address = {}
+          billing_address[:address_type] = "default_billing"
+          billing_address[:physical_address] = {}
+          billing_address[:physical_address][:street_line1] = address[:address1] if address[:address1]
+          billing_address[:physical_address][:street_line2] = address[:address2] if address[:address2]
+          billing_address[:physical_address][:postal_code] = address[:zip] if address[:zip]
+          billing_address[:physical_address][:region] = address[:state] if address[:state]
+          billing_address[:physical_address][:locality] = address[:city] if address[:city]
+          post[:addresses] << billing_address
+        end
+      end
+
       def add_billing_address(post, payment, options)
         post[:billing_address] = {}
         if address = options[:billing_address] || options[:address]
@@ -159,7 +192,9 @@ module ActiveMerchant #:nodoc:
       end
 
       def add_payment_method(post, payment_method)
-        if payment_method.respond_to?(:brand)
+        if payment_method.kind_of?(String)
+          add_customer_token(post, payment_method)
+        elsif payment_method.respond_to?(:brand)
           add_credit_card(post, payment_method)
         else
           add_echeck(post, payment_method)
@@ -173,6 +208,9 @@ module ActiveMerchant #:nodoc:
         post[:echeck][:routing_number] = payment.routing_number
         post[:echeck][:account_type] = payment.account_type
         post[:echeck][:check_number] = payment.number
+        # TODO: make sec_code configurable in options hash
+        # sec_code is temporarily hard-coded as "WEB" to fix remote test failure
+        post[:echeck][:sec_code] = "WEB"
       end
 
       def add_credit_card(post, payment)
@@ -183,6 +221,10 @@ module ActiveMerchant #:nodoc:
         post[:card][:expire_month] = payment.month
         post[:card][:expire_year] = payment.year
         post[:card][:card_verification_value] = payment.verification_value
+      end
+
+      def add_customer_token(post, payment_method)
+        post[:customer_token] = payment_method
       end
 
       def commit(type, parameters)
@@ -236,7 +278,7 @@ module ActiveMerchant #:nodoc:
         if parameters[:action].present?
           "/accounts/act_#{@options[:account_id].strip}/locations/loc_#{@options[:location_id].strip}/transactions/"
         else
-          "/accounts/act_#{@options[:account_id].strip}/locations/loc_#{@options[:location_id].strip}/paymethods/"
+          "/accounts/act_#{@options[:account_id].strip}/locations/loc_#{@options[:location_id].strip}/customers/"
         end
       end
 

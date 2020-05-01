@@ -194,8 +194,18 @@ class RemoteForteTest < Test::Unit::TestCase
     response = @gateway.store(@credit_card)
     assert_success response
     assert_equal 'Create Successful.', response.message
-    assert response.params['paymethod_token'].present?
-    @data_key = response.params['paymethod_token']
+    assert response.params['customer_token'].present?
+    @data_key = response.params['customer_token']
+  end
+
+  def test_successful_store_and_purchase
+    assert response = @gateway.store(@credit_card, :billing_address => address)
+    assert_success response
+    assert_equal 'Create Successful.', response.message
+
+    vault_id = response.params['customer_token']
+    purchase_response = @gateway.purchase(@amount, vault_id)
+    assert purchase_response.params['transaction_id'].start_with?("trn_")
   end
 
   def test_transcript_scrubbing
