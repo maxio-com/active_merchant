@@ -210,6 +210,7 @@ module ActiveMerchant #:nodoc:
         post[:echeck][:check_number] = payment.number
         # TODO: make sec_code configurable in options hash
         # sec_code is temporarily hard-coded as "WEB" to fix remote test failure
+        # see public issue https://github.com/activemerchant/active_merchant/issues/3612
         post[:echeck][:sec_code] = "WEB"
       end
 
