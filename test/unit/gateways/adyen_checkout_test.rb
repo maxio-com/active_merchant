@@ -150,10 +150,9 @@ class AdyenTest < Test::Unit::TestCase
 
   def test_successful_update_card_details_store
     response = stub_comms do
-      @gateway.store(
+      @gateway.update(
         @credit_card,
         @options.merge(
-          update_card_details: true,
           stored_payment_method_id: "8415877192784258",
           recurring_processing_model: 'Subscription')
         )

@@ -58,11 +58,7 @@ module ActiveMerchant #:nodoc:
         requires!(options, :order_id)
         post = init_post(options)
         add_invoice(post, 0, options)
-        if options[:update_card_details]
-          add_update_card_details(post, credit_card, options[:stored_payment_method_id])
-        else
-          add_payment(post, credit_card)
-        end
+        add_payment(post, credit_card)
         add_extra_data(post, options)
         add_stored_credentials(post, credit_card, options)
         add_address(post, options)
@@ -75,6 +71,17 @@ module ActiveMerchant #:nodoc:
         else
           initial_response
         end
+      end
+
+      def update(credit_card, options = {})
+        post = init_post(options)
+        add_invoice(post, 0, options)
+        add_update_card_details(post, credit_card, options[:stored_payment_method_id])
+        add_extra_data(post, options)
+        add_stored_credentials(post, credit_card, options)
+        add_address(post, options)
+
+        commit('payments', post, options)
       end
 
       def unstore(identification, options = {})
@@ -369,7 +376,7 @@ module ActiveMerchant #:nodoc:
         CVC_MAPPING[response['additionalData']['cvcResult'][0]] if response.dig('additionalData', 'cvcResult')
       end
 
-      def should_use_pal_endpoint?(action)
+      def use_pal_endpoint?(action)
         action == "refund" || action == "disable"
       end
 
@@ -382,11 +389,11 @@ module ActiveMerchant #:nodoc:
 
       def url(action)
         if test?
-          should_use_pal_endpoint?(action) ? "#{PAL_TEST_URL}#{endpoint(action)}" : "#{test_url}#{endpoint(action)}"
+          use_pal_endpoint?(action) ? "#{PAL_TEST_URL}#{endpoint(action)}" : "#{test_url}#{endpoint(action)}"
         elsif @options[:subdomain]
           "https://#{@options[:subdomain]}-pal-live.adyenpayments.com/pal/servlet/#{endpoint(action)}"
         else
-          should_use_pal_endpoint?(action) ? "#{PAL_LIVE_URL}#{endpoint(action)}" : "#{live_url}#{endpoint(action)}"
+          use_pal_endpoint?(action) ? "#{PAL_LIVE_URL}#{endpoint(action)}" : "#{live_url}#{endpoint(action)}"
         end
       end
 
