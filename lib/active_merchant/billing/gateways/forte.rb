@@ -196,7 +196,13 @@ module ActiveMerchant #:nodoc:
 
       def add_payment_method(post, payment_method)
         if payment_method.kind_of?(String)
-          add_customer_token(post, payment_method)
+          if payment_method.include?('|')
+            customer_token, paymethod_token = payment_method.split('|')
+            add_customer_token(post, customer_token)
+            add_paymethod_token(post, paymethod_token)
+          else
+            add_customer_token(post, payment_method)
+          end
         elsif payment_method.respond_to?(:brand)
           add_credit_card(post, payment_method)
         else
@@ -229,6 +235,10 @@ module ActiveMerchant #:nodoc:
 
       def add_customer_token(post, payment_method)
         post[:customer_token] = payment_method
+      end
+
+      def add_paymethod_token(post, payment_method)
+        post[:paymethod_token] = payment_method
       end
 
       def commit(type, parameters)
