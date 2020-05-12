@@ -155,6 +155,7 @@ module ActiveMerchant #:nodoc:
           billing_address[:physical_address][:postal_code] = address[:zip] if address[:zip]
           billing_address[:physical_address][:region] = address[:state] if address[:state]
           billing_address[:physical_address][:locality] = address[:city] if address[:city]
+          billing_address[:email] = options[:email] if options[:email]
           post[:addresses] << billing_address
         end
       end
