@@ -32,7 +32,7 @@ module ActiveMerchant #:nodoc:
         add_shipping_address(post, options) unless payment_method.kind_of?(String)
         post[:action] = 'sale'
 
-        commit(:post, post)
+        commit(:post, "/transactions", post)
       end
 
       def authorize(money, payment_method, options={})
@@ -44,7 +44,7 @@ module ActiveMerchant #:nodoc:
         add_shipping_address(post, options)
         post[:action] = 'authorize'
 
-        commit(:post, post)
+        commit(:post, "/transactions", post)
       end
 
       def capture(money, authorization, options={})
@@ -53,7 +53,7 @@ module ActiveMerchant #:nodoc:
         post[:authorization_code] = authorization_code_from(authorization) || ''
         post[:action] = 'capture'
 
-        commit(:put, post)
+        commit(:put, "/transactions", post)
       end
 
       def credit(money, payment_method, options={})
@@ -64,7 +64,7 @@ module ActiveMerchant #:nodoc:
         add_billing_address(post, payment_method, options)
         post[:action] = 'disburse'
 
-        commit(:post, post)
+        commit(:post, "/transactions", post)
       end
 
       def refund(money, authorization, options={})
@@ -74,7 +74,7 @@ module ActiveMerchant #:nodoc:
         post[:authorization_code] = authorization_code_from(authorization)
         post[:action] = 'reverse'
 
-        commit(:post, post)
+        commit(:post, "/transactions", post)
       end
 
       def store(credit_card, options = {})
@@ -83,7 +83,7 @@ module ActiveMerchant #:nodoc:
         add_customer_paymethod(post, credit_card)
         add_customer_billing_address(post, options)
 
-        commit(:post, post)
+        commit(:post, "/customers", post)
       end
 
       def unstore(identification, options = {})
@@ -91,11 +91,8 @@ module ActiveMerchant #:nodoc:
 
         # TODO: support deleting just a card and not the whole customer
 
-        options_for_delete = { customer_token: customer_token }
-
-        commit(:delete, options_for_delete)
+        commit(:delete, "/customers/#{customer_token}", {})
       end
-
 
       def void(authorization, options={})
         post = {}
@@ -103,7 +100,7 @@ module ActiveMerchant #:nodoc:
         post[:authorization_code] = authorization_code_from(authorization)
         post[:action] = 'void'
 
-        commit(:put, post)
+        commit(:put, "/transactions", post)
       end
 
       def verify(credit_card, options={})
@@ -253,10 +250,10 @@ module ActiveMerchant #:nodoc:
         post[:paymethod_token] = payment_method
       end
 
-      def commit(type, parameters)
+      def commit(type, path, parameters)
         add_auth(parameters)
 
-        url = (test? ? test_url : live_url) + endpoint(parameters)
+        url = (test? ? test_url : live_url) + endpoint + path
         body = type == :delete ? nil : parameters.to_json
         response = parse(handle_resp(raw_ssl_request(type, url, body, headers)))
 
@@ -302,14 +299,8 @@ module ActiveMerchant #:nodoc:
         end
       end
 
-      def endpoint(parameters)
-        if parameters[:action].present?
-          "/accounts/act_#{organization_id.strip}/locations/loc_#{@options[:location_id].strip}/transactions/"
-        elsif parameters[:customer_token].present?
-          "/accounts/act_#{organization_id.strip}/locations/loc_#{@options[:location_id].strip}/customers/#{parameters[:customer_token].strip}"
-        else
-          "/accounts/act_#{organization_id.strip}/locations/loc_#{@options[:location_id].strip}/customers/"
-        end
+      def endpoint
+          "/accounts/act_#{organization_id.strip}/locations/loc_#{@options[:location_id].strip}"
       end
 
       def headers
