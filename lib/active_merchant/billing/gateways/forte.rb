@@ -86,6 +86,17 @@ module ActiveMerchant #:nodoc:
         commit(:post, post)
       end
 
+      def unstore(identification, options = {})
+        customer_token, paymethod_token = identification.split('|')
+
+        # TODO: support deleting just a card and not the whole customer
+
+        options_for_delete = { customer_token: customer_token }
+
+        commit(:delete, options_for_delete)
+      end
+
+
       def void(authorization, options={})
         post = {}
         post[:transaction_id] = transaction_id_from(authorization)
@@ -246,7 +257,8 @@ module ActiveMerchant #:nodoc:
         add_auth(parameters)
 
         url = (test? ? test_url : live_url) + endpoint(parameters)
-        response = parse(handle_resp(raw_ssl_request(type, url, parameters.to_json, headers)))
+        body = type == :delete ? nil : parameters.to_json
+        response = parse(handle_resp(raw_ssl_request(type, url, body, headers)))
 
         Response.new(
           success_from(response),
@@ -274,7 +286,8 @@ module ActiveMerchant #:nodoc:
 
       def success_from(response)
         response['response']['response_code'] == 'A01' ||
-          response['response']['response_desc'] == "Create Successful."
+          response['response']['response_desc'] == "Create Successful." ||
+          response['response']['response_desc'] == "Delete Successful."
       end
 
       def message_from(response)
@@ -292,6 +305,8 @@ module ActiveMerchant #:nodoc:
       def endpoint(parameters)
         if parameters[:action].present?
           "/accounts/act_#{organization_id.strip}/locations/loc_#{@options[:location_id].strip}/transactions/"
+        elsif parameters[:customer_token].present?
+          "/accounts/act_#{organization_id.strip}/locations/loc_#{@options[:location_id].strip}/customers/#{parameters[:customer_token].strip}"
         else
           "/accounts/act_#{organization_id.strip}/locations/loc_#{@options[:location_id].strip}/customers/"
         end
