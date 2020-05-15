@@ -95,6 +95,20 @@ module ActiveMerchant #:nodoc:
         commit(:delete, "customers/#{customer_token}", {})
       end
 
+      def update(customer_token, paymethod_token, credit_card, _options = {})
+        params = {}
+        add_card_for_update(params, credit_card)
+
+        path = [
+          "customers/",
+          "#{customer_token}/",
+          "paymethods/",
+          "#{paymethod_token}/"
+        ].join
+
+        commit(:put, path, params)
+      end
+
       def void(authorization, _options = {})
         post = {}
         post[:transaction_id] = transaction_id_from(authorization)
@@ -146,6 +160,16 @@ module ActiveMerchant #:nodoc:
         post[:paymethod][:card][:expire_month] = payment_method.month
         post[:paymethod][:card][:expire_year] = payment_method.year
         post[:paymethod][:card][:card_verification_value] = payment_method.verification_value
+      end
+
+      def add_card_for_update(put, payment_method)
+        put[:card] = {
+          card_type: format_card_brand(payment_method.brand),
+          name_on_card: payment_method.name,
+          expire_month: payment_method.month,
+          expire_year: payment_method.year,
+          card_verification_value: payment_method.verification_value
+        }
       end
 
       def add_customer_billing_address(post, options)
@@ -274,6 +298,7 @@ module ActiveMerchant #:nodoc:
       def success_from(response)
         response["response"]["response_code"] == "A01" ||
           response["response"]["response_desc"] == "Create Successful." ||
+          response["response"]["response_desc"] == "Update Successful." ||
           response["response"]["response_desc"] == "Delete Successful."
       end
 
