@@ -247,24 +247,28 @@ module ActiveMerchant #:nodoc:
       end
 
       def commit(http_method, path, params)
-        body = http_method == :delete ? nil : params.to_json
         url = URI.join(base_url, path)
-
-        send_request(http_method, url, body, headers)
-      end
-
-      def send_request(http_method, url, body, headers)
-        response = JSON.parse(ssl_request(http_method, url, body, headers))
+        body = http_method == :delete ? nil : params.to_json
+        response = JSON.parse(handle_response(raw_ssl_request(http_method, url, body, headers)))
 
         Response.new(
           success_from(response),
           message_from(response),
           response,
-          authorization: authorization_from(response, body),
+          authorization: authorization_from(response, params),
           avs_result: AVSResult.new(code: response['response']['avs_result']),
           cvv_result: CVVResult.new(response['response']['cvv_code']),
           test: test?
         )
+      end
+
+      def handle_response(response)
+        case response.code.to_i
+        when 200..499
+          response.body
+        else
+          raise ResponseError.new(response)
+        end
       end
 
       def success_from(response)
