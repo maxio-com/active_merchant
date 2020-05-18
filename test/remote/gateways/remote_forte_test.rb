@@ -228,6 +228,8 @@ class RemoteForteTest < Test::Unit::TestCase
     assert unstore_response = @gateway.unstore(vault_id)
     assert_success unstore_response
     assert_equal 'Delete Successful.', unstore_response.message
+    assert unstore_response.params['customer_token'].present?
+    assert unstore_response.params['paymethod_token'].blank?
   end
 
   def test_successful_store_of_customer_and_unstore_of_only_paymethod
@@ -240,6 +242,8 @@ class RemoteForteTest < Test::Unit::TestCase
     assert unstore_response = @gateway.unstore(vault_id)
     assert_success unstore_response
     assert_equal 'Delete Successful.', unstore_response.message
+    assert unstore_response.params['customer_token'].blank?
+    assert unstore_response.params['paymethod_token'].present?
   end
 
   def test_transcript_scrubbing
