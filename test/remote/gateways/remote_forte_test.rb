@@ -143,6 +143,20 @@ class RemoteForteTest < Test::Unit::TestCase
     assert_failure response
   end
 
+  def test_successful_update
+    auth = @gateway.authorize(@amount, @credit_card, @options)
+    assert_success auth
+
+    wait_for_authorization_to_clear
+
+    assert capture = @gateway.capture(@amount - 1, auth.authorization, @options)
+    require 'pry'; binding.pry
+    puts capture.inspect
+    assert_success capture
+
+    # response = @gateway.update()
+  end
+
   def test_successful_void
     auth = @gateway.authorize(@amount, @credit_card, @options)
     assert_success auth

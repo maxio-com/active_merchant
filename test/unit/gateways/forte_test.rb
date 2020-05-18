@@ -104,6 +104,13 @@ class ForteTest < Test::Unit::TestCase
     assert_failure response
   end
 
+  def test_successful_update
+    response = stub_comms(@gateway, :raw_ssl_request) do
+      @gateway.update('customer_token', 'paymethod_token', @credit_card)
+    end.respond_with(MockedResponse.new(successful_update_response))
+    assert_failure response
+  end
+
   def test_successful_void
     response = stub_comms(@gateway, :raw_ssl_request) do
       @gateway.void('authcode')
