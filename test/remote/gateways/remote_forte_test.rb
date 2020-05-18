@@ -236,6 +236,7 @@ class RemoteForteTest < Test::Unit::TestCase
     assert_equal 'Create Successful.', store_response.message
 
     vault_id = store_response.params['customer_token'] + "|" + store_response.params['default_paymethod_token']
+
     assert unstore_response = @gateway.unstore(vault_id)
     assert_success unstore_response
     assert_equal 'Delete Successful.', unstore_response.message

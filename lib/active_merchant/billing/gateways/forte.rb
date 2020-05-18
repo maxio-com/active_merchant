@@ -88,12 +88,12 @@ module ActiveMerchant #:nodoc:
       end
 
       def unstore(identification, _options = {})
-        customer_token, _paymethod_token = identification.split('|')
+        customer_token, paymethod_token = identification.split('|')
 
         if (customer_token && !paymethod_token)
-          commit(:delete, "/customers/#{customer_token}", {})
+          commit(:delete, "customers/#{customer_token}", {})
         else
-          commit(:delete, "/paymethods/#{paymethod_token}", {})
+          commit(:delete, "paymethods/#{paymethod_token}", {})
         end
       end
 
