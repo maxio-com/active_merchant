@@ -89,9 +89,11 @@ module ActiveMerchant #:nodoc:
       def unstore(identification, options = {})
         customer_token, paymethod_token = identification.split('|')
 
-        # TODO: support deleting just a card and not the whole customer
-
-        commit(:delete, "/customers/#{customer_token}", {})
+        if (customer_token && !paymethod_token)
+          commit(:delete, "/customers/#{customer_token}", {})
+        else
+          commit(:delete, "/paymethods/#{paymethod_token}", {})
+        end
       end
 
       def void(authorization, options={})
