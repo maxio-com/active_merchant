@@ -149,7 +149,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def add_customer_billing_address(post, options)
-        return unless address == options[:billing_address] || options[:address]
+        return unless (address = options[:billing_address] || options[:address])
 
         post[:addresses] = []
         billing_address = {}
@@ -166,7 +166,7 @@ module ActiveMerchant #:nodoc:
 
       def add_billing_address(post, payment, options)
         post[:billing_address] = {}
-        if address == options[:billing_address] || options[:address]
+        if (address = options[:billing_address] || options[:address])
           first_name, last_name = split_names(address[:name])
           post[:billing_address][:first_name] = first_name if first_name
           post[:billing_address][:last_name] = last_name if last_name
