@@ -1,24 +1,24 @@
-require 'json'
+require "json"
 
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
     class ForteGateway < Gateway
       include Empty
 
-      self.test_url = 'https://sandbox.forte.net/api/v2/'
-      self.live_url = 'https://api.forte.net/v2/'
+      self.test_url = "https://sandbox.forte.net/api/v2/"
+      self.live_url = "https://api.forte.net/v2/"
 
-      self.supported_countries = ['US']
-      self.default_currency = 'USD'
+      self.supported_countries = ["US"]
+      self.default_currency = "USD"
       self.supported_cardtypes = %i[visa master american_express discover]
 
-      self.homepage_url = 'https://www.forte.net'
-      self.display_name = 'Forte'
+      self.homepage_url = "https://www.forte.net"
+      self.display_name = "Forte"
 
       def initialize(options = {})
         requires!(options, :api_key, :secret, :location_id)
         unless options.key?(:organization_id) || options.key?(:account_id)
-          raise ArgumentError.new('Missing required parameter: organization_id or account_id')
+          raise ArgumentError.new("Missing required parameter: organization_id or account_id")
         end
 
         super
@@ -31,9 +31,9 @@ module ActiveMerchant #:nodoc:
         add_payment_method(post, payment_method)
         add_billing_address(post, payment_method, options) unless payment_method.is_a?(String)
         add_shipping_address(post, options) unless payment_method.is_a?(String)
-        post[:action] = 'sale'
+        post[:action] = "sale"
 
-        commit(:post, 'transactions', post)
+        commit(:post, "transactions", post)
       end
 
       def authorize(money, payment_method, options = {})
@@ -43,18 +43,18 @@ module ActiveMerchant #:nodoc:
         add_payment_method(post, payment_method)
         add_billing_address(post, payment_method, options)
         add_shipping_address(post, options)
-        post[:action] = 'authorize'
+        post[:action] = "authorize"
 
-        commit(:post, 'transactions', post)
+        commit(:post, "transactions", post)
       end
 
       def capture(_money, authorization, _options = {})
         post = {}
         post[:transaction_id] = transaction_id_from(authorization)
-        post[:authorization_code] = authorization_code_from(authorization) || ''
-        post[:action] = 'capture'
+        post[:authorization_code] = authorization_code_from(authorization) || ""
+        post[:action] = "capture"
 
-        commit(:put, 'transactions', post)
+        commit(:put, "transactions", post)
       end
 
       def credit(money, payment_method, options = {})
@@ -63,9 +63,9 @@ module ActiveMerchant #:nodoc:
         add_invoice(post, options)
         add_payment_method(post, payment_method)
         add_billing_address(post, payment_method, options)
-        post[:action] = 'disburse'
+        post[:action] = "disburse"
 
-        commit(:post, 'transactions', post)
+        commit(:post, "transactions", post)
       end
 
       def refund(money, authorization, options = {})
@@ -73,9 +73,9 @@ module ActiveMerchant #:nodoc:
         add_amount(post, money, options)
         post[:original_transaction_id] = transaction_id_from(authorization)
         post[:authorization_code] = authorization_code_from(authorization)
-        post[:action] = 'reverse'
+        post[:action] = "reverse"
 
-        commit(:post, 'transactions', post)
+        commit(:post, "transactions", post)
       end
 
       def store(credit_card, options = {})
@@ -84,11 +84,11 @@ module ActiveMerchant #:nodoc:
         add_customer_paymethod(post, credit_card)
         add_customer_billing_address(post, options)
 
-        commit(:post, 'customers', post)
+        commit(:post, "customers", post)
       end
 
       def unstore(identification, _options = {})
-        customer_token, _paymethod_token = identification.split('|')
+        customer_token, _paymethod_token = identification.split("|")
 
         # TODO: support deleting just a card and not the whole customer
 
@@ -99,9 +99,9 @@ module ActiveMerchant #:nodoc:
         post = {}
         post[:transaction_id] = transaction_id_from(authorization)
         post[:authorization_code] = authorization_code_from(authorization)
-        post[:action] = 'void'
+        post[:action] = "void"
 
-        commit(:put, 'transactions', post)
+        commit(:put, "transactions", post)
       end
 
       def verify(credit_card, options = {})
@@ -201,8 +201,8 @@ module ActiveMerchant #:nodoc:
 
       def add_payment_method(post, payment_method)
         if payment_method.is_a?(String)
-          if payment_method.include?('|')
-            customer_token, paymethod_token = payment_method.split('|')
+          if payment_method.include?("|")
+            customer_token, paymethod_token = payment_method.split("|")
             add_customer_token(post, customer_token)
             add_paymethod_token(post, paymethod_token)
           else
@@ -225,7 +225,7 @@ module ActiveMerchant #:nodoc:
         # TODO: make sec_code configurable in options hash
         # sec_code is temporarily hard-coded as "WEB" to fix remote test failure
         # see public issue https://github.com/activemerchant/active_merchant/issues/3612
-        post[:echeck][:sec_code] = 'WEB'
+        post[:echeck][:sec_code] = "WEB"
       end
 
       def add_credit_card(post, payment)
@@ -256,8 +256,8 @@ module ActiveMerchant #:nodoc:
           message_from(response),
           response,
           authorization: authorization_from(response, params),
-          avs_result: AVSResult.new(code: response['response']['avs_result']),
-          cvv_result: CVVResult.new(response['response']['cvv_code']),
+          avs_result: AVSResult.new(code: response["response"]["avs_result"]),
+          cvv_result: CVVResult.new(response["response"]["cvv_code"]),
           test: test?
         )
       end
@@ -272,56 +272,56 @@ module ActiveMerchant #:nodoc:
       end
 
       def success_from(response)
-        response['response']['response_code'] == 'A01' ||
-          response['response']['response_desc'] == 'Create Successful.' ||
-          response['response']['response_desc'] == 'Delete Successful.'
+        response["response"]["response_code"] == "A01" ||
+          response["response"]["response_desc"] == "Create Successful." ||
+          response["response"]["response_desc"] == "Delete Successful."
       end
 
       def message_from(response)
-        response['response']['response_desc']
+        response["response"]["response_desc"]
       end
 
       def authorization_from(response, parameters)
-        if parameters[:action] == 'capture'
-          [response['transaction_id'], response.dig('response', 'authorization_code'), parameters[:transaction_id], parameters[:authorization_code]].join('#')
+        if parameters[:action] == "capture"
+          [response["transaction_id"], response.dig("response", "authorization_code"), parameters[:transaction_id], parameters[:authorization_code]].join("#")
         else
-          [response['transaction_id'], response.dig('response', 'authorization_code')].join('#')
+          [response["transaction_id"], response.dig("response", "authorization_code")].join("#")
         end
       end
 
       def base_url
         URI.join(
           (test? ? test_url : live_url),
-          'accounts/',
+          "accounts/",
           "act_#{organization_id.strip}/",
-          'locations/',
+          "locations/",
           "loc_#{@options[:location_id].strip}/"
         )
       end
 
       def headers
         {
-          'Authorization' => ('Basic ' + Base64.strict_encode64("#{@options[:api_key]}:#{@options[:secret]}")),
-          'X-Forte-Auth-Account-Id' => "act_#{organization_id}",
-          'Content-Type' => 'application/json'
+          "Authorization" => ("Basic " + Base64.strict_encode64("#{@options[:api_key]}:#{@options[:secret]}")),
+          "X-Forte-Auth-Account-Id" => "act_#{organization_id}",
+          "Content-Type" => "application/json"
         }
       end
 
       def format_card_brand(card_brand)
         case card_brand
-        when 'visa'
-          'visa'
-        when 'master'
-          'mast'
-        when 'american_express'
-          'amex'
-        when 'discover'
-          'disc'
+        when "visa"
+          "visa"
+        when "master"
+          "mast"
+        when "american_express"
+          "amex"
+        when "discover"
+          "disc"
         end
       end
 
       def split_authorization(authorization)
-        authorization.split('#')
+        authorization.split("#")
       end
 
       def authorization_code_from(authorization)
@@ -330,7 +330,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def transaction_id_from(authorization)
-        transaction_id, _, original_auth_transaction_id, _ = split_authorization(authorization)
+        transaction_id, _, original_auth_transaction_id, = split_authorization(authorization)
         original_auth_transaction_id.present? ? original_auth_transaction_id : transaction_id
       end
 
