@@ -100,7 +100,13 @@ module ActiveMerchant #:nodoc:
         add_card_for_update(params, credit_card)
         path = ["customers/", "#{customer_token}/", "paymethods/", "#{paymethod_token}/"].join
 
-        commit(:put, path, params)
+        verify_response = verify(credit_card).primary_response
+
+        if verify_response.success?
+          commit(:put, path, params)
+        else
+          verify_response
+        end
       end
 
       def void(authorization, _options = {})

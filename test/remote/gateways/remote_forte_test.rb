@@ -242,6 +242,18 @@ class RemoteForteTest < Test::Unit::TestCase
     assert_equal "Update Successful.", update_response.message
   end
 
+  def test_failed_update
+    response = @gateway.store(@credit_card)
+    customer_token = response.params["customer_token"]
+    paymethod_token = response.params["paymethod"]["paymethod_token"]
+    credit_card = @declined_card
+
+    update_response = @gateway.update(customer_token, paymethod_token, credit_card)
+
+    assert_failure update_response
+    assert_equal "INVALID CREDIT CARD NUMBER", update_response.message
+  end
+
   def test_transcript_scrubbing
     @credit_card.verification_value = 789
     transcript = capture_transcript(@gateway) do

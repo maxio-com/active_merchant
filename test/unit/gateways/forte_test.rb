@@ -156,8 +156,15 @@ class ForteTest < Test::Unit::TestCase
   def test_successful_update
     response = stub_comms(@gateway, :raw_ssl_request) do
       @gateway.update("customer_token", "paymethod_token", @credit_card)
-    end.respond_with(MockedResponse.new(successful_update_response))
+    end.respond_with(MockedResponse.new(successful_authorize_response), MockedResponse.new(successful_update_response))
     assert_success response
+  end
+
+  def test_failed_update
+    response = stub_comms(@gateway, :raw_ssl_request) do
+      @gateway.update("customer_token", "paymethod_token", @credit_card)
+    end.respond_with(MockedResponse.new(failed_authorize_response))
+    assert_failure response
   end
 
   def test_handles_improper_padding
