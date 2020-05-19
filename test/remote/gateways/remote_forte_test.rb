@@ -219,8 +219,48 @@ class RemoteForteTest < Test::Unit::TestCase
     assert purchase_response.params['transaction_id'].start_with?("trn_")
   end
 
+  def test_successful_store_of_bank_account
+    response = @gateway.store(@check)
+    assert_success response
+    assert_equal 'Create Successful.', response.message
+    assert response.params['customer_token'].present?
+    @data_key = response.params['customer_token']
+  end
+
+  def test_successful_store_of_bank_account_and_purchase_with_customer_token
+    assert response = @gateway.store(@check, :billing_address => address)
+    assert_success response
+    assert_equal 'Create Successful.', response.message
+
+    vault_id = response.params['customer_token']
+    purchase_response = @gateway.purchase(@amount, vault_id)
+    assert purchase_response.params['transaction_id'].start_with?("trn_")
+  end
+
+  def test_successful_store_of_bank_account_and_purchase_with_customer_and_paymethod_tokens
+    assert response = @gateway.store(@check, :billing_address => address)
+    assert_success response
+    assert_equal 'Create Successful.', response.message
+
+    vault_id = response.params['customer_token'] + "|" + response.params['default_paymethod_token']
+    purchase_response = @gateway.purchase(@amount, vault_id)
+    assert_success purchase_response
+    assert purchase_response.params['transaction_id'].start_with?("trn_")
+  end
+
   def test_successful_store_and_unstore
     assert store_response = @gateway.store(@credit_card, :billing_address => address)
+    assert_success store_response
+    assert_equal 'Create Successful.', store_response.message
+
+    vault_id = store_response.params['customer_token']
+    assert unstore_response = @gateway.unstore(vault_id)
+    assert_success unstore_response
+    assert_equal 'Delete Successful.', unstore_response.message
+  end
+
+  def test_successful_store_and_unstore_of_bank_account
+    assert store_response = @gateway.store(@check, :billing_address => address)
     assert_success store_response
     assert_equal 'Create Successful.', store_response.message
 

@@ -77,10 +77,10 @@ module ActiveMerchant #:nodoc:
         commit(:post, "/transactions", post)
       end
 
-      def store(credit_card, options = {})
+      def store(payment_method, options = {})
         post = {}
-        add_customer(post, credit_card, options)
-        add_customer_paymethod(post, credit_card)
+        add_customer(post, payment_method, options)
+        add_customer_paymethod(post, payment_method)
         add_customer_billing_address(post, options)
 
         commit(:post, "/customers", post)
@@ -143,13 +143,18 @@ module ActiveMerchant #:nodoc:
 
       def add_customer_paymethod(post, payment_method)
         post[:paymethod] = {}
-        post[:paymethod][:card] = {}
-        post[:paymethod][:card][:card_type] = format_card_brand(payment_method.brand)
-        post[:paymethod][:card][:name_on_card] = payment_method.name
-        post[:paymethod][:card][:account_number] = payment_method.number
-        post[:paymethod][:card][:expire_month] = payment_method.month
-        post[:paymethod][:card][:expire_year] = payment_method.year
-        post[:paymethod][:card][:card_verification_value] = payment_method.verification_value
+
+        if payment_method.is_a?(Check)
+          add_echeck(post[:paymethod], payment_method)
+        else
+          post[:paymethod][:card] = {}
+          post[:paymethod][:card][:card_type] = format_card_brand(payment_method.brand)
+          post[:paymethod][:card][:name_on_card] = payment_method.name
+          post[:paymethod][:card][:account_number] = payment_method.number
+          post[:paymethod][:card][:expire_month] = payment_method.month
+          post[:paymethod][:card][:expire_year] = payment_method.year
+          post[:paymethod][:card][:card_verification_value] = payment_method.verification_value
+        end
       end
 
       def add_customer_billing_address(post, options)
