@@ -143,20 +143,6 @@ class RemoteForteTest < Test::Unit::TestCase
     assert_failure response
   end
 
-  def test_successful_update
-    auth = @gateway.authorize(@amount, @credit_card, @options)
-    assert_success auth
-
-    wait_for_authorization_to_clear
-
-    assert capture = @gateway.capture(@amount - 1, auth.authorization, @options)
-    require 'pry'; binding.pry
-    puts capture.inspect
-    assert_success capture
-
-    # response = @gateway.update()
-  end
-
   def test_successful_void
     auth = @gateway.authorize(@amount, @credit_card, @options)
     assert_success auth
@@ -242,6 +228,18 @@ class RemoteForteTest < Test::Unit::TestCase
     assert unstore_response = @gateway.unstore(vault_id)
     assert_success unstore_response
     assert_equal 'Delete Successful.', unstore_response.message
+  end
+
+  def test_successful_update
+    response = @gateway.store(@credit_card)
+    customer_token = response.params["customer_token"]
+    paymethod_token = response.params["paymethod"]["paymethod_token"]
+    credit_card = credit_card("4111111111111111")
+
+    update_response = @gateway.update(customer_token, paymethod_token, credit_card)
+
+    assert_success update_response
+    assert_equal "Update Successful.", update_response.message
   end
 
   def test_transcript_scrubbing

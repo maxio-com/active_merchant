@@ -98,13 +98,7 @@ module ActiveMerchant #:nodoc:
       def update(customer_token, paymethod_token, credit_card, _options = {})
         params = {}
         add_card_for_update(params, credit_card)
-
-        path = [
-          "customers/",
-          "#{customer_token}/",
-          "paymethods/",
-          "#{paymethod_token}/"
-        ].join
+        path = ["customers/", "#{customer_token}/", "paymethods/", "#{paymethod_token}/"].join
 
         commit(:put, path, params)
       end

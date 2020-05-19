@@ -104,13 +104,6 @@ class ForteTest < Test::Unit::TestCase
     assert_failure response
   end
 
-  def test_successful_update
-    response = stub_comms(@gateway, :raw_ssl_request) do
-      @gateway.update('customer_token', 'paymethod_token', @credit_card)
-    end.respond_with(MockedResponse.new(successful_update_response))
-    assert_failure response
-  end
-
   def test_successful_void
     response = stub_comms(@gateway, :raw_ssl_request) do
       @gateway.void('authcode')
@@ -158,6 +151,13 @@ class ForteTest < Test::Unit::TestCase
       @gateway.refund(@amount, 'authcode')
     end.respond_with(MockedResponse.new(failed_refund_response))
     assert_failure response
+  end
+
+  def test_successful_update
+    response = stub_comms(@gateway, :raw_ssl_request) do
+      @gateway.update("customer_token", "paymethod_token", @credit_card)
+    end.respond_with(MockedResponse.new(successful_update_response))
+    assert_success response
   end
 
   def test_handles_improper_padding
@@ -531,6 +531,32 @@ class ForteTest < Test::Unit::TestCase
           }
         }
     '
+  end
+
+  def successful_update_response
+    <<~RESPONSE
+      {
+        "paymethod_token":"mth_bC1DgWtqik6Q7acsBRwIwg",
+        "location_id":"loc_250884",
+        "customer_token":"cst_006RWQVY7UCMdhy8mfXtEQ",
+        "card":{
+          "name_on_card":"Longbob Longsen",
+          "expire_month":9,
+          "expire_year":2021,
+          "card_type":"visa"
+        },
+        "response":{
+          "environment":"sandbox",
+          "response_desc":"Update Successful."
+        },
+        "links":{
+          "transactions":"https://sandbox.forte.net/API/v2/paymethods/mth_bC1DgWtqik6Q7acsBRwIwg/transactions",
+          "settlements":"https://sandbox.forte.net/API/v2/paymethods/mth_bC1DgWtqik6Q7acsBRwIwg/settlements",
+          "schedules":"https://sandbox.forte.net/API/v2/paymethods/mth_bC1DgWtqik6Q7acsBRwIwg/schedules",
+          "self":"https://sandbox.forte.net/API/v2/paymethods/mth_bC1DgWtqik6Q7acsBRwIwg/"
+        }
+      }
+    RESPONSE
   end
 
   def successful_void_response
