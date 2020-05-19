@@ -31,7 +31,12 @@ module ActiveMerchant #:nodoc:
         add_billing_address(post, payment_method, options) unless payment_method.kind_of?(String)
         add_shipping_address(post, options) unless payment_method.kind_of?(String)
         post[:action] = 'sale'
-
+        # TODO: investigate why without this purchase won't work for bank_account
+        # (even when we do purchase with customer_token and paymethod_token only)
+        if !post.key?(:card) && !post.key?(:echeck)
+          post[:echeck] ||= {}
+          post[:echeck][:sec_code] = "WEB"
+        end
         commit(:post, "/transactions", post)
       end
 
