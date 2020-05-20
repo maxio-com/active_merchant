@@ -121,21 +121,14 @@ class ForteTest < Test::Unit::TestCase
   def test_successful_verify
     response = stub_comms(@gateway, :raw_ssl_request) do
       @gateway.verify(@credit_card, @options)
-    end.respond_with(MockedResponse.new(successful_authorize_response), MockedResponse.new(successful_void_response))
-    assert_success response
-  end
-
-  def test_successful_verify_with_failed_void
-    response = stub_comms(@gateway, :raw_ssl_request) do
-      @gateway.verify(@credit_card, @options)
-    end.respond_with(MockedResponse.new(successful_authorize_response), MockedResponse.new(failed_void_response))
+    end.respond_with(MockedResponse.new(successful_verify_response))
     assert_success response
   end
 
   def test_failed_verify
     response = stub_comms(@gateway, :raw_ssl_request) do
       @gateway.verify(@credit_card, @options)
-    end.respond_with(MockedResponse.new(failed_authorize_response))
+    end.respond_with(MockedResponse.new(failed_verify_response))
     assert_failure response
   end
 
@@ -609,6 +602,61 @@ class ForteTest < Test::Unit::TestCase
         }
       }
     '
+  end
+
+  def successful_verify_response
+    <<~RESPONSE
+      {
+        "transaction_id":"trn_8124eadd-f646-4c79-85f9-6706f0ae9219",
+        "location_id":"loc_250884",
+        "action":"verify",
+        "entered_by":"7fc1135da64ee63eb5f032e6a411b668",
+        "billing_address":{
+          "first_name":"Longbob",
+          "last_name":"Longsen"
+        },
+        "card":{
+          "name_on_card":"Longbob Longsen",
+          "masked_account_number":"****2224",
+          "card_type":"visa"
+        },
+        "response":{
+          "environment":"sandbox",
+          "response_type":"A",
+          "response_code":"A01",
+          "response_desc":"TEST APPROVAL",
+          "authorization_code":"8RN706",
+          "avs_result":"Y",
+          "cvv_code":"M"
+        }
+      }
+    RESPONSE
+  end
+
+  def failed_verify_response
+    <<~RESPONSE
+      {
+        "transaction_id":"trn_2c06282b-bcde-48e3-88bb-505835325180",
+        "location_id":"loc_250884",
+        "action":"verify",
+        "entered_by":"7fc1135da64ee63eb5f032e6a411b668",
+        "billing_address":{
+          "first_name":"Longbob",
+          "last_name":"Longsen"
+        },
+        "card":{
+          "name_on_card":"Longbob Longsen",
+          "masked_account_number":"****1111",
+          "card_type":"visa"
+        },
+        "response":{
+          "environment":"sandbox",
+          "response_type":"D",
+          "response_code":"U20",
+          "response_desc":"INVALID CREDIT CARD NUMBER"
+        }
+      }
+    RESPONSE
   end
 
   def successful_refund_response
