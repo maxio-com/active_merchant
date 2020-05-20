@@ -543,25 +543,20 @@ class ForteTest < Test::Unit::TestCase
   def successful_update_response
     <<~RESPONSE
       {
-        "paymethod_token":"mth_BrrFVn8YzkmsVfUYlMWw7g",
+        "customer_token":"cst_Jo4X2yzLoE-AR49js4vIxQ",
         "location_id":"loc_250884",
-        "customer_token":"cst_yqErs2-A3EuciVMt4jlEVA",
-        "card":{
-          "name_on_card":"Longbob Longsen",
-          "masked_account_number":"****1111",
-          "expire_month":9,
-          "expire_year":2021,
-          "card_type":"visa"
-        },
+        "default_paymethod_token":"mth_TtqnDFibGUG5PYFdKlxkug",
         "response":{
           "environment":"sandbox",
-          "response_desc":"Create Successful."
+          "response_desc":"Update Successful."
         },
         "links":{
-          "transactions":"https://sandbox.forte.net/API/v2/paymethods/mth_BrrFVn8YzkmsVfUYlMWw7g/transactions",
-          "settlements":"https://sandbox.forte.net/API/v2/paymethods/mth_BrrFVn8YzkmsVfUYlMWw7g/settlements",
-          "schedules":"https://sandbox.forte.net/API/v2/paymethods/mth_BrrFVn8YzkmsVfUYlMWw7g/schedules",
-          "self":"https://sandbox.forte.net/API/v2/paymethods/mth_BrrFVn8YzkmsVfUYlMWw7g/"
+          "addresses":"https://sandbox.forte.net/API/v2/customers/cst_Jo4X2yzLoE-AR49js4vIxQ/addresses",
+          "paymethods":"https://sandbox.forte.net/API/v2/customers/cst_Jo4X2yzLoE-AR49js4vIxQ/paymethods",
+          "transactions":"https://sandbox.forte.net/API/v2/customers/cst_Jo4X2yzLoE-AR49js4vIxQ/transactions",
+          "settlements":"https://sandbox.forte.net/API/v2/customers/cst_Jo4X2yzLoE-AR49js4vIxQ/settlements",
+          "schedules":"https://sandbox.forte.net/API/v2/customers/cst_Jo4X2yzLoE-AR49js4vIxQ/schedules",
+          "self":"https://sandbox.forte.net/API/v2/customers/cst_Jo4X2yzLoE-AR49js4vIxQ/"
         }
       }
     RESPONSE

@@ -238,7 +238,7 @@ class RemoteForteTest < Test::Unit::TestCase
     update_response = @gateway.update(customer_token, credit_card)
 
     assert_success update_response
-    assert_equal "Create Successful.", update_response.message
+    assert_equal "Update Successful.", update_response.message
   end
 
   def test_failed_update

@@ -96,11 +96,18 @@ module ActiveMerchant #:nodoc:
       end
 
       def update(customer_token, credit_card, _options = {})
-        path = ["customers/", "#{customer_token}/", "paymethods"].join
+        path = ["customers/", customer_token, "/paymethods"].join
         params = {}
         add_credit_card(params, credit_card)
 
-        commit(:post, path, params)
+        post_response = commit(:post, path, params)
+
+        new_paymethod_token = post_response.params["paymethod_token"]
+        if post_response.success?
+          update_customer(customer_token, { default_paymethod_token: new_paymethod_token })
+        else
+          post_response
+        end
       end
 
       def void(authorization, _options = {})
@@ -135,6 +142,14 @@ module ActiveMerchant #:nodoc:
       end
 
       private
+
+      def update_customer(customer_token, options)
+        path = ["customers/", customer_token].join
+        allowed_fields = %i[default_paymethod_token first_name last_name company_name status]
+        params = options.slice(*allowed_fields)
+
+        commit(:put, path, params)
+      end
 
       def add_invoice(post, options)
         post[:order_number] = options[:order_id]
