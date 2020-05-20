@@ -234,7 +234,7 @@ class RemoteForteTest < Test::Unit::TestCase
     response = @gateway.store(@credit_card)
     customer_token = response.params["customer_token"]
     paymethod_token = response.params["paymethod"]["paymethod_token"]
-    credit_card = credit_card("4111111111111111")
+    credit_card = @credit_card
 
     update_response = @gateway.update(customer_token, paymethod_token, credit_card)
 

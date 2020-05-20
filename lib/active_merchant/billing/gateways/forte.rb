@@ -96,11 +96,11 @@ module ActiveMerchant #:nodoc:
       end
 
       def update(customer_token, paymethod_token, credit_card, _options = {})
-        params = {}
-        add_card_for_update(params, credit_card)
         path = ["customers/", "#{customer_token}/", "paymethods/", "#{paymethod_token}/"].join
+        params = {}
+        add_credit_card(params, credit_card)
 
-        verify_response = verify(credit_card).primary_response
+        verify_response = verify(credit_card)
 
         if verify_response.success?
           commit(:put, path, params)
@@ -118,11 +118,15 @@ module ActiveMerchant #:nodoc:
         commit(:put, "transactions", post)
       end
 
-      def verify(credit_card, options = {})
-        MultiResponse.run(:use_first_response) do |r|
-          r.process { authorize(100, credit_card, options) }
-          r.process(:ignore_result) { void(r.authorization, options) }
-        end
+      def verify(credit_card, _options = {})
+        path = "transactions"
+
+        params = {}
+        add_action(params, "verify")
+        add_credit_card(params, credit_card)
+        add_first_and_last_name(params, credit_card)
+
+        commit(:post, path, params)
       end
 
       def supports_scrubbing?
@@ -160,16 +164,6 @@ module ActiveMerchant #:nodoc:
         post[:paymethod][:card][:expire_month] = payment_method.month
         post[:paymethod][:card][:expire_year] = payment_method.year
         post[:paymethod][:card][:card_verification_value] = payment_method.verification_value
-      end
-
-      def add_card_for_update(put, payment_method)
-        put[:card] = {
-          card_type: format_card_brand(payment_method.brand),
-          name_on_card: payment_method.name,
-          expire_month: payment_method.month,
-          expire_year: payment_method.year,
-          card_verification_value: payment_method.verification_value
-        }
       end
 
       def add_customer_billing_address(post, options)
@@ -252,14 +246,26 @@ module ActiveMerchant #:nodoc:
         post[:echeck][:sec_code] = "WEB"
       end
 
-      def add_credit_card(post, payment)
-        post[:card] = {}
-        post[:card][:card_type] = format_card_brand(payment.brand)
-        post[:card][:name_on_card] = payment.name
-        post[:card][:account_number] = payment.number
-        post[:card][:expire_month] = payment.month
-        post[:card][:expire_year] = payment.year
-        post[:card][:card_verification_value] = payment.verification_value
+      def add_credit_card(params, payment_method)
+        params[:card] = {
+          card_type: format_card_brand(payment_method.brand),
+          name_on_card: payment_method.name,
+          account_number: payment_method.number,
+          expire_month: payment_method.month,
+          expire_year: payment_method.year,
+          card_verification_value: payment_method.verification_value
+        }
+      end
+
+      def add_first_and_last_name(params, payment_method)
+        params[:billing_address] = {
+          first_name: payment_method.first_name,
+          last_name: payment_method.last_name
+        }
+      end
+
+      def add_action(params, action_name)
+        params[:action] = action_name
       end
 
       def add_customer_token(post, payment_method)
