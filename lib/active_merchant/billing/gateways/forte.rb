@@ -95,18 +95,12 @@ module ActiveMerchant #:nodoc:
         commit(:delete, "customers/#{customer_token}", {})
       end
 
-      def update(customer_token, paymethod_token, credit_card, _options = {})
-        path = ["customers/", "#{customer_token}/", "paymethods/", "#{paymethod_token}/"].join
+      def update(customer_token, credit_card, _options = {})
+        path = ["customers/", "#{customer_token}/", "paymethods"].join
         params = {}
         add_credit_card(params, credit_card)
 
-        verify_response = verify(credit_card)
-
-        if verify_response.success?
-          commit(:put, path, params)
-        else
-          verify_response
-        end
+        commit(:post, path, params)
       end
 
       def void(authorization, _options = {})

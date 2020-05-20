@@ -233,25 +233,23 @@ class RemoteForteTest < Test::Unit::TestCase
   def test_successful_update
     response = @gateway.store(@credit_card)
     customer_token = response.params["customer_token"]
-    paymethod_token = response.params["paymethod"]["paymethod_token"]
-    credit_card = @credit_card
+    credit_card = credit_card("4111111111111111")
 
-    update_response = @gateway.update(customer_token, paymethod_token, credit_card)
+    update_response = @gateway.update(customer_token, credit_card)
 
     assert_success update_response
-    assert_equal "Update Successful.", update_response.message
+    assert_equal "Create Successful.", update_response.message
   end
 
   def test_failed_update
     response = @gateway.store(@credit_card)
     customer_token = response.params["customer_token"]
-    paymethod_token = response.params["paymethod"]["paymethod_token"]
     credit_card = @declined_card
 
-    update_response = @gateway.update(customer_token, paymethod_token, credit_card)
+    update_response = @gateway.update(customer_token, credit_card)
 
     assert_failure update_response
-    assert_equal "INVALID CREDIT CARD NUMBER", update_response.message
+    assert_equal "Error[1]: Payment Method's credit card number is invalid. Error[2]: Payment Method's credit card type is invalid for the credit card number given.", update_response.message
   end
 
   def test_transcript_scrubbing

@@ -155,15 +155,15 @@ class ForteTest < Test::Unit::TestCase
 
   def test_successful_update
     response = stub_comms(@gateway, :raw_ssl_request) do
-      @gateway.update("customer_token", "paymethod_token", @credit_card)
-    end.respond_with(MockedResponse.new(successful_authorize_response), MockedResponse.new(successful_update_response))
+      @gateway.update("customer_token", @credit_card)
+    end.respond_with(MockedResponse.new(successful_update_response))
     assert_success response
   end
 
   def test_failed_update
     response = stub_comms(@gateway, :raw_ssl_request) do
-      @gateway.update("customer_token", "paymethod_token", @credit_card)
-    end.respond_with(MockedResponse.new(failed_authorize_response))
+      @gateway.update("customer_token", credit_card)
+    end.respond_with(MockedResponse.new(failed_update_response))
     assert_failure response
   end
 
@@ -543,24 +543,36 @@ class ForteTest < Test::Unit::TestCase
   def successful_update_response
     <<~RESPONSE
       {
-        "paymethod_token":"mth_bC1DgWtqik6Q7acsBRwIwg",
+        "paymethod_token":"mth_BrrFVn8YzkmsVfUYlMWw7g",
         "location_id":"loc_250884",
-        "customer_token":"cst_006RWQVY7UCMdhy8mfXtEQ",
+        "customer_token":"cst_yqErs2-A3EuciVMt4jlEVA",
         "card":{
           "name_on_card":"Longbob Longsen",
+          "masked_account_number":"****1111",
           "expire_month":9,
           "expire_year":2021,
           "card_type":"visa"
         },
         "response":{
           "environment":"sandbox",
-          "response_desc":"Update Successful."
+          "response_desc":"Create Successful."
         },
         "links":{
-          "transactions":"https://sandbox.forte.net/API/v2/paymethods/mth_bC1DgWtqik6Q7acsBRwIwg/transactions",
-          "settlements":"https://sandbox.forte.net/API/v2/paymethods/mth_bC1DgWtqik6Q7acsBRwIwg/settlements",
-          "schedules":"https://sandbox.forte.net/API/v2/paymethods/mth_bC1DgWtqik6Q7acsBRwIwg/schedules",
-          "self":"https://sandbox.forte.net/API/v2/paymethods/mth_bC1DgWtqik6Q7acsBRwIwg/"
+          "transactions":"https://sandbox.forte.net/API/v2/paymethods/mth_BrrFVn8YzkmsVfUYlMWw7g/transactions",
+          "settlements":"https://sandbox.forte.net/API/v2/paymethods/mth_BrrFVn8YzkmsVfUYlMWw7g/settlements",
+          "schedules":"https://sandbox.forte.net/API/v2/paymethods/mth_BrrFVn8YzkmsVfUYlMWw7g/schedules",
+          "self":"https://sandbox.forte.net/API/v2/paymethods/mth_BrrFVn8YzkmsVfUYlMWw7g/"
+        }
+      }
+    RESPONSE
+  end
+
+  def failed_update_response
+    <<~RESPONSE
+      {
+        "response":{
+          "environment":"sandbox",
+          "response_desc":"Error[1]: Payment Method's credit card number is invalid. Error[2]: Payment Method's credit card type is invalid for the credit card number given."
         }
       }
     RESPONSE
