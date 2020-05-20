@@ -97,6 +97,21 @@ module ActiveMerchant #:nodoc:
         end
       end
 
+      def update(customer_token, credit_card, _options = {})
+        path = ["customers/", customer_token, "/paymethods"].join
+        params = {}
+        add_credit_card(params, credit_card)
+
+        post_response = commit(:post, path, params)
+
+        new_paymethod_token = post_response.params["paymethod_token"]
+        if post_response.success?
+          update_customer(customer_token, { default_paymethod_token: new_paymethod_token })
+        else
+          post_response
+        end
+      end
+
       def void(authorization, _options = {})
         post = {}
         post[:transaction_id] = transaction_id_from(authorization)
@@ -106,11 +121,15 @@ module ActiveMerchant #:nodoc:
         commit(:put, "transactions", post)
       end
 
-      def verify(credit_card, options = {})
-        MultiResponse.run(:use_first_response) do |r|
-          r.process { authorize(100, credit_card, options) }
-          r.process(:ignore_result) { void(r.authorization, options) }
-        end
+      def verify(credit_card, _options = {})
+        path = "transactions"
+
+        params = {}
+        add_action(params, "verify")
+        add_credit_card(params, credit_card)
+        add_first_and_last_name(params, credit_card)
+
+        commit(:post, path, params)
       end
 
       def supports_scrubbing?
@@ -125,6 +144,14 @@ module ActiveMerchant #:nodoc:
       end
 
       private
+
+      def update_customer(customer_token, options)
+        path = ["customers/", customer_token].join
+        allowed_fields = %i[default_paymethod_token first_name last_name company_name status]
+        params = options.slice(*allowed_fields)
+
+        commit(:put, path, params)
+      end
 
       def add_invoice(post, options)
         post[:order_number] = options[:order_id]
@@ -230,14 +257,26 @@ module ActiveMerchant #:nodoc:
         post[:echeck][:sec_code] = "WEB"
       end
 
-      def add_credit_card(post, payment)
-        post[:card] = {}
-        post[:card][:card_type] = format_card_brand(payment.brand)
-        post[:card][:name_on_card] = payment.name
-        post[:card][:account_number] = payment.number
-        post[:card][:expire_month] = payment.month
-        post[:card][:expire_year] = payment.year
-        post[:card][:card_verification_value] = payment.verification_value
+      def add_credit_card(params, payment_method)
+        params[:card] = {
+          card_type: format_card_brand(payment_method.brand),
+          name_on_card: payment_method.name,
+          account_number: payment_method.number,
+          expire_month: payment_method.month,
+          expire_year: payment_method.year,
+          card_verification_value: payment_method.verification_value
+        }
+      end
+
+      def add_first_and_last_name(params, payment_method)
+        params[:billing_address] = {
+          first_name: payment_method.first_name,
+          last_name: payment_method.last_name
+        }
+      end
+
+      def add_action(params, action_name)
+        params[:action] = action_name
       end
 
       def add_customer_token(post, payment_method)
@@ -276,6 +315,7 @@ module ActiveMerchant #:nodoc:
       def success_from(response)
         response["response"]["response_code"] == "A01" ||
           response["response"]["response_desc"] == "Create Successful." ||
+          response["response"]["response_desc"] == "Update Successful." ||
           response["response"]["response_desc"] == "Delete Successful."
       end
 
