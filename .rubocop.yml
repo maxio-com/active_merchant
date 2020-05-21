@@ -1,0 +1,16 @@
+AllCops:
+  Exclude:
+  - "vendor/**/*"
+  - "tmp/**/*"
+  - ".git/**/*"
+
+Layout/LineLength:
+  Max: 120
+  Enabled: true
+
+Style/FrozenStringLiteralComment:
+  Enabled: false
+
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+  Enabled: true

@@ -248,7 +248,7 @@ class RemoteForteTest < Test::Unit::TestCase
     assert purchase_response.params['transaction_id'].start_with?("trn_")
   end
 
-  def test_successful_store_and_unstore
+  def test_successful_store_and_unstore_of_customer
     assert store_response = @gateway.store(@credit_card, :billing_address => address)
     assert_success store_response
     assert_equal 'Create Successful.', store_response.message
@@ -257,9 +257,25 @@ class RemoteForteTest < Test::Unit::TestCase
     assert unstore_response = @gateway.unstore(vault_id)
     assert_success unstore_response
     assert_equal 'Delete Successful.', unstore_response.message
+    assert unstore_response.params['customer_token'].present?
+    assert unstore_response.params['paymethod_token'].blank?
   end
 
-  def test_successful_store_and_unstore_of_bank_account
+  def test_successful_store_of_customer_and_unstore_of_only_paymethod
+    assert store_response = @gateway.store(@credit_card, :billing_address => address)
+    assert_success store_response
+    assert_equal 'Create Successful.', store_response.message
+
+    vault_id = store_response.params['customer_token'] + "|" + store_response.params['default_paymethod_token']
+
+    assert unstore_response = @gateway.unstore(vault_id)
+    assert_success unstore_response
+    assert_equal 'Delete Successful.', unstore_response.message
+    assert unstore_response.params['customer_token'].blank?
+    assert unstore_response.params['paymethod_token'].present?
+  end
+
+  def test_successful_store_and_unstore_of_customer_for_bank_account
     assert store_response = @gateway.store(@check, :billing_address => address)
     assert_success store_response
     assert_equal 'Create Successful.', store_response.message
@@ -268,6 +284,22 @@ class RemoteForteTest < Test::Unit::TestCase
     assert unstore_response = @gateway.unstore(vault_id)
     assert_success unstore_response
     assert_equal 'Delete Successful.', unstore_response.message
+    assert unstore_response.params['customer_token'].present?
+    assert unstore_response.params['paymethod_token'].blank?
+  end
+
+  def test_successful_store_of_customer_and_unstore_of_only_paymethod_for_bank_account
+    assert store_response = @gateway.store(@check, :billing_address => address)
+    assert_success store_response
+    assert_equal 'Create Successful.', store_response.message
+
+    vault_id = store_response.params['customer_token'] + "|" + store_response.params['default_paymethod_token']
+
+    assert unstore_response = @gateway.unstore(vault_id)
+    assert_success unstore_response
+    assert_equal 'Delete Successful.', unstore_response.message
+    assert unstore_response.params['customer_token'].blank?
+    assert unstore_response.params['paymethod_token'].present?
   end
 
   def test_transcript_scrubbing
