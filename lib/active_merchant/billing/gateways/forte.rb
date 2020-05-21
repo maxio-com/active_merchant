@@ -28,7 +28,7 @@ module ActiveMerchant #:nodoc:
         post = {}
         add_amount(post, money, options)
         add_invoice(post, options)
-        add_payment_method(post, payment_method)
+        add_payment_method(post, payment_method, options)
         add_billing_address(post, payment_method, options) unless payment_method.is_a?(String)
         add_shipping_address(post, options) unless payment_method.is_a?(String)
         post[:action] = "sale"
@@ -40,7 +40,7 @@ module ActiveMerchant #:nodoc:
         post = {}
         add_amount(post, money, options)
         add_invoice(post, options)
-        add_payment_method(post, payment_method)
+        add_payment_method(post, payment_method, options)
         add_billing_address(post, payment_method, options)
         add_shipping_address(post, options)
         post[:action] = "authorize"
@@ -61,7 +61,7 @@ module ActiveMerchant #:nodoc:
         post = {}
         add_amount(post, money, options)
         add_invoice(post, options)
-        add_payment_method(post, payment_method)
+        add_payment_method(post, payment_method, options)
         add_billing_address(post, payment_method, options)
         post[:action] = "disburse"
 
@@ -228,7 +228,7 @@ module ActiveMerchant #:nodoc:
         post[:shipping_address][:physical_address][:locality] = address[:city] if address[:city]
       end
 
-      def add_payment_method(post, payment_method)
+      def add_payment_method(post, payment_method, options)
         if payment_method.is_a?(String)
           if payment_method.include?("|")
             customer_token, paymethod_token = payment_method.split("|")
@@ -240,21 +240,18 @@ module ActiveMerchant #:nodoc:
         elsif payment_method.respond_to?(:brand)
           add_credit_card(post, payment_method)
         else
-          add_echeck(post, payment_method)
+          add_echeck(post, payment_method, options)
         end
       end
 
-      def add_echeck(post, payment)
+      def add_echeck(post, payment, options)
         post[:echeck] = {}
         post[:echeck][:account_holder] = payment.name
         post[:echeck][:account_number] = payment.account_number
         post[:echeck][:routing_number] = payment.routing_number
         post[:echeck][:account_type] = payment.account_type
         post[:echeck][:check_number] = payment.number
-        # TODO: make sec_code configurable in options hash
-        # sec_code is temporarily hard-coded as "WEB" to fix remote test failure
-        # see public issue https://github.com/activemerchant/active_merchant/issues/3612
-        post[:echeck][:sec_code] = "WEB"
+        post[:echeck][:sec_code] = options[:sec_code] || "WEB"
       end
 
       def add_credit_card(params, payment_method)
