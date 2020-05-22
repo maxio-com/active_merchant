@@ -79,12 +79,14 @@ module ActiveMerchant #:nodoc:
       end
 
       def store(credit_card, options = {})
-        post = {}
-        add_customer(post, credit_card, options)
-        add_customer_paymethod(post, credit_card)
-        add_customer_billing_address(post, options)
+        customer_token = options[:customer_token]
+        options = options.delete(:customer_token) || {}
 
-        commit(:post, 'customers', post)
+        if customer_token.present?
+          create_credit_card_for_customer(customer_token, credit_card, options)
+        else
+          create_customer_and_credit_card(credit_card, options)
+        end
       end
 
       def unstore(identification, _options = {})
@@ -94,21 +96,6 @@ module ActiveMerchant #:nodoc:
           commit(:delete, "customers/#{customer_token}", {})
         else
           commit(:delete, "paymethods/#{paymethod_token}", {})
-        end
-      end
-
-      def update(customer_token, credit_card, _options = {})
-        path = ['customers/', customer_token, '/paymethods'].join
-        params = {}
-        add_credit_card(params, credit_card)
-
-        post_response = commit(:post, path, params)
-
-        new_paymethod_token = post_response.params['paymethod_token']
-        if post_response.success?
-          update_customer(customer_token, { default_paymethod_token: new_paymethod_token })
-        else
-          post_response
         end
       end
 
@@ -144,6 +131,31 @@ module ActiveMerchant #:nodoc:
       end
 
       private
+
+      def create_credit_card_for_customer(customer_token, credit_card, _options)
+        path = ['customers/', customer_token, '/paymethods'].join
+        params = {}
+        add_credit_card(params, credit_card)
+
+        post_response = commit(:post, path, params)
+
+        new_paymethod_token = post_response.params['paymethod_token']
+        if post_response.success?
+          update_customer(customer_token, { default_paymethod_token: new_paymethod_token })
+        else
+          post_response
+        end
+      end
+
+      def create_customer_and_credit_card(credit_card, options)
+        path = 'customers'
+        params = {}
+        add_customer(params, credit_card, options)
+        add_customer_paymethod(params, credit_card)
+        add_customer_billing_address(params, options)
+
+        commit(:post, path, params)
+      end
 
       def update_customer(customer_token, options)
         path = ['customers/', customer_token].join

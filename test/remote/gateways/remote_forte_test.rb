@@ -258,26 +258,40 @@ class RemoteForteTest < Test::Unit::TestCase
     assert unstore_response.params['paymethod_token'].present?
   end
 
-  def test_successful_update
+  def test_successful_store_with_customer_create
     response = @gateway.store(@credit_card)
-    customer_token = response.params['customer_token']
-    credit_card = credit_card('4111111111111111')
 
-    update_response = @gateway.update(customer_token, credit_card)
-
-    assert_success update_response
-    assert_equal 'Update Successful.', update_response.message
+    assert_success response
+    assert_equal 'Create Successful.', response.message
   end
 
-  def test_failed_update
+  def test_failed_store_with_customer_create
+    response = @gateway.store(@declined_card)
+
+    assert_failure response
+    assert_equal "Error[1]: Payment Method's credit card number is invalid. Error[2]: Payment Method's credit card type is invalid for the credit card number given.", response.message
+  end
+
+  def test_successful_store_without_customer_create
     response = @gateway.store(@credit_card)
-    customer_token = response.params['customer_token']
+    credit_card = credit_card('4111111111111111')
+    options = { customer_token: response.params['customer_token'] }
+
+    final_response = @gateway.store(credit_card, options)
+
+    assert_success final_response
+    assert_equal 'Update Successful.', final_response.message
+  end
+
+  def test_failed_store_without_customer_create
+    response = @gateway.store(@credit_card)
     credit_card = @declined_card
+    options = { customer_token: response.params['customer_token'] }
 
-    update_response = @gateway.update(customer_token, credit_card)
+    final_response = @gateway.store(credit_card, options)
 
-    assert_failure update_response
-    assert_equal "Error[1]: Payment Method's credit card number is invalid. Error[2]: Payment Method's credit card type is invalid for the credit card number given.", update_response.message
+    assert_failure final_response
+    assert_equal "Error[1]: Payment Method's credit card number is invalid. Error[2]: Payment Method's credit card type is invalid for the credit card number given.", final_response.message
   end
 
   def test_transcript_scrubbing
