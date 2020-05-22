@@ -165,7 +165,7 @@ class ForteTest < Test::Unit::TestCase
     response = stub_comms(@gateway, :raw_ssl_request) do
       @gateway.purchase(@amount, @credit_card, @options)
     end.check_request do |_type, url, _parameters, _headers|
-      URI.parse(url)
+      url.is_a?(URI) || URI.parse(url)
     end.respond_with(MockedResponse.new(successful_purchase_response))
     assert_success response
   end

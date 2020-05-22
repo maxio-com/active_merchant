@@ -284,7 +284,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def commit(http_method, path, params)
-        url = URI.join(base_url, path).to_s
+        url = URI.join(base_url, path)
         body = http_method == :delete ? nil : params.to_json
         response = JSON.parse(handle_response(raw_ssl_request(http_method, url, body, headers)))
 
