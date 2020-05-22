@@ -5,8 +5,8 @@ module ActiveMerchant #:nodoc:
     class ForteGateway < Gateway
       include Empty
 
-      self.test_url = "https://sandbox.forte.net/api/v2/"
-      self.live_url = "https://api.forte.net/v2/"
+      self.test_url = "https://sandbox.forte.net/api/v3/"
+      self.live_url = "https://api.forte.net/v3/"
 
       self.supported_countries = ["US"]
       self.default_currency = "USD"
@@ -63,7 +63,7 @@ module ActiveMerchant #:nodoc:
         add_invoice(post, options)
         add_payment_method(post, payment_method, options)
         add_billing_address(post, payment_method, options)
-        post[:action] = "disburse"
+        post[:action] = "credit"
 
         commit(:post, "transactions", post)
       end
@@ -250,7 +250,6 @@ module ActiveMerchant #:nodoc:
         post[:echeck][:account_number] = payment.account_number
         post[:echeck][:routing_number] = payment.routing_number
         post[:echeck][:account_type] = payment.account_type
-        post[:echeck][:check_number] = payment.number
         post[:echeck][:sec_code] = options[:sec_code] || "WEB"
       end
 
@@ -331,8 +330,8 @@ module ActiveMerchant #:nodoc:
       def base_url
         URI.join(
           (test? ? test_url : live_url),
-          "accounts/",
-          "act_#{organization_id.strip}/",
+          "organizations/",
+          "org_#{organization_id.strip}/",
           "locations/",
           "loc_#{@options[:location_id].strip}/"
         )
@@ -341,7 +340,7 @@ module ActiveMerchant #:nodoc:
       def headers
         {
           "Authorization" => ("Basic " + Base64.strict_encode64("#{@options[:api_key]}:#{@options[:secret]}")),
-          "X-Forte-Auth-Account-Id" => "act_#{organization_id}",
+          "X-Forte-Auth-Organization-Id" => "org_#{organization_id}",
           "Content-Type" => "application/json"
         }
       end
