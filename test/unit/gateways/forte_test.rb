@@ -161,7 +161,7 @@ class ForteTest < Test::Unit::TestCase
   end
 
   def test_handles_improper_padding
-    @gateway = ForteGateway.new(location_id: ' improperly-padded ', account_id: '  account_id  ', api_key: 'api_key', secret: 'secret')
+    @gateway = ForteGateway.new(location_id: ' improperly-padded ', organization_id: '  organization_id  ', api_key: 'api_key', secret: 'secret')
     response = stub_comms(@gateway, :raw_ssl_request) do
       @gateway.purchase(@amount, @credit_card, @options)
     end.check_request do |_type, url, _parameters, _headers|
