@@ -28,7 +28,7 @@ class ForteTest < Test::Unit::TestCase
 
   def test_purchase_passes_options
     options = { order_id: '1' }
-    @gateway.expects(:commit).with(anything, has_entries(order_number: '1'))
+    @gateway.expects(:commit).with(anything, anything, has_entries(order_number: '1'))
 
     stub_comms(@gateway, :raw_ssl_request) do
       @gateway.purchase(@amount, @credit_card, options)
@@ -161,11 +161,11 @@ class ForteTest < Test::Unit::TestCase
   end
 
   def test_handles_improper_padding
-    @gateway = ForteGateway.new(location_id: ' improperly-padded ', account_id: '  account_id  ', api_key: 'api_key', secret: 'secret')
+    @gateway = ForteGateway.new(location_id: ' improperly-padded ', organization_id: '  organization_id  ', api_key: 'api_key', secret: 'secret')
     response = stub_comms(@gateway, :raw_ssl_request) do
       @gateway.purchase(@amount, @credit_card, @options)
     end.check_request do |_type, url, _parameters, _headers|
-      URI.parse(url)
+      url.is_a?(URI) || URI.parse(url)
     end.respond_with(MockedResponse.new(successful_purchase_response))
     assert_success response
   end
