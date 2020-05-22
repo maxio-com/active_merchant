@@ -146,17 +146,33 @@ class ForteTest < Test::Unit::TestCase
     assert_failure response
   end
 
-  def test_successful_update
+  def test_successful_store_with_customer_create
     response = stub_comms(@gateway, :raw_ssl_request) do
-      @gateway.update('customer_token', @credit_card)
-    end.respond_with(MockedResponse.new(successful_update_response))
+      @gateway.store(@credit_card)
+    end.respond_with(MockedResponse.new(successful_create_customer_and_credit_card_response))
     assert_success response
   end
 
-  def test_failed_update
+  def test_failed_store_with_customer_create
     response = stub_comms(@gateway, :raw_ssl_request) do
-      @gateway.update('customer_token', credit_card)
-    end.respond_with(MockedResponse.new(failed_update_response))
+      @gateway.store(@credit_card)
+    end.respond_with(MockedResponse.new(failed_create_customer_and_credit_card_response))
+    assert_failure response
+  end
+
+  def test_successful_store_without_customer_create
+    response = stub_comms(@gateway, :raw_ssl_request) do
+      options = { customer_token: 'customer_token' }
+      @gateway.store(@credit_card, options)
+    end.respond_with(MockedResponse.new(successful_create_credit_card_for_customer_response), MockedResponse.new(successful_update_customer_default_credit_card_response))
+    assert_success response
+  end
+
+  def test_failed_store_without_customer_create
+    response = stub_comms(@gateway, :raw_ssl_request) do
+      options = { customer_token: 'customer_token' }
+      @gateway.store(@credit_card, options)
+    end.respond_with(MockedResponse.new(failed_create_credit_card_for_customer_response))
     assert_failure response
   end
 
@@ -533,7 +549,62 @@ class ForteTest < Test::Unit::TestCase
     RESPONSE
   end
 
-  def successful_update_response
+  def successful_create_customer_and_credit_card_response
+    <<~RESPONSE
+      {
+        "customer_token":"cst_w-sjYpGkokm8crUFAtDOhg",
+        "location_id":"loc_250884",
+        "default_paymethod_type":"visa",
+        "default_paymethod_token":"mth_Un9wSMcNI0WLPdIhOAkEfA",
+        "first_name":"Longbob",
+        "last_name":"Longsen",
+        "display_name":"Longbob Longsen",
+        "paymethod":{
+          "paymethod_token":"mth_Un9wSMcNI0WLPdIhOAkEfA",
+          "location_id":"loc_250884",
+          "card":{
+            "name_on_card":"Longbob Longsen",
+            "last_4_account_number":"2224",
+            "masked_account_number":"****2224",
+            "expire_month":9,
+            "expire_year":2021,
+            "card_type":"visa"
+          },
+          "links":{
+            "transactions":"https://sandbox.forte.net/API/v3/paymethods/mth_Un9wSMcNI0WLPdIhOAkEfA/transactions",
+            "settlements":"https://sandbox.forte.net/API/v3/paymethods/mth_Un9wSMcNI0WLPdIhOAkEfA/settlements",
+            "schedules":"https://sandbox.forte.net/API/v3/paymethods/mth_Un9wSMcNI0WLPdIhOAkEfA/schedules",
+            "self":"https://sandbox.forte.net/API/v3/paymethods/mth_Un9wSMcNI0WLPdIhOAkEfA/"
+          }
+        },
+        "response":{
+          "environment":"sandbox",
+          "response_desc":"Create Successful."
+        },
+        "links":{
+          "addresses":"https://sandbox.forte.net/API/v3/customers/cst_w-sjYpGkokm8crUFAtDOhg/addresses",
+          "paymethods":"https://sandbox.forte.net/API/v3/customers/cst_w-sjYpGkokm8crUFAtDOhg/paymethods",
+          "transactions":"https://sandbox.forte.net/API/v3/customers/cst_w-sjYpGkokm8crUFAtDOhg/transactions",
+          "settlements":"https://sandbox.forte.net/API/v3/customers/cst_w-sjYpGkokm8crUFAtDOhg/settlements",
+          "schedules":"https://sandbox.forte.net/API/v3/customers/cst_w-sjYpGkokm8crUFAtDOhg/schedules",
+          "self":"https://sandbox.forte.net/API/v3/customers/cst_w-sjYpGkokm8crUFAtDOhg/"
+        }
+      }
+    RESPONSE
+  end
+
+  def failed_create_customer_and_credit_card_response
+    <<~RESPONSE
+      {
+        "response":{
+          "environment":"sandbox",
+          "response_desc":"Error[1]: Payment Method's credit card number is invalid. Error[2]: Payment Method's credit card type is invalid for the credit card number given."
+        }
+      }
+    RESPONSE
+  end
+
+  def successful_update_customer_default_credit_card_response
     <<~RESPONSE
       {
         "customer_token":"cst_Jo4X2yzLoE-AR49js4vIxQ",
@@ -555,7 +626,35 @@ class ForteTest < Test::Unit::TestCase
     RESPONSE
   end
 
-  def failed_update_response
+  def successful_create_credit_card_for_customer_response
+    <<~RESPONSE
+      {
+        "paymethod_token":"mth_qzctde2KAEKb9ZofoZNxGg",
+        "location_id":"loc_250884",
+        "customer_token":"cst_a1XI_ZTelEGwpzxKJXhlCQ",
+        "card":{
+          "name_on_card":"Longbob Longsen",
+          "last_4_account_number":"1111",
+          "masked_account_number":"****1111",
+          "expire_month":9,
+          "expire_year":2021,
+          "card_type":"visa"
+        },
+        "response":{
+          "environment":"sandbox",
+          "response_desc":"Create Successful."
+        },
+        "links":{
+          "transactions":"https://sandbox.forte.net/API/v3/paymethods/mth_qzctde2KAEKb9ZofoZNxGg/transactions",
+          "settlements":"https://sandbox.forte.net/API/v3/paymethods/mth_qzctde2KAEKb9ZofoZNxGg/settlements",
+          "schedules":"https://sandbox.forte.net/API/v3/paymethods/mth_qzctde2KAEKb9ZofoZNxGg/schedules",
+          "self":"https://sandbox.forte.net/API/v3/paymethods/mth_qzctde2KAEKb9ZofoZNxGg/"
+        }
+      }
+    RESPONSE
+  end
+
+  def failed_create_credit_card_for_customer_response
     <<~RESPONSE
       {
         "response":{
