@@ -9,7 +9,7 @@ class RemoteForteTest < Test::Unit::TestCase
     @declined_card = credit_card('1111111111111111')
 
     @check = check
-    @bad_check = check({
+    @bad_check = check(
       name: 'Jim Smith',
       bank_name: 'Bank of Elbonia',
       routing_number: '1234567890',
@@ -17,7 +17,7 @@ class RemoteForteTest < Test::Unit::TestCase
       account_holder_type: '',
       account_type: 'checking',
       number: '0'
-    })
+    )
 
     @options = {
       billing_address: address,
@@ -48,7 +48,7 @@ class RemoteForteTest < Test::Unit::TestCase
 
   def test_successful_purchase_with_echeck_with_more_options
     options = {
-      sec_code: "PPD"
+      sec_code: 'PPD'
     }
 
     response = @gateway.purchase(@amount, @check, options)
@@ -211,28 +211,28 @@ class RemoteForteTest < Test::Unit::TestCase
   end
 
   def test_successful_store_and_purchase_with_customer_token
-    assert response = @gateway.store(@credit_card, :billing_address => address)
+    assert response = @gateway.store(@credit_card, billing_address: address)
     assert_success response
     assert_equal 'Create Successful.', response.message
 
     vault_id = response.params['customer_token']
     purchase_response = @gateway.purchase(@amount, vault_id)
-    assert purchase_response.params['transaction_id'].start_with?("trn_")
+    assert purchase_response.params['transaction_id'].start_with?('trn_')
   end
 
   def test_successful_store_and_purchase_with_customer_and_paymethod_tokens
-    assert response = @gateway.store(@credit_card, :billing_address => address)
+    assert response = @gateway.store(@credit_card, billing_address: address)
     assert_success response
     assert_equal 'Create Successful.', response.message
 
-    vault_id = response.params['customer_token'] + "|" + response.params['default_paymethod_token']
+    vault_id = response.params['customer_token'] + '|' + response.params['default_paymethod_token']
     purchase_response = @gateway.purchase(@amount, vault_id)
     assert_success purchase_response
-    assert purchase_response.params['transaction_id'].start_with?("trn_")
+    assert purchase_response.params['transaction_id'].start_with?('trn_')
   end
 
   def test_successful_store_and_unstore_of_customer
-    assert store_response = @gateway.store(@credit_card, :billing_address => address)
+    assert store_response = @gateway.store(@credit_card, billing_address: address)
     assert_success store_response
     assert_equal 'Create Successful.', store_response.message
 
@@ -245,7 +245,7 @@ class RemoteForteTest < Test::Unit::TestCase
   end
 
   def test_successful_store_of_customer_and_unstore_of_only_paymethod
-    assert store_response = @gateway.store(@credit_card, :billing_address => address)
+    assert store_response = @gateway.store(@credit_card, billing_address: address)
     assert_success store_response
     assert_equal 'Create Successful.', store_response.message
 
@@ -260,18 +260,18 @@ class RemoteForteTest < Test::Unit::TestCase
 
   def test_successful_update
     response = @gateway.store(@credit_card)
-    customer_token = response.params["customer_token"]
-    credit_card = credit_card("4111111111111111")
+    customer_token = response.params['customer_token']
+    credit_card = credit_card('4111111111111111')
 
     update_response = @gateway.update(customer_token, credit_card)
 
     assert_success update_response
-    assert_equal "Update Successful.", update_response.message
+    assert_equal 'Update Successful.', update_response.message
   end
 
   def test_failed_update
     response = @gateway.store(@credit_card)
-    customer_token = response.params["customer_token"]
+    customer_token = response.params['customer_token']
     credit_card = @declined_card
 
     update_response = @gateway.update(customer_token, credit_card)
