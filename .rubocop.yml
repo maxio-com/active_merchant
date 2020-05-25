@@ -1,6 +1,5 @@
 AllCops:
   Exclude:
-  - "vendor/**/*"
   - "tmp/**/*"
   - ".git/**/*"
 
@@ -12,5 +11,5 @@ Style/FrozenStringLiteralComment:
   Enabled: false
 
 Style/StringLiterals:
-  EnforcedStyle: double_quotes
+  EnforcedStyle: single_quotes
   Enabled: true

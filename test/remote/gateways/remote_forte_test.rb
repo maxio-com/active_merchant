@@ -9,7 +9,7 @@ class RemoteForteTest < Test::Unit::TestCase
     @declined_card = credit_card('1111111111111111')
 
     @check = check
-    @bad_check = check({
+    @bad_check = check(
       name: 'Jim Smith',
       bank_name: 'Bank of Elbonia',
       routing_number: '1234567890',
@@ -17,7 +17,7 @@ class RemoteForteTest < Test::Unit::TestCase
       account_holder_type: '',
       account_type: 'checking',
       number: '0'
-    })
+    )
 
     @options = {
       billing_address: address,
@@ -43,6 +43,18 @@ class RemoteForteTest < Test::Unit::TestCase
     response = @gateway.purchase(@amount, @check, @options)
     assert_success response
     assert_equal 'APPROVED', response.message
+    assert_equal 'WEB', response.params['echeck']['sec_code']
+  end
+
+  def test_successful_purchase_with_echeck_with_more_options
+    options = {
+      sec_code: 'PPD'
+    }
+
+    response = @gateway.purchase(@amount, @check, options)
+    assert_success response
+    assert_equal 'APPROVED', response.message
+    assert_equal 'PPD', response.params['echeck']['sec_code']
   end
 
   def test_failed_purchase_with_echeck
@@ -199,24 +211,24 @@ class RemoteForteTest < Test::Unit::TestCase
   end
 
   def test_successful_store_and_purchase_with_customer_token
-    assert response = @gateway.store(@credit_card, :billing_address => address)
+    assert response = @gateway.store(@credit_card, billing_address: address)
     assert_success response
     assert_equal 'Create Successful.', response.message
 
     vault_id = response.params['customer_token']
     purchase_response = @gateway.purchase(@amount, vault_id)
-    assert purchase_response.params['transaction_id'].start_with?("trn_")
+    assert purchase_response.params['transaction_id'].start_with?('trn_')
   end
 
   def test_successful_store_and_purchase_with_customer_and_paymethod_tokens
-    assert response = @gateway.store(@credit_card, :billing_address => address)
+    assert response = @gateway.store(@credit_card, billing_address: address)
     assert_success response
     assert_equal 'Create Successful.', response.message
 
-    vault_id = response.params['customer_token'] + "|" + response.params['default_paymethod_token']
+    vault_id = response.params['customer_token'] + '|' + response.params['default_paymethod_token']
     purchase_response = @gateway.purchase(@amount, vault_id)
     assert_success purchase_response
-    assert purchase_response.params['transaction_id'].start_with?("trn_")
+    assert purchase_response.params['transaction_id'].start_with?('trn_')
   end
 
   def test_successful_store_of_bank_account
@@ -249,7 +261,7 @@ class RemoteForteTest < Test::Unit::TestCase
   end
 
   def test_successful_store_and_unstore_of_customer
-    assert store_response = @gateway.store(@credit_card, :billing_address => address)
+    assert store_response = @gateway.store(@credit_card, billing_address: address)
     assert_success store_response
     assert_equal 'Create Successful.', store_response.message
 
@@ -262,7 +274,7 @@ class RemoteForteTest < Test::Unit::TestCase
   end
 
   def test_successful_store_of_customer_and_unstore_of_only_paymethod
-    assert store_response = @gateway.store(@credit_card, :billing_address => address)
+    assert store_response = @gateway.store(@credit_card, billing_address: address)
     assert_success store_response
     assert_equal 'Create Successful.', store_response.message
 
@@ -275,31 +287,40 @@ class RemoteForteTest < Test::Unit::TestCase
     assert unstore_response.params['paymethod_token'].present?
   end
 
-  def test_successful_store_and_unstore_of_customer_for_bank_account
-    assert store_response = @gateway.store(@check, :billing_address => address)
-    assert_success store_response
-    assert_equal 'Create Successful.', store_response.message
+  def test_successful_store_with_customer_create
+    response = @gateway.store(@credit_card)
 
-    vault_id = store_response.params['customer_token']
-    assert unstore_response = @gateway.unstore(vault_id)
-    assert_success unstore_response
-    assert_equal 'Delete Successful.', unstore_response.message
-    assert unstore_response.params['customer_token'].present?
-    assert unstore_response.params['paymethod_token'].blank?
+    assert_success response
+    assert_equal 'Create Successful.', response.message
   end
 
-  def test_successful_store_of_customer_and_unstore_of_only_paymethod_for_bank_account
-    assert store_response = @gateway.store(@check, :billing_address => address)
-    assert_success store_response
-    assert_equal 'Create Successful.', store_response.message
+  def test_failed_store_with_customer_create
+    response = @gateway.store(@declined_card)
 
-    vault_id = store_response.params['customer_token'] + "|" + store_response.params['default_paymethod_token']
+    assert_failure response
+    assert_equal "Error[1]: Payment Method's credit card number is invalid. Error[2]: Payment Method's credit card type is invalid for the credit card number given.", response.message
+  end
 
-    assert unstore_response = @gateway.unstore(vault_id)
-    assert_success unstore_response
-    assert_equal 'Delete Successful.', unstore_response.message
-    assert unstore_response.params['customer_token'].blank?
-    assert unstore_response.params['paymethod_token'].present?
+  def test_successful_store_without_customer_create
+    response = @gateway.store(@credit_card)
+    credit_card = credit_card('4111111111111111')
+    options = { customer_token: response.params['customer_token'] }
+
+    final_response = @gateway.store(credit_card, options)
+
+    assert_success final_response
+    assert_equal 'Update Successful.', final_response.message
+  end
+
+  def test_failed_store_without_customer_create
+    response = @gateway.store(@credit_card)
+    credit_card = @declined_card
+    options = { customer_token: response.params['customer_token'] }
+
+    final_response = @gateway.store(credit_card, options)
+
+    assert_failure final_response
+    assert_equal "Error[1]: Payment Method's credit card number is invalid. Error[2]: Payment Method's credit card type is invalid for the credit card number given.", final_response.message
   end
 
   def test_transcript_scrubbing
