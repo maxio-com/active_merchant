@@ -33,6 +33,13 @@ module ActiveMerchant #:nodoc:
         add_shipping_address(post, options) unless payment_method.is_a?(String)
         post[:action] = 'sale'
 
+        # TODO: investigate why without this purchase won't work for bank_account
+        # (even when we do purchase with customer_token and paymethod_token only)
+        if !post.key?(:card) && !post.key?(:echeck)
+          post[:echeck] ||= {}
+          post[:echeck][:sec_code] = options[:sec_code] || 'WEB'
+        end
+
         commit(:post, 'transactions', post)
       end
 
@@ -78,14 +85,14 @@ module ActiveMerchant #:nodoc:
         commit(:post, 'transactions', post)
       end
 
-      def store(credit_card, options = {})
+      def store(payment_method, options = {})
         customer_token = options[:customer_token]
         options = options.delete(:customer_token) || {}
 
         if customer_token.present?
-          create_credit_card_for_customer(customer_token, credit_card, options)
+          create_payment_method_for_customer(customer_token, payment_method, options)
         else
-          create_customer_and_credit_card(credit_card, options)
+          create_customer_and_payment_method(payment_method, options)
         end
       end
 
@@ -132,10 +139,15 @@ module ActiveMerchant #:nodoc:
 
       private
 
-      def create_credit_card_for_customer(customer_token, credit_card, _options)
+      def create_payment_method_for_customer(customer_token, payment_method, options)
         path = ['customers/', customer_token, '/paymethods'].join
         params = {}
-        add_credit_card(params, credit_card)
+
+        if payment_method.is_a?(Check)
+          add_echeck(params, payment_method, options)
+        else
+          add_credit_card(params, payment_method)
+        end
 
         post_response = commit(:post, path, params)
 
@@ -147,11 +159,11 @@ module ActiveMerchant #:nodoc:
         end
       end
 
-      def create_customer_and_credit_card(credit_card, options)
+      def create_customer_and_payment_method(payment_method, options)
         path = 'customers'
         params = {}
-        add_customer(params, credit_card, options)
-        add_customer_paymethod(params, credit_card)
+        add_customer(params, payment_method, options)
+        add_customer_paymethod(params, payment_method, options)
         add_customer_billing_address(params, options)
 
         commit(:post, path, params)
@@ -178,11 +190,11 @@ module ActiveMerchant #:nodoc:
         post[:last_name] = payment_method.last_name
       end
 
-      def add_customer_paymethod(post, payment_method)
+      def add_customer_paymethod(post, payment_method, options)
         post[:paymethod] = {}
 
         if payment_method.is_a?(Check)
-          add_echeck(post[:paymethod], payment_method)
+          add_echeck(post[:paymethod], payment_method, options)
         else
           post[:paymethod][:card] = {}
           post[:paymethod][:card][:card_type] = format_card_brand(payment_method.brand)
