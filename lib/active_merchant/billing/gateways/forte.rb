@@ -33,13 +33,6 @@ module ActiveMerchant #:nodoc:
         add_shipping_address(post, options) unless payment_method.is_a?(String)
         post[:action] = 'sale'
 
-        # TODO: investigate why without this purchase won't work for bank_account
-        # (even when we do purchase with customer_token and paymethod_token only)
-        if !post.key?(:card) && !post.key?(:echeck)
-          post[:echeck] ||= {}
-          post[:echeck][:sec_code] = options[:sec_code] || 'WEB'
-        end
-
         commit(:post, 'transactions', post)
       end
 
@@ -263,6 +256,7 @@ module ActiveMerchant #:nodoc:
             customer_token, paymethod_token = payment_method.split('|')
             add_customer_token(post, customer_token)
             add_paymethod_token(post, paymethod_token)
+            add_echeck_sec_code(post, options)
           else
             add_customer_token(post, payment_method)
           end
@@ -279,6 +273,11 @@ module ActiveMerchant #:nodoc:
         post[:echeck][:account_number] = payment.account_number
         post[:echeck][:routing_number] = payment.routing_number
         post[:echeck][:account_type] = payment.account_type
+        add_echeck_sec_code(post, options)
+      end
+
+      def add_echeck_sec_code(post, options)
+        post[:echeck] ||= {}
         post[:echeck][:sec_code] = options[:sec_code] || 'WEB'
       end
 
