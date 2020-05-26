@@ -80,7 +80,7 @@ module ActiveMerchant #:nodoc:
 
       def store(credit_card, options = {})
         customer_token = options[:customer_token]
-        options = options.delete(:customer_token) || {}
+        options = options.slice(*(options.keys - [:customer_token]))
 
         if customer_token.present?
           create_credit_card_for_customer(customer_token, credit_card, options)
