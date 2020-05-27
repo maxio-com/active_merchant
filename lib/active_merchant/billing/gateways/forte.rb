@@ -259,6 +259,7 @@ module ActiveMerchant #:nodoc:
             add_echeck_sec_code(post, options)
           else
             add_customer_token(post, payment_method)
+            add_echeck_sec_code(post, options)
           end
         elsif payment_method.respond_to?(:brand)
           add_credit_card(post, payment_method)
@@ -273,12 +274,14 @@ module ActiveMerchant #:nodoc:
         post[:echeck][:account_number] = payment.account_number
         post[:echeck][:routing_number] = payment.routing_number
         post[:echeck][:account_type] = payment.account_type
-        add_echeck_sec_code(post, options)
+        post[:echeck][:sec_code] = options[:sec_code] || 'WEB'
       end
 
       def add_echeck_sec_code(post, options)
-        post[:echeck] ||= {}
-        post[:echeck][:sec_code] = options[:sec_code] || 'WEB'
+        if options[:sec_code]
+          post[:echeck] ||= {}
+          post[:echeck][:sec_code] = options[:sec_code]
+        end
       end
 
       def add_credit_card(params, payment_method)

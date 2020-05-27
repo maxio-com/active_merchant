@@ -257,7 +257,9 @@ class RemoteForteTest < Test::Unit::TestCase
     assert_equal 'Create Successful.', response.message
 
     vault_id = response.params['customer_token']
-    purchase_response = @gateway.purchase(@amount, vault_id)
+    options = { sec_code: "WEB" }
+    purchase_response = @gateway.purchase(@amount, vault_id, options)
+    assert_success purchase_response
     assert purchase_response.params['transaction_id'].start_with?("trn_")
   end
 
@@ -267,7 +269,8 @@ class RemoteForteTest < Test::Unit::TestCase
     assert_equal 'Create Successful.', response.message
 
     vault_id = response.params['customer_token'] + "|" + response.params['default_paymethod_token']
-    purchase_response = @gateway.purchase(@amount, vault_id)
+    options = { sec_code: "WEB" }
+    purchase_response = @gateway.purchase(@amount, vault_id, options)
     assert_success purchase_response
     assert purchase_response.params['transaction_id'].start_with?("trn_")
   end
