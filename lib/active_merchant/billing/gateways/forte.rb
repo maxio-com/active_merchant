@@ -252,15 +252,7 @@ module ActiveMerchant #:nodoc:
 
       def add_payment_method(post, payment_method, options)
         if payment_method.is_a?(String)
-          if payment_method.include?('|')
-            customer_token, paymethod_token = payment_method.split('|')
-            add_customer_token(post, customer_token)
-            add_paymethod_token(post, paymethod_token)
-            add_echeck_sec_code(post, options)
-          else
-            add_customer_token(post, payment_method)
-            add_echeck_sec_code(post, options)
-          end
+          add_payment_method_tokens(post, payment_method, options)
         elsif payment_method.respond_to?(:brand)
           add_credit_card(post, payment_method)
         else
@@ -304,6 +296,18 @@ module ActiveMerchant #:nodoc:
 
       def add_action(params, action_name)
         params[:action] = action_name
+      end
+
+      def add_payment_method_tokens(post, payment_method, options)
+        if payment_method.include?('|')
+          customer_token, paymethod_token = payment_method.split('|')
+          add_customer_token(post, customer_token)
+          add_paymethod_token(post, paymethod_token)
+          add_echeck_sec_code(post, options)
+        else
+          add_customer_token(post, payment_method)
+          add_echeck_sec_code(post, options)
+        end
       end
 
       def add_customer_token(post, payment_method)
