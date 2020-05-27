@@ -183,6 +183,18 @@ class RemoteForteTest < Test::Unit::TestCase
     assert_equal 'TEST APPROVAL', refund.message
   end
 
+  def test_successful_refund_with_bank_account
+    omit('This currently won\'t pass due to the bug in Forte')
+    purchase = @gateway.purchase(@amount, @check, @options)
+    assert_success purchase
+
+    wait_for_authorization_to_clear
+
+    assert refund = @gateway.refund(@amount, purchase.authorization, @options)
+    assert_success refund
+    assert_equal 'TEST APPROVAL', refund.message
+  end
+
   def test_failed_refund
     response = @gateway.refund(@amount, '', @options)
     assert_failure response
