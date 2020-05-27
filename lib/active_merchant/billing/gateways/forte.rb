@@ -78,14 +78,14 @@ module ActiveMerchant #:nodoc:
         commit(:post, 'transactions', post)
       end
 
-      def store(credit_card, options = {})
+      def store(payment_method, options = {})
         customer_token = options[:customer_token]
         options = options.slice(*(options.keys - [:customer_token]))
 
         if customer_token.present?
-          create_credit_card_for_customer(customer_token, credit_card, options)
+          create_payment_method_for_customer(customer_token, payment_method, options)
         else
-          create_customer_and_credit_card(credit_card, options)
+          create_customer_and_payment_method(payment_method, options)
         end
       end
 
@@ -132,10 +132,15 @@ module ActiveMerchant #:nodoc:
 
       private
 
-      def create_credit_card_for_customer(customer_token, credit_card, _options)
+      def create_payment_method_for_customer(customer_token, payment_method, options)
         path = ['customers/', customer_token, '/paymethods'].join
         params = {}
-        add_credit_card(params, credit_card)
+
+        if payment_method.is_a?(Check)
+          add_echeck(params, payment_method, options)
+        else
+          add_credit_card(params, payment_method)
+        end
 
         post_response = commit(:post, path, params)
 
@@ -147,11 +152,11 @@ module ActiveMerchant #:nodoc:
         end
       end
 
-      def create_customer_and_credit_card(credit_card, options)
+      def create_customer_and_payment_method(payment_method, options)
         path = 'customers'
         params = {}
-        add_customer(params, credit_card, options)
-        add_customer_paymethod(params, credit_card)
+        add_customer(params, payment_method, options)
+        add_customer_paymethod(params, payment_method, options)
         add_customer_billing_address(params, options)
 
         commit(:post, path, params)
@@ -178,15 +183,20 @@ module ActiveMerchant #:nodoc:
         post[:last_name] = payment_method.last_name
       end
 
-      def add_customer_paymethod(post, payment_method)
+      def add_customer_paymethod(post, payment_method, options)
         post[:paymethod] = {}
-        post[:paymethod][:card] = {}
-        post[:paymethod][:card][:card_type] = format_card_brand(payment_method.brand)
-        post[:paymethod][:card][:name_on_card] = payment_method.name
-        post[:paymethod][:card][:account_number] = payment_method.number
-        post[:paymethod][:card][:expire_month] = payment_method.month
-        post[:paymethod][:card][:expire_year] = payment_method.year
-        post[:paymethod][:card][:card_verification_value] = payment_method.verification_value
+
+        if payment_method.is_a?(Check)
+          add_echeck(post[:paymethod], payment_method, options)
+        else
+          post[:paymethod][:card] = {}
+          post[:paymethod][:card][:card_type] = format_card_brand(payment_method.brand)
+          post[:paymethod][:card][:name_on_card] = payment_method.name
+          post[:paymethod][:card][:account_number] = payment_method.number
+          post[:paymethod][:card][:expire_month] = payment_method.month
+          post[:paymethod][:card][:expire_year] = payment_method.year
+          post[:paymethod][:card][:card_verification_value] = payment_method.verification_value
+        end
       end
 
       def add_customer_billing_address(post, options)
@@ -246,6 +256,7 @@ module ActiveMerchant #:nodoc:
             customer_token, paymethod_token = payment_method.split('|')
             add_customer_token(post, customer_token)
             add_paymethod_token(post, paymethod_token)
+            add_echeck_sec_code(post, options)
           else
             add_customer_token(post, payment_method)
           end
@@ -262,6 +273,11 @@ module ActiveMerchant #:nodoc:
         post[:echeck][:account_number] = payment.account_number
         post[:echeck][:routing_number] = payment.routing_number
         post[:echeck][:account_type] = payment.account_type
+        add_echeck_sec_code(post, options)
+      end
+
+      def add_echeck_sec_code(post, options)
+        post[:echeck] ||= {}
         post[:echeck][:sec_code] = options[:sec_code] || 'WEB'
       end
 

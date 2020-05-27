@@ -183,6 +183,18 @@ class RemoteForteTest < Test::Unit::TestCase
     assert_equal 'TEST APPROVAL', refund.message
   end
 
+  def test_successful_refund_with_bank_account
+    omit('This currently won\'t pass due to the bug in Forte')
+    purchase = @gateway.purchase(@amount, @check, @options)
+    assert_success purchase
+
+    wait_for_authorization_to_clear
+
+    assert refund = @gateway.refund(@amount, purchase.authorization, @options)
+    assert_success refund
+    assert_equal 'TEST APPROVAL', refund.message
+  end
+
   def test_failed_refund
     response = @gateway.refund(@amount, '', @options)
     assert_failure response
@@ -229,6 +241,35 @@ class RemoteForteTest < Test::Unit::TestCase
     purchase_response = @gateway.purchase(@amount, vault_id)
     assert_success purchase_response
     assert purchase_response.params['transaction_id'].start_with?('trn_')
+  end
+
+  def test_successful_store_of_bank_account
+    response = @gateway.store(@check)
+    assert_success response
+    assert_equal 'Create Successful.', response.message
+    assert response.params['customer_token'].present?
+    @data_key = response.params['customer_token']
+  end
+
+  def test_successful_store_of_bank_account_and_purchase_with_customer_token
+    assert response = @gateway.store(@check, :billing_address => address)
+    assert_success response
+    assert_equal 'Create Successful.', response.message
+
+    vault_id = response.params['customer_token']
+    purchase_response = @gateway.purchase(@amount, vault_id)
+    assert purchase_response.params['transaction_id'].start_with?("trn_")
+  end
+
+  def test_successful_store_of_bank_account_and_purchase_with_customer_and_paymethod_tokens
+    assert response = @gateway.store(@check, :billing_address => address)
+    assert_success response
+    assert_equal 'Create Successful.', response.message
+
+    vault_id = response.params['customer_token'] + "|" + response.params['default_paymethod_token']
+    purchase_response = @gateway.purchase(@amount, vault_id)
+    assert_success purchase_response
+    assert purchase_response.params['transaction_id'].start_with?("trn_")
   end
 
   def test_successful_store_and_unstore_of_customer
