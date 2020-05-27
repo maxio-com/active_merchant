@@ -252,14 +252,7 @@ module ActiveMerchant #:nodoc:
 
       def add_payment_method(post, payment_method, options)
         if payment_method.is_a?(String)
-          if payment_method.include?('|')
-            customer_token, paymethod_token = payment_method.split('|')
-            add_customer_token(post, customer_token)
-            add_paymethod_token(post, paymethod_token)
-            add_echeck_sec_code(post, options)
-          else
-            add_customer_token(post, payment_method)
-          end
+          add_payment_method_tokens(post, payment_method, options)
         elsif payment_method.respond_to?(:brand)
           add_credit_card(post, payment_method)
         else
@@ -273,12 +266,14 @@ module ActiveMerchant #:nodoc:
         post[:echeck][:account_number] = payment.account_number
         post[:echeck][:routing_number] = payment.routing_number
         post[:echeck][:account_type] = payment.account_type
-        add_echeck_sec_code(post, options)
+        post[:echeck][:sec_code] = options[:sec_code] || 'WEB'
       end
 
       def add_echeck_sec_code(post, options)
-        post[:echeck] ||= {}
-        post[:echeck][:sec_code] = options[:sec_code] || 'WEB'
+        if options[:sec_code]
+          post[:echeck] ||= {}
+          post[:echeck][:sec_code] = options[:sec_code]
+        end
       end
 
       def add_credit_card(params, payment_method)
@@ -301,6 +296,18 @@ module ActiveMerchant #:nodoc:
 
       def add_action(params, action_name)
         params[:action] = action_name
+      end
+
+      def add_payment_method_tokens(post, payment_method, options)
+        if payment_method.include?('|')
+          customer_token, paymethod_token = payment_method.split('|')
+          add_customer_token(post, customer_token)
+          add_paymethod_token(post, paymethod_token)
+          add_echeck_sec_code(post, options)
+        else
+          add_customer_token(post, payment_method)
+          add_echeck_sec_code(post, options)
+        end
       end
 
       def add_customer_token(post, payment_method)
