@@ -327,6 +327,27 @@ class RemoteForteTest < Test::Unit::TestCase
     assert_equal 'Update Successful.', final_response.message
   end
 
+  def test_successful_store_without_customer_create_and_with_billing_address
+    response = @gateway.store(@credit_card)
+    credit_card = credit_card('4111111111111111')
+    options = {
+      customer_token: response.params['customer_token'],
+      billing_address: {
+        address1: '2981 Aglae Mall',
+        address2: 'Suite 949',
+        city: 'North Irmachester',
+        state: 'NE',
+        country: 'US',
+        zip: '86498'
+      }
+    }
+
+    final_response = @gateway.store(credit_card, options)
+
+    assert_success final_response
+    assert_equal 'Update Successful.', final_response.message
+  end
+
   def test_failed_store_without_customer_create
     response = @gateway.store(@credit_card)
     credit_card = @declined_card
