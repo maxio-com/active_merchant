@@ -132,7 +132,7 @@ module ActiveMerchant #:nodoc:
       private
 
       def create_payment_method_for_customer(customer_token, payment_method, options)
-        path = ['customers/', customer_token, '/paymethods'].join
+        path = ['customers', customer_token, 'paymethods'].join('/')
         params = {}
 
         if payment_method.is_a?(Check)
@@ -143,8 +143,15 @@ module ActiveMerchant #:nodoc:
 
         post_response = commit(:post, path, params)
 
-        new_paymethod_token = post_response.params['paymethod_token']
         if post_response.success?
+          new_paymethod_token = post_response.params['paymethod_token']
+          create_address_response = create_address_for_customer(customer_token, options)
+
+          if create_address_response.success?
+            new_address_token = create_address_response.params['address_token']
+            update_paymethod_address(new_paymethod_token, new_address_token)
+          end
+
           update_customer(customer_token, { default_paymethod_token: new_paymethod_token })
         else
           post_response
@@ -161,8 +168,25 @@ module ActiveMerchant #:nodoc:
         commit(:post, path, params)
       end
 
+      def create_address_for_customer(customer_token, options)
+        return unless options[:billing_address].present?
+
+        path = ['customers', customer_token, 'addresses'].join('/')
+        params = {}
+        add_physical_address(params, options)
+
+        commit(:post, path, params)
+      end
+
+      def update_paymethod_address(new_paymethod_token, new_address_token)
+        path = ['paymethods', new_paymethod_token].join('/')
+        params = { billing_address_token: new_address_token }
+
+        commit(:put, path, params)
+      end
+
       def update_customer(customer_token, options)
-        path = ['customers/', customer_token].join
+        path = ['customers', customer_token].join('/')
         allowed_fields = %i[default_paymethod_token first_name last_name company_name status]
         params = options.slice(*allowed_fields)
 
@@ -231,6 +255,19 @@ module ActiveMerchant #:nodoc:
         post[:billing_address][:first_name] = payment.first_name if empty?(post[:billing_address][:first_name]) && payment.first_name
 
         post[:billing_address][:last_name] = payment.last_name if empty?(post[:billing_address][:last_name]) && payment.last_name
+      end
+
+      def add_physical_address(params, options)
+        address = options[:billing_address]
+        return unless address.present?
+
+        params[:physical_address] = {}
+        params[:physical_address][:street_line1] = address[:address1] if address[:address1]
+        params[:physical_address][:street_line2] = address[:address2] if address[:address2]
+        params[:physical_address][:locality] = address[:city] if address[:city]
+        params[:physical_address][:region] = address[:state] if address[:state]
+        params[:physical_address][:country] = address[:country] if address[:country]
+        params[:physical_address][:postal_code] = address[:zip] if address[:zip]
       end
 
       def add_shipping_address(post, options)
