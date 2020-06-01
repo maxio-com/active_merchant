@@ -132,7 +132,7 @@ module ActiveMerchant #:nodoc:
       private
 
       def create_paymethod_and_address_for_customer(customer_token, payment_method, options)
-        MultiResponse.run(:use_first_response) do |r|
+        MultiResponse.run do |r|
           create_paymethod_response = nil
           create_address_response = nil
 
