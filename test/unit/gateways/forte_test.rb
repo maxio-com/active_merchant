@@ -146,29 +146,32 @@ class ForteTest < Test::Unit::TestCase
     assert_failure response
   end
 
-  def test_successful_store_with_customer_create
+  def test_successful_store_for_new_customer
     response = stub_comms(@gateway, :raw_ssl_request) do
       @gateway.store(@credit_card)
     end.respond_with(MockedResponse.new(successful_create_customer_and_credit_card_response))
     assert_success response
   end
 
-  def test_failed_store_with_customer_create
+  def test_failed_store_for_new_customer
     response = stub_comms(@gateway, :raw_ssl_request) do
       @gateway.store(@credit_card)
     end.respond_with(MockedResponse.new(failed_create_customer_and_credit_card_response))
     assert_failure response
   end
 
-  def test_successful_store_without_customer_create
+  def test_successful_store_for_existing_customer_without_billing_address
     response = stub_comms(@gateway, :raw_ssl_request) do
       options = { customer_token: 'customer_token' }
       @gateway.store(@credit_card, options)
-    end.respond_with(MockedResponse.new(successful_create_credit_card_for_customer_response), MockedResponse.new(successful_update_customer_default_credit_card_response))
+    end.respond_with(
+      MockedResponse.new(successful_create_credit_card_for_customer_response),
+      MockedResponse.new(successful_update_customer_default_credit_card_response)
+    )
     assert_success response
   end
 
-  def test_failed_store_without_customer_create
+  def test_failed_store_for_existing_customer
     response = stub_comms(@gateway, :raw_ssl_request) do
       options = { customer_token: 'customer_token' }
       @gateway.store(@credit_card, options)

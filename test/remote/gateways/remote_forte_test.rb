@@ -252,7 +252,7 @@ class RemoteForteTest < Test::Unit::TestCase
   end
 
   def test_successful_store_of_bank_account_and_purchase_with_customer_token
-    assert response = @gateway.store(@check, :billing_address => address)
+    assert response = @gateway.store(@check, billing_address: address)
     assert_success response
     assert_equal 'Create Successful.', response.message
 
@@ -264,15 +264,15 @@ class RemoteForteTest < Test::Unit::TestCase
   end
 
   def test_successful_store_of_bank_account_and_purchase_with_customer_and_paymethod_tokens
-    assert response = @gateway.store(@check, :billing_address => address)
+    assert response = @gateway.store(@check, billing_address: address)
     assert_success response
     assert_equal 'Create Successful.', response.message
 
-    vault_id = response.params['customer_token'] + "|" + response.params['default_paymethod_token']
-    options = { sec_code: "WEB" }
+    vault_id = response.params['customer_token'] + '|' + response.params['default_paymethod_token']
+    options = { sec_code: 'WEB' }
     purchase_response = @gateway.purchase(@amount, vault_id, options)
     assert_success purchase_response
-    assert purchase_response.params['transaction_id'].start_with?("trn_")
+    assert purchase_response.params['transaction_id'].start_with?('trn_')
   end
 
   def test_successful_store_and_unstore_of_customer
@@ -293,7 +293,7 @@ class RemoteForteTest < Test::Unit::TestCase
     assert_success store_response
     assert_equal 'Create Successful.', store_response.message
 
-    vault_id = store_response.params['customer_token'] + "|" + store_response.params['default_paymethod_token']
+    vault_id = store_response.params['customer_token'] + '|' + store_response.params['default_paymethod_token']
 
     assert unstore_response = @gateway.unstore(vault_id)
     assert_success unstore_response
@@ -302,36 +302,45 @@ class RemoteForteTest < Test::Unit::TestCase
     assert unstore_response.params['paymethod_token'].present?
   end
 
-  def test_successful_store_with_customer_create
+  def test_successful_store_for_new_customer
     response = @gateway.store(@credit_card)
 
     assert_success response
     assert_equal 'Create Successful.', response.message
   end
 
-  def test_failed_store_with_customer_create
+  def test_failed_store_for_new_customer
     response = @gateway.store(@declined_card)
 
     assert_failure response
     assert_equal "Error[1]: Payment Method's credit card number is invalid. Error[2]: Payment Method's credit card type is invalid for the credit card number given.", response.message
   end
 
-  def test_successful_store_without_customer_create
-    response = @gateway.store(@credit_card)
+  def test_successful_store_for_existing_customer_without_billing_address
+    store_response1 = @gateway.store(@credit_card)
     credit_card = credit_card('4111111111111111')
-    options = { customer_token: response.params['customer_token'] }
+    options = { customer_token: store_response1.params['customer_token'] }
 
-    final_response = @gateway.store(credit_card, options)
+    store_response2 = @gateway.store(credit_card, options)
+    responses = store_response2.responses
 
-    assert_success final_response
-    assert_equal 'Update Successful.', final_response.message
+    assert_success store_response2
+    assert_instance_of MultiResponse, store_response2
+    assert_equal 2, responses.size
+
+    create_paymethod_response = responses[0]
+    assert_success create_paymethod_response
+
+    update_customer_response = responses[1]
+    assert_success update_customer_response
+    assert_equal 'Update Successful.', update_customer_response.message
   end
 
-  def test_successful_store_without_customer_create_and_with_billing_address
-    response = @gateway.store(@credit_card)
+  def test_successful_store_for_existing_customer_with_billing_address
+    store_response1 = @gateway.store(@credit_card)
     credit_card = credit_card('4111111111111111')
     options = {
-      customer_token: response.params['customer_token'],
+      customer_token: store_response1.params['customer_token'],
       billing_address: {
         address1: '2981 Aglae Mall',
         address2: 'Suite 949',
@@ -342,28 +351,58 @@ class RemoteForteTest < Test::Unit::TestCase
       }
     }
 
-    final_response = @gateway.store(credit_card, options)
+    store_response2 = @gateway.store(credit_card, options)
+    responses = store_response2.responses
 
-    assert_success final_response
-    assert_equal 'Update Successful.', final_response.message
+    assert_success store_response2
+    assert_instance_of MultiResponse, store_response2
+    assert_equal 4, responses.size
+
+    create_paymethod_response = responses[0]
+    assert_success create_paymethod_response
+
+    create_address_response = responses[1]
+    assert_success create_address_response
+    address_params = create_address_response.params['physical_address']
+    assert_equal '2981 Aglae Mall', address_params['street_line1']
+    assert_equal 'Suite 949', address_params['street_line2']
+    assert_equal 'North Irmachester', address_params['locality']
+    assert_equal 'NE', address_params['region']
+    assert_equal '86498', address_params['postal_code']
+    assert_equal 'US', address_params['country']
+
+    add_address_to_paymethod_response = responses[2]
+    assert_success add_address_to_paymethod_response
+
+    update_customer_response = responses[3]
+    assert_success update_customer_response
   end
 
   def test_successful_store_for_existing_customer_with_new_customer_name
-    response = @gateway.store(@credit_card)
+    store_response1 = @gateway.store(@credit_card)
     credit_card = credit_card('4111111111111111')
-
     options = {
-      customer_token: response.params['customer_token'],
+      customer_token: store_response1.params['customer_token'],
       customer: { first_name: 'Peter', last_name: 'Jones' }
     }
 
-    final_response = @gateway.store(credit_card, options)
+    store_response2 = @gateway.store(credit_card, options)
+    responses = store_response2.responses
 
-    assert_success final_response
-    assert_equal 'Update Successful.', final_response.message
+    assert_success store_response2
+    assert_instance_of MultiResponse, store_response2
+    assert_equal 2, responses.size
+
+    create_paymethod_response = responses[0]
+    assert_success create_paymethod_response
+
+    update_customer_response = responses[1]
+    assert_success update_customer_response
+    assert_equal 'Peter', update_customer_response.params["first_name"]
+    assert_equal 'Jones', update_customer_response.params["last_name"]
   end
 
-  def test_failed_store_without_customer_create
+  def test_failed_store_for_existing_customer
     response = @gateway.store(@credit_card)
     credit_card = @declined_card
     options = { customer_token: response.params['customer_token'] }

@@ -82,7 +82,7 @@ module ActiveMerchant #:nodoc:
         customer_token = options.delete(:customer_token)
 
         if customer_token.present?
-          create_payment_method_for_customer(customer_token, payment_method, options)
+          create_paymethod_and_address_for_customer(customer_token, payment_method, options)
         else
           create_customer_and_payment_method(payment_method, options)
         end
@@ -131,7 +131,37 @@ module ActiveMerchant #:nodoc:
 
       private
 
-      def create_payment_method_for_customer(customer_token, payment_method, options)
+      def create_paymethod_and_address_for_customer(customer_token, payment_method, options)
+        MultiResponse.run(:use_first_response) do |r|
+          create_paymethod_response = nil
+          create_address_response = nil
+
+          r.process { create_paymethod_response = create_paymethod_for_customer(customer_token, payment_method, options) }
+
+          if create_paymethod_response&.success?
+            new_paymethod_token = create_paymethod_response.params['paymethod_token']
+
+            if options[:billing_address].present?
+              r.process { create_address_response = create_address_for_customer(customer_token, options) }
+
+              if create_address_response&.success?
+                new_address_token = create_address_response.params['address_token']
+
+                r.process { update_paymethod_address(new_paymethod_token, new_address_token) }
+              end
+            end
+
+            customer_params = {}
+            customer_params[:default_paymethod_token] = new_paymethod_token
+            customer_params[:first_name] = options[:customer][:first_name] if options.dig(:customer, :first_name)
+            customer_params[:last_name] = options[:customer][:last_name] if options.dig(:customer, :last_name)
+
+            r.process { update_customer(customer_token, customer_params) }
+          end
+        end
+      end
+
+      def create_paymethod_for_customer(customer_token, payment_method, options)
         path = ['customers', customer_token, 'paymethods'].join('/')
         params = {}
 
@@ -141,26 +171,7 @@ module ActiveMerchant #:nodoc:
           add_credit_card(params, payment_method)
         end
 
-        post_response = commit(:post, path, params)
-
-        if post_response.success?
-          new_paymethod_token = post_response.params['paymethod_token']
-          create_address_response = create_address_for_customer(customer_token, options)
-
-          if create_address_response && create_address_response.success?
-            new_address_token = create_address_response.params['address_token']
-            update_paymethod_address(new_paymethod_token, new_address_token)
-          end
-
-          customer_params = {}
-          customer_params[:default_paymethod_token] = new_paymethod_token
-          customer_params[:first_name] = options[:customer][:first_name] if options.dig(:customer, :first_name)
-          customer_params[:last_name] = options[:customer][:last_name] if options.dig(:customer, :last_name)
-
-          update_customer(customer_token, customer_params)
-        else
-          post_response
-        end
+        commit(:post, path, params)
       end
 
       def create_customer_and_payment_method(payment_method, options)
@@ -174,8 +185,6 @@ module ActiveMerchant #:nodoc:
       end
 
       def create_address_for_customer(customer_token, options)
-        return unless options[:billing_address].present?
-
         path = ['customers', customer_token, 'addresses'].join('/')
         params = {}
         add_physical_address(params, options)
