@@ -348,6 +348,21 @@ class RemoteForteTest < Test::Unit::TestCase
     assert_equal 'Update Successful.', final_response.message
   end
 
+  def test_successful_store_for_existing_customer_with_new_customer_name
+    response = @gateway.store(@credit_card)
+    credit_card = credit_card('4111111111111111')
+
+    options = {
+      customer_token: response.params['customer_token'],
+      customer: { first_name: 'Peter', last_name: 'Jones' }
+    }
+
+    final_response = @gateway.store(credit_card, options)
+
+    assert_success final_response
+    assert_equal 'Update Successful.', final_response.message
+  end
+
   def test_failed_store_without_customer_create
     response = @gateway.store(@credit_card)
     credit_card = @declined_card

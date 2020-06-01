@@ -147,12 +147,17 @@ module ActiveMerchant #:nodoc:
           new_paymethod_token = post_response.params['paymethod_token']
           create_address_response = create_address_for_customer(customer_token, options)
 
-          if create_address_response.success?
+          if create_address_response && create_address_response.success?
             new_address_token = create_address_response.params['address_token']
             update_paymethod_address(new_paymethod_token, new_address_token)
           end
 
-          update_customer(customer_token, { default_paymethod_token: new_paymethod_token })
+          customer_params = {}
+          customer_params[:default_paymethod_token] = new_paymethod_token
+          customer_params[:first_name] = options[:customer][:first_name] if options.dig(:customer, :first_name)
+          customer_params[:last_name] = options[:customer][:last_name] if options.dig(:customer, :last_name)
+
+          update_customer(customer_token, customer_params)
         else
           post_response
         end
@@ -202,8 +207,8 @@ module ActiveMerchant #:nodoc:
       end
 
       def add_customer(post, payment_method, _options)
-        post[:first_name] = payment_method.first_name
-        post[:last_name] = payment_method.last_name
+        post[:first_name] = options.dig(:customer, :first_name) || payment_method.first_name
+        post[:last_name] = options.dig(:customer, :last_name) || payment_method.last_name
       end
 
       def add_customer_paymethod(post, payment_method, options)
