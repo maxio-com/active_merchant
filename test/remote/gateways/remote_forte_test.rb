@@ -257,10 +257,10 @@ class RemoteForteTest < Test::Unit::TestCase
     assert_equal 'Create Successful.', response.message
 
     vault_id = response.params['customer_token']
-    options = { sec_code: "WEB" }
+    options = { sec_code: 'WEB' }
     purchase_response = @gateway.purchase(@amount, vault_id, options)
     assert_success purchase_response
-    assert purchase_response.params['transaction_id'].start_with?("trn_")
+    assert purchase_response.params['transaction_id'].start_with?('trn_')
   end
 
   def test_successful_store_of_bank_account_and_purchase_with_customer_and_paymethod_tokens
