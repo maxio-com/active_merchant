@@ -348,10 +348,10 @@ module ActiveMerchant #:nodoc:
 
       def add_echeck(post, payment, options)
         post[:echeck] = {}
-        post[:echeck][:account_holder] = payment.name
-        post[:echeck][:account_number] = payment.account_number
-        post[:echeck][:routing_number] = payment.routing_number
-        post[:echeck][:account_type] = payment.account_type
+        post[:echeck][:account_holder] = payment.name if payment.name
+        post[:echeck][:account_number] = payment.account_number if payment.account_number
+        post[:echeck][:routing_number] = payment.routing_number if payment.routing_number
+        post[:echeck][:account_type] = payment.account_type if payment.account_type
         post[:echeck][:sec_code] = options[:sec_code] || 'WEB'
       end
 
