@@ -102,18 +102,35 @@ module ActiveMerchant #:nodoc:
         customer_token = options.delete(:customer_token)
         paymethod_token = options.delete(:paymethod_token)
 
+        # TODO: Use MultiResponse
+
         post = {}
         add_customer(post, payment_method, options)
-
         commit(:put, "customers/#{customer_token}", post)
 
-        r = commit(:get, "paymethods/#{paymethod_token}", nil)
-        billing_address_token = r.params["billing_address_token"]
-
         post = {}
-        add_physical_address(post, options)
+        if payment_method.is_a?(Check)
+          payment_method.account_number = nil
+          add_echeck(post, payment_method, options)
+        else
+          payment_method.number = nil
+          add_credit_card(post, payment_method)
+        end
+        response = commit(:put, "paymethods/#{paymethod_token}", post)
 
-        commit(:put, "addresses/#{billing_address_token}", post)
+        if options[:billing_address].present?
+          r = commit(:get, "paymethods/#{paymethod_token}", nil)
+          billing_address_token = r.params["billing_address_token"]
+          if billing_address_token.present?
+            post = {}
+            add_physical_address(post, options)
+            commit(:put, "addresses/#{billing_address_token}", post)
+          else
+            # TODO: add a new address and attach it to the paymethod
+          end
+        end
+
+        response
       end
 
       def void(authorization, _options = {})
@@ -346,14 +363,13 @@ module ActiveMerchant #:nodoc:
       end
 
       def add_credit_card(params, payment_method)
-        params[:card] = {
-          card_type: format_card_brand(payment_method.brand),
-          name_on_card: payment_method.name,
-          account_number: payment_method.number,
-          expire_month: payment_method.month,
-          expire_year: payment_method.year,
-          card_verification_value: payment_method.verification_value
-        }
+        params[:card] = {}
+        params[:card][:card_type] = format_card_brand(payment_method.brand) if payment_method.brand
+        params[:card][:name_on_card] = payment_method.name if payment_method.name
+        params[:card][:account_number] = payment_method.number if payment_method.number
+        params[:card][:expire_month] = payment_method.month if payment_method.month
+        params[:card][:expire_year] = payment_method.year if payment_method.year
+        params[:card][:card_verification_value] = payment_method.verification_value if payment_method.verification_value
       end
 
       def add_first_and_last_name(params, payment_method)
