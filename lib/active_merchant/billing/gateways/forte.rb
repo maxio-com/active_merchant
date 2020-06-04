@@ -118,16 +118,21 @@ module ActiveMerchant #:nodoc:
         end
         response = commit(:put, "paymethods/#{paymethod_token}", post)
 
+        r = commit(:get, "paymethods/#{paymethod_token}", nil)
+        billing_address_token = r.params["billing_address_token"]
+        post = {}
+        add_email(post, options)
+
         if options[:billing_address].present?
-          r = commit(:get, "paymethods/#{paymethod_token}", nil)
-          billing_address_token = r.params["billing_address_token"]
           if billing_address_token.present?
-            post = {}
             add_physical_address(post, options)
-            commit(:put, "addresses/#{billing_address_token}", post)
           else
             # TODO: add a new address and attach it to the paymethod
           end
+        end
+
+        unless post.empty?
+          commit(:put, "addresses/#{billing_address_token}", post)
         end
 
         response
@@ -306,6 +311,10 @@ module ActiveMerchant #:nodoc:
         post[:billing_address][:last_name] = payment.last_name if empty?(post[:billing_address][:last_name]) && payment.last_name
       end
 
+      def add_email(params, options)
+        params[:email] = options[:email] if options[:email]
+      end
+
       def add_physical_address(params, options)
         address = options[:billing_address]
         return unless address.present?
@@ -317,7 +326,6 @@ module ActiveMerchant #:nodoc:
         params[:physical_address][:region] = address[:state] if address[:state]
         params[:physical_address][:country] = address[:country] if address[:country]
         params[:physical_address][:postal_code] = address[:zip] if address[:zip]
-        params[:physical_address][:email] = options[:email] if options[:email]
       end
 
       def add_shipping_address(post, options)
