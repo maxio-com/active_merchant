@@ -98,6 +98,16 @@ module ActiveMerchant #:nodoc:
         end
       end
 
+      def update(payment_method, options = {})
+        customer_token = options.delete(:customer_token)
+        paymethod_token = options.delete(:paymethod_token)
+
+        post = {}
+        add_customer(post, payment_method, options)
+
+        commit(:put, "customers/#{customer_token}", post)
+      end
+
       def void(authorization, _options = {})
         post = {}
         post[:transaction_id] = transaction_id_from(authorization)
@@ -215,7 +225,7 @@ module ActiveMerchant #:nodoc:
         post[:authorization_amount] = amount(money)
       end
 
-      def add_customer(post, payment_method, _options)
+      def add_customer(post, payment_method, options)
         post[:first_name] = options.dig(:customer, :first_name) || payment_method.first_name
         post[:last_name] = options.dig(:customer, :last_name) || payment_method.last_name
       end
