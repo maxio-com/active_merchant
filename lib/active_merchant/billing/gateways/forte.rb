@@ -106,6 +106,14 @@ module ActiveMerchant #:nodoc:
         add_customer(post, payment_method, options)
 
         commit(:put, "customers/#{customer_token}", post)
+
+        r = commit(:get, "paymethods/#{paymethod_token}", nil)
+        billing_address_token = r.params["billing_address_token"]
+
+        post = {}
+        add_physical_address(post, options)
+
+        commit(:put, "addresses/#{billing_address_token}", post)
       end
 
       def void(authorization, _options = {})
@@ -292,6 +300,7 @@ module ActiveMerchant #:nodoc:
         params[:physical_address][:region] = address[:state] if address[:state]
         params[:physical_address][:country] = address[:country] if address[:country]
         params[:physical_address][:postal_code] = address[:zip] if address[:zip]
+        params[:physical_address][:email] = options[:email] if options[:email]
       end
 
       def add_shipping_address(post, options)
@@ -380,7 +389,7 @@ module ActiveMerchant #:nodoc:
 
       def commit(http_method, path, params)
         url = URI.join(base_url, path)
-        body = http_method == :delete ? nil : params.to_json
+        body = [:delete, :get].include?(http_method) ? nil : params.to_json
         response = JSON.parse(handle_response(raw_ssl_request(http_method, url, body, headers)))
 
         Response.new(
@@ -415,6 +424,8 @@ module ActiveMerchant #:nodoc:
       end
 
       def authorization_from(response, parameters)
+        return unless response['transaction_id']
+
         if parameters[:action] == 'capture'
           [response['transaction_id'], response.dig('response', 'authorization_code'), parameters[:transaction_id], parameters[:authorization_code]].join('#')
         else
