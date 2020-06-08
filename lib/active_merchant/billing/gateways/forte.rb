@@ -99,44 +99,43 @@ module ActiveMerchant #:nodoc:
       end
 
       def update(payment_method, options = {})
-        customer_token = options.delete(:customer_token)
-        paymethod_token = options.delete(:paymethod_token)
-
         MultiResponse.run do |r|
+          customer_token = options.delete(:customer_token)
+          paymethod_token = options.delete(:paymethod_token)
           get_paymethod_response = nil
 
-          post = {}
-          add_customer(post, payment_method, options)
+          r.process do
+            params = {}
+            add_customer(params, payment_method, options)
 
-          r.process { commit(:put, "customers/#{customer_token}", post) }
-
-          post = {}
-          if payment_method.is_a?(Check)
-            payment_method.account_number = nil
-            add_echeck(post, payment_method, options)
-          else
-            payment_method.number = nil
-            add_credit_card(post, payment_method)
+            update_customer(customer_token, params)
           end
 
-          r.process { commit(:put, "paymethods/#{paymethod_token}", post) }
+          r.process do
+            params = {}
+            if payment_method.is_a?(Check)
+              add_echeck(params, payment_method, options)
+            else
+              add_credit_card(params, payment_method)
+            end
 
-          r.process { get_paymethod_response = commit(:get, "paymethods/#{paymethod_token}") }
+            update_clientless_paymethod(paymethod_token, params)
+          end
+
+          r.process { get_paymethod_response = get_paymethod(payment_method) }
 
           billing_address_token = get_paymethod_response.params['billing_address_token']
 
-          post = {}
-          add_email(post, options)
+          address_options = {}
+          add_email(address_options, options)
 
           if options[:billing_address].present? && billing_address_token.present?
-            add_physical_address(post, options)
+            add_physical_address(address_options, options)
           else
             # TODO: add a new address and attach it to the paymethod
           end
 
-          unless post.empty?
-            r.process { commit(:put, "addresses/#{billing_address_token}", post) }
-          end
+          r.process { update_address(billing_address_token, address_options) } if address_options.keys.present?
         end
       end
 
@@ -234,19 +233,42 @@ module ActiveMerchant #:nodoc:
         commit(:post, path, params)
       end
 
-      def update_paymethod_address(new_paymethod_token, new_address_token)
-        path = ['paymethods', new_paymethod_token].join('/')
+      def get_paymethod(paymethod_token)
+        path = ['paymethods', paymethod_token].join('/')
+
+        commit(:get, path)
+      end
+
+      def update_paymethod_address(paymethod_token, new_address_token)
+        path = ['paymethods', paymethod_token].join('/')
         params = { billing_address_token: new_address_token }
+
+        commit(:put, path, params)
+      end
+
+      def update_clientless_paymethod(paymethod_token, options)
+        path = ['paymethods', paymethod_token].join('/')
+        if options[:card].present?
+          options[:card].delete(:account_number)
+        elsif options[:echeck].present?
+          options[:echeck].delete(:account_number)
+        end
 
         commit(:put, path, params)
       end
 
       def update_customer(customer_token, options)
         path = ['customers', customer_token].join('/')
-        allowed_fields = %i[default_paymethod_token first_name last_name company_name status]
+        allowed_fields = %i[default_shipping_address_token default_billing_address_token default_paymethod_token paymethod_token first_name last_name company_name status]
         params = options.slice(*allowed_fields)
 
         commit(:put, path, params)
+      end
+
+      def update_address(address_token, options)
+        path = ['addresses', address_token].join('/')
+
+        commit(:put, path, options)
       end
 
       def add_invoice(post, options)
