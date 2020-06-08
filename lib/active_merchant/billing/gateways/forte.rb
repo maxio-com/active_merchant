@@ -102,12 +102,13 @@ module ActiveMerchant #:nodoc:
         customer_token = options.delete(:customer_token)
         paymethod_token = options.delete(:paymethod_token)
 
-        MultiResponse.run do |response|
+        MultiResponse.run do |r|
           get_paymethod_response = nil
 
           post = {}
           add_customer(post, payment_method, options)
-          response.process { commit(:put, "customers/#{customer_token}", post) }
+
+          r.process { commit(:put, "customers/#{customer_token}", post) }
 
           post = {}
           if payment_method.is_a?(Check)
@@ -117,25 +118,25 @@ module ActiveMerchant #:nodoc:
             payment_method.number = nil
             add_credit_card(post, payment_method)
           end
-          response.process { commit(:put, "paymethods/#{paymethod_token}", post) }
 
-          response.process { get_paymethod_response = commit(:get, "paymethods/#{paymethod_token}", nil) }
-          billing_address_token = get_paymethod_response.params["billing_address_token"]
+          r.process { commit(:put, "paymethods/#{paymethod_token}", post) }
+
+          r.process { get_paymethod_response = commit(:get, "paymethods/#{paymethod_token}") }
+
+          billing_address_token = get_paymethod_response.params['billing_address_token']
+
           post = {}
           add_email(post, options)
 
-          if options[:billing_address].present?
-            if billing_address_token.present?
-              add_physical_address(post, options)
-            else
-              # TODO: add a new address and attach it to the paymethod
-            end
+          if options[:billing_address].present? && billing_address_token.present?
+            add_physical_address(post, options)
+          else
+            # TODO: add a new address and attach it to the paymethod
           end
 
           unless post.empty?
-            response.process { commit(:put, "addresses/#{billing_address_token}", post) }
+            r.process { commit(:put, "addresses/#{billing_address_token}", post) }
           end
-          response
         end
       end
 
@@ -412,9 +413,9 @@ module ActiveMerchant #:nodoc:
         post[:paymethod_token] = payment_method
       end
 
-      def commit(http_method, path, params)
+      def commit(http_method, path, params = {})
         url = URI.join(base_url, path)
-        body = [:delete, :get].include?(http_method) ? nil : params.to_json
+        body = %i[delete get].include?(http_method) ? nil : params.to_json
         response = JSON.parse(handle_response(raw_ssl_request(http_method, url, body, headers)))
 
         Response.new(
@@ -441,7 +442,8 @@ module ActiveMerchant #:nodoc:
         response['response']['response_code'] == 'A01' ||
           response['response']['response_desc'] == 'Create Successful.' ||
           response['response']['response_desc'] == 'Update Successful.' ||
-          response['response']['response_desc'] == 'Delete Successful.'
+          response['response']['response_desc'] == 'Delete Successful.' ||
+          response['response']['response_desc'] == 'Get Successful.'
       end
 
       def message_from(response)

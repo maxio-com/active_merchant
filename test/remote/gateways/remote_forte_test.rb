@@ -413,12 +413,12 @@ class RemoteForteTest < Test::Unit::TestCase
   end
 
   def test_successful_update
-    store_response = @gateway.store(@credit_card)
-    credit_card = credit_card(nil, { first_name: "Jane", last_name: "Smith"})
+    store_response = @gateway.store(@credit_card, @options)
+    credit_card = credit_card(nil, { first_name: 'Jane', last_name: 'Smith' })
 
     options = {
       customer_token: store_response.params['customer_token'],
-      paymethod_token: store_response.params['paymethod_token']
+      paymethod_token: store_response.params['paymethod']['paymethod_token']
     }
 
     response = @gateway.update(credit_card, options)
