@@ -102,40 +102,41 @@ module ActiveMerchant #:nodoc:
         customer_token = options.delete(:customer_token)
         paymethod_token = options.delete(:paymethod_token)
 
-        # TODO: Use MultiResponse
+        MultiResponse.run do |response|
+          get_paymethod_response = nil
 
-        post = {}
-        add_customer(post, payment_method, options)
-        commit(:put, "customers/#{customer_token}", post)
+          post = {}
+          add_customer(post, payment_method, options)
+          response.process { commit(:put, "customers/#{customer_token}", post) }
 
-        post = {}
-        if payment_method.is_a?(Check)
-          payment_method.account_number = nil
-          add_echeck(post, payment_method, options)
-        else
-          payment_method.number = nil
-          add_credit_card(post, payment_method)
-        end
-        response = commit(:put, "paymethods/#{paymethod_token}", post)
-
-        r = commit(:get, "paymethods/#{paymethod_token}", nil)
-        billing_address_token = r.params["billing_address_token"]
-        post = {}
-        add_email(post, options)
-
-        if options[:billing_address].present?
-          if billing_address_token.present?
-            add_physical_address(post, options)
+          post = {}
+          if payment_method.is_a?(Check)
+            payment_method.account_number = nil
+            add_echeck(post, payment_method, options)
           else
-            # TODO: add a new address and attach it to the paymethod
+            payment_method.number = nil
+            add_credit_card(post, payment_method)
           end
-        end
+          response.process { commit(:put, "paymethods/#{paymethod_token}", post) }
 
-        unless post.empty?
-          commit(:put, "addresses/#{billing_address_token}", post)
-        end
+          response.process { get_paymethod_response = commit(:get, "paymethods/#{paymethod_token}", nil) }
+          billing_address_token = get_paymethod_response.params["billing_address_token"]
+          post = {}
+          add_email(post, options)
 
-        response
+          if options[:billing_address].present?
+            if billing_address_token.present?
+              add_physical_address(post, options)
+            else
+              # TODO: add a new address and attach it to the paymethod
+            end
+          end
+
+          unless post.empty?
+            response.process { commit(:put, "addresses/#{billing_address_token}", post) }
+          end
+          response
+        end
       end
 
       def void(authorization, _options = {})
