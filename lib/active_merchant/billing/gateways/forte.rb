@@ -122,20 +122,19 @@ module ActiveMerchant #:nodoc:
             update_clientless_paymethod(paymethod_token, params)
           end
 
-          r.process { get_paymethod_response = get_paymethod(payment_method) }
-
+          r.process { get_paymethod_response = get_paymethod(paymethod_token) }
           billing_address_token = get_paymethod_response.params['billing_address_token']
 
-          address_options = {}
-          add_email(address_options, options)
-
-          if options[:billing_address].present? && billing_address_token.present?
-            add_physical_address(address_options, options)
+          if billing_address_token.present?
+            address_options = {}
+            add_email(address_options, options)
+            if options[:billing_address].present?
+              add_physical_address(address_options, options)
+            end
+            r.process { update_address(billing_address_token, address_options) } if address_options.keys.present?
           else
             # TODO: add a new address and attach it to the paymethod
           end
-
-          r.process { update_address(billing_address_token, address_options) } if address_options.keys.present?
         end
       end
 
@@ -254,7 +253,7 @@ module ActiveMerchant #:nodoc:
           options[:echeck].delete(:account_number)
         end
 
-        commit(:put, path, params)
+        commit(:put, path, options)
       end
 
       def update_customer(customer_token, options)
