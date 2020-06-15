@@ -135,6 +135,8 @@ module ActiveMerchant #:nodoc:
           else
             # TODO: add a new address and attach it to the paymethod
           end
+
+          r.process { get_customer(customer_token) }
         end
       end
 
@@ -234,6 +236,12 @@ module ActiveMerchant #:nodoc:
 
       def get_paymethod(paymethod_token)
         path = ['paymethods', paymethod_token].join('/')
+
+        commit(:get, path)
+      end
+
+      def get_customer(customer_token)
+        path = ['customers', customer_token].join('/')
 
         commit(:get, path)
       end
