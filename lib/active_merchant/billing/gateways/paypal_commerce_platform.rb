@@ -13,7 +13,8 @@ module ActiveMerchant #:nodoc:
 
       def purchase(money, payment_method, options = {})
         post = {}
-        add_amount_and_order_id(post, money, options)
+        add_order_id(post, money, options)
+        add_amount(post[:purchase_units].first, money, options)
         add_payment_method(post, payment_method)
 
         commit(:post, '/v2/checkout/orders', post)
@@ -25,6 +26,20 @@ module ActiveMerchant #:nodoc:
 
         commit(:post, '/v2/vault/payment-tokens', post)
       end
+
+      def refund(money, authorization, options = {})
+        post = {}
+        add_amount(post, money, options)
+
+        commit(:post, "/v2/payments/captures/#{authorization}/refund", post)
+      end
+
+      def void(authorization, _options = {})
+        post = {}
+
+        commit(:post, "/v2/payments/captures/#{authorization}/refund", post)
+      end
+
 
       def supports_scrubbing?
         true
@@ -66,16 +81,19 @@ module ActiveMerchant #:nodoc:
         }
       end
 
-      def add_amount_and_order_id(post, money, options)
+      def add_order_id(post, money, options)
         post[:intent] = 'CAPTURE'
         post[:purchase_units] ||= {}
         post[:purchase_units] = [{
-          reference_id: options[:order_id],
-          amount: {
-            currency_code: options[:currency],
-            value: amount(money)
-          }
+          reference_id: options[:order_id]
         }]
+      end
+
+      def add_amount(post, money, options)
+        post[:amount] = {
+          currency_code: options[:currency],
+          value: amount(money)
+        }
       end
 
       def access_token
