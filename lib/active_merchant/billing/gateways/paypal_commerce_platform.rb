@@ -78,6 +78,9 @@ module ActiveMerchant #:nodoc:
             postal_code: billing_address[:zip],
             country_code: billing_address[:country]
           }
+
+          params[:source][:card].delete(:billing_address) unless
+            params[:source][:card][:billing_address].any? { |_, value| value.present? }
         end
       end
 
