@@ -22,7 +22,7 @@ module ActiveMerchant #:nodoc:
 
       def store(payment_method, options = {})
         post = {}
-        add_credit_card(post, payment_method)
+        add_credit_card(post, payment_method, options)
 
         commit(:post, '/v2/vault/payment-tokens', post)
       end
@@ -56,7 +56,7 @@ module ActiveMerchant #:nodoc:
 
       private
 
-      def add_credit_card(params, payment_method)
+      def add_credit_card(params, payment_method, options)
         params[:source] ||= {}
         params[:source][:card] = {
           type: format_card_brand(payment_method.brand),
@@ -65,6 +65,20 @@ module ActiveMerchant #:nodoc:
           security_code: payment_method.verification_value,
           expiry: "#{payment_method.year}-#{format(payment_method.month, :two_digits)}",
         }
+
+        if options[:billing_address].present?
+          billing_address = options[:billing_address]
+          address_line_1 = billing_address[:address1]
+          address_line_1 += " #{billing_address[:address2]}" if billing_address[:address2].present?
+
+          params[:source][:card][:billing_address] = {
+            address_line_1: address_line_1,
+            admin_area_2: billing_address[:city],
+            admin_area_1: billing_address[:state],
+            postal_code: billing_address[:zip],
+            country_code: billing_address[:country]
+          }
+        end
       end
 
       def add_payment_method(post, payment_method)
