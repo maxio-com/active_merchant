@@ -168,6 +168,15 @@ module ActiveMerchant #:nodoc:
         end
       end
 
+      def handle_response(response)
+        case response.code.to_i
+        when 200..499
+          response.body
+        else
+          raise ResponseError.new(response)
+        end
+      end
+
       def base_url
         test? ? test_url : live_url
       end
