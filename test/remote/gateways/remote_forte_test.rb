@@ -423,6 +423,22 @@ class RemoteForteTest < Test::Unit::TestCase
 
     response = @gateway.update(credit_card, options)
     assert_success response
+    assert response.params['customer_token'].present?
+    assert response.params['default_paymethod_token'].present?
+  end
+
+  def test_successful_bank_account_update
+    store_response = @gateway.store(@check)
+    options = {
+      customer_token: store_response.params['customer_token'],
+      paymethod_token: store_response.params['paymethod']['paymethod_token']
+    }
+    check = ActiveMerchant::Billing::Check.new(first_name: 'Jane', last_name: 'Smith')
+
+    response = @gateway.update(check, options)
+    assert_success response
+    assert response.params['customer_token'].present?
+    assert response.params['default_paymethod_token'].present?
   end
 
   def test_transcript_scrubbing
