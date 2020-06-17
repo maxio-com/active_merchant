@@ -143,8 +143,15 @@ module ActiveMerchant #:nodoc:
           message_from(success, response),
           response,
           authorization: authorization_from(response, path),
+          avs_result: AVSResult.new(code: processor_response(response)['avs_code']),
+          cvv_result: CVVResult.new(processor_response(response)['cvv_code']),
           test: test?
         )
+      end
+
+      def processor_response(response)
+        return {} unless response['purchase_units']
+        response['purchase_units'].first['payments']['captures'].first['processor_response']
       end
 
       def format_card_brand(card_brand)
