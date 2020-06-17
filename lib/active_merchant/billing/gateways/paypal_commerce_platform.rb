@@ -35,11 +35,12 @@ module ActiveMerchant #:nodoc:
       end
 
       def void(authorization, _options = {})
-        post = {}
-
-        commit(:post, "/v2/payments/captures/#{authorization}/refund", post)
+        commit(:post, "/v2/payments/captures/#{authorization}/refund", {})
       end
 
+      def unstore(paymethod_token, _options = {})
+        commit(:delete, "/v2/vault/payment-tokens/#{paymethod_token}", {})
+      end
 
       def supports_scrubbing?
         true
@@ -132,8 +133,10 @@ module ActiveMerchant #:nodoc:
         url = URI.join(base_url, path)
         body = http_method == :delete ? nil : params.to_json
 
-        response = JSON.parse(ssl_request(http_method, url, body, headers))
-        success = success_from(response)
+        raw_response = raw_ssl_request(http_method, url, body, headers)
+        http_code = raw_response.code.to_i
+        response = JSON.parse(handle_response(raw_response))
+        success = success_from(http_method, path, http_code, response)
 
         Response.new(
           success,
@@ -151,8 +154,19 @@ module ActiveMerchant #:nodoc:
         }.fetch(card_brand.to_sym, card_brand).to_s
       end
 
-      def success_from(response)
-        ['CREATED', 'COMPLETED'].include?(response['status'])
+      def success_from(http_method, path, http_code, response)
+        if path.start_with?('/v2/vault/payment-tokens')
+          case http_method
+          when :post
+            http_code == 201 && response['status'] == 'CREATED'
+          when :delete
+            http_code == 204
+          end
+        elsif path.start_with?('/v2/checkout/orders')
+          http_code == 201 && response['status'] == 'COMPLETED'
+        elsif path.start_with?('/v2/payments/captures')
+          http_code == 201 && response['status'] == 'COMPLETED'
+        end
       end
 
       def message_from(success, response)
@@ -171,7 +185,7 @@ module ActiveMerchant #:nodoc:
       def handle_response(response)
         case response.code.to_i
         when 200..499
-          response.body
+          response.body || {}
         else
           raise ResponseError.new(response)
         end
