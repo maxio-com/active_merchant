@@ -130,6 +130,12 @@ module ActiveMerchant #:nodoc:
       end
 
       def commit(http_method, path, params)
+        begin
+          access_token
+        rescue ResponseError => e
+          return Response.new(false, e.message)
+        end
+
         url = URI.join(base_url, path)
         body = http_method == :delete ? nil : params.to_json
 
@@ -191,7 +197,7 @@ module ActiveMerchant #:nodoc:
 
       def handle_response(response)
         case response.code.to_i
-        when 200..499
+        when 200..300
           response.body || {}
         else
           raise ResponseError.new(response)
