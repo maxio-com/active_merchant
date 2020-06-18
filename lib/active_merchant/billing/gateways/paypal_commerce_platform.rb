@@ -15,14 +15,14 @@ module ActiveMerchant #:nodoc:
         post = {}
         add_order_id(post, money, options)
         add_amount(post[:purchase_units].first, money, options)
-        add_payment_method(post, payment_method)
+        add_payment_source(post, payment_method, options)
 
         commit(:post, '/v2/checkout/orders', post)
       end
 
       def store(payment_method, options = {})
-        post = {}
-        add_credit_card(post, payment_method, options)
+        post = { source: {} }
+        add_credit_card(post[:source], payment_method, options)
 
         commit(:post, '/v2/vault/payment-tokens', post)
       end
@@ -58,8 +58,7 @@ module ActiveMerchant #:nodoc:
       private
 
       def add_credit_card(params, payment_method, options)
-        params[:source] ||= {}
-        params[:source][:card] = {
+        params[:card] = {
           type: format_card_brand(payment_method.brand),
           name: payment_method.name,
           number: payment_method.number,
@@ -72,7 +71,7 @@ module ActiveMerchant #:nodoc:
           address_line_1 = billing_address[:address1]
           address_line_1 += " #{billing_address[:address2]}" if billing_address[:address2].present?
 
-          params[:source][:card][:billing_address] = {
+          params[:card][:billing_address] = {
             address_line_1: address_line_1,
             admin_area_2: billing_address[:city],
             admin_area_1: billing_address[:state],
@@ -80,23 +79,30 @@ module ActiveMerchant #:nodoc:
             country_code: billing_address[:country]
           }
 
-          params[:source][:card].delete(:billing_address) unless
-            params[:source][:card][:billing_address].any? { |_, value| value.present? }
+          params[:card].delete(:billing_address) unless
+            params[:card][:billing_address].any? { |_, value| value.present? }
         end
       end
 
-      def add_payment_method(post, payment_method)
+      def add_payment_source(post, payment_method, options)
         if payment_method.is_a?(String)
-          add_payment_source_tokens(post, payment_method)
+          add_payment_source_token(post, payment_method)
+        else
+          add_payment_source_credit_card(post, payment_method, options)
         end
       end
 
-      def add_payment_source_tokens(post, payment_method)
+      def add_payment_source_token(post, payment_method)
         post[:payment_source] ||= {}
         post[:payment_source][:token] = {
           type: 'PAYMENT_METHOD_TOKEN',
           id: payment_method
         }
+      end
+
+      def add_payment_source_credit_card(post, payment_method, options)
+        post[:payment_source] ||= {}
+        add_credit_card(post[:payment_source], payment_method, options)
       end
 
       def add_order_id(post, money, options)
