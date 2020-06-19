@@ -67,17 +67,20 @@ module ActiveMerchant #:nodoc:
         }
 
         if options[:billing_address].present?
+          params[:card][:billing_address] = {}
+
           billing_address = options[:billing_address]
           address_line_1 = billing_address[:address1]
           address_line_1 += " #{billing_address[:address2]}" if billing_address[:address2].present?
 
-          params[:card][:billing_address] = {
-            address_line_1: address_line_1,
-            admin_area_2: billing_address[:city],
-            admin_area_1: billing_address[:state],
-            postal_code: billing_address[:zip],
-            country_code: billing_address[:country]
-          }
+          params[:card][:billing_address][:address_line_1] = address_line_1 if address_line_1.present?
+          params[:card][:billing_address][:admin_area_1] = billing_address[:state] if billing_address[:state].present?
+          params[:card][:billing_address][:admin_area_2] = billing_address[:city] if billing_address[:city].present?
+
+          if billing_address[:zip].present? && billing_address[:country].present?
+            params[:card][:billing_address][:postal_code] = billing_address[:zip]
+            params[:card][:billing_address][:country_code] = billing_address[:country]
+          end
 
           params[:card].delete(:billing_address) unless
             params[:card][:billing_address].any? { |_, value| value.present? }
@@ -203,7 +206,7 @@ module ActiveMerchant #:nodoc:
 
       def handle_response(response)
         case response.code.to_i
-        when 200..300
+        when 200..499
           response.body || '{}'
         else
           raise ResponseError.new(response)
