@@ -157,7 +157,7 @@ module ActiveMerchant #:nodoc:
           success,
           message_from(success, response),
           response,
-          authorization: authorization_from(response, path),
+          authorization: authorization_from(success, response, path),
           avs_result: AVSResult.new(code: processor_response(response)['avs_code']),
           cvv_result: CVVResult.new(processor_response(response)['cvv_code']),
           test: test?
@@ -195,7 +195,9 @@ module ActiveMerchant #:nodoc:
         success ? 'Transaction approved' : response['message']
       end
 
-      def authorization_from(response, path)
+      def authorization_from(success, response, path)
+        return unless success
+
         case path
         when '/v2/vault/payment-tokens'
           response['id']
