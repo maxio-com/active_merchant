@@ -48,9 +48,9 @@ module ActiveMerchant #:nodoc:
 
       def scrub(transcript)
         transcript
-          .gsub(/(Authorization: Basic )\w+/, '\1[FILTERED]')
-          .gsub(/(Authorization: Bearer )\w+/, '\1[FILTERED]')
-          .gsub(/(access_token)\W+\w+/, '\1[FILTERED]')
+          .gsub(/(Authorization: Basic )[\w-]+/, '\1[FILTERED]')
+          .gsub(/(Authorization: Bearer )[\w-]+/, '\1[FILTERED]')
+          .gsub(/(access_token)\W+[\w-]+/, '\1[FILTERED]')
           .gsub(/(number)\W+\d+/, '\1[FILTERED]')
           .gsub(/(security_code)\W+\d+/, '\1[FILTERED]')
       end
