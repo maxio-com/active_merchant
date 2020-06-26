@@ -17,7 +17,7 @@ module ActiveMerchant #:nodoc:
         add_amount(post[:purchase_units].first, money, options)
         add_payment_source(post, payment_method, options)
 
-        commit(:post, '/v2/checkout/orders', post)
+        commit(:post, '/v2/checkout/orders', post, options)
       end
 
       def store(payment_method, options = {})
@@ -138,7 +138,7 @@ module ActiveMerchant #:nodoc:
         end
       end
 
-      def commit(http_method, path, params)
+      def commit(http_method, path, params, options = {})
         begin
           access_token
         rescue ResponseError => e
@@ -148,7 +148,7 @@ module ActiveMerchant #:nodoc:
         url = URI.join(base_url, path)
         body = http_method == :delete ? nil : params.to_json
 
-        raw_response = raw_ssl_request(http_method, url, body, headers)
+        raw_response = raw_ssl_request(http_method, url, body, headers(options))
         http_code = raw_response.code.to_i
         response = JSON.parse(handle_response(raw_response))
         success = success_from(http_method, path, http_code, response)
@@ -166,7 +166,7 @@ module ActiveMerchant #:nodoc:
 
       def processor_response(response)
         return {} unless response['purchase_units']
-        response['purchase_units'].first['payments']['captures'].first['processor_response']
+        response['purchase_units'].first['payments']['captures'].first['processor_response'] || {}
       end
 
       def format_card_brand(card_brand)
@@ -219,12 +219,14 @@ module ActiveMerchant #:nodoc:
         test? ? test_url : live_url
       end
 
-      def headers
+      def headers(options = {})
         {
           'Authorization' => ('Bearer ' + access_token),
           'PayPal-Partner-Attribution-Id' => @options[:bn_code],
           'Content-Type' => 'application/json'
-        }
+        }.tap do |h|
+          h['PayPal-Request-Id'] = options[:order_id] if options[:order_id]
+        end
       end
     end
   end
