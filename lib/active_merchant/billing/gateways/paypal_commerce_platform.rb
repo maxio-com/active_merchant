@@ -134,7 +134,13 @@ module ActiveMerchant #:nodoc:
             'Content-Type' => 'application/x-www-form-urlencoded'
           }
 
-          JSON.parse(ssl_request(:post, URI.join(base_url, path), body, headers))['access_token']
+          response = raw_ssl_request(:post, URI.join(base_url, path), body, headers)
+
+          if response.code.to_i == 200
+            JSON.parse(response.body)['access_token']
+          else
+            raise ResponseError.new(response)
+          end
         end
       end
 
@@ -185,7 +191,7 @@ module ActiveMerchant #:nodoc:
             http_code == 204
           end
         elsif path.start_with?('/v2/checkout/orders')
-          http_code == 201 && response['status'] == 'COMPLETED'
+          [200, 201].include?(http_code) && response['status'] == 'COMPLETED'
         elsif path.start_with?('/v2/payments/captures')
           http_code == 201 && response['status'] == 'COMPLETED'
         end

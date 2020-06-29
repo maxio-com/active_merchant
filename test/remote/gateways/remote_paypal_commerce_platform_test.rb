@@ -11,7 +11,7 @@ class RemotePayPalCommercePlatformTest < Test::Unit::TestCase
       currency: 'USD',
       billing_address: address,
       description: 'Store Purchase',
-      order_id: '1'
+      order_id: generate_unique_id[0...10]
     }
   end
 
