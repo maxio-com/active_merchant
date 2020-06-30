@@ -186,14 +186,14 @@ module ActiveMerchant #:nodoc:
         if path.start_with?('/v2/vault/payment-tokens')
           case http_method
           when :post
-            http_code == 201 && response['status'] == 'CREATED'
+            response['status'] == 'CREATED'
           when :delete
-            http_code == 204
+            true
           end
         elsif path.start_with?('/v2/checkout/orders')
-          [200, 201].include?(http_code) && response['status'] == 'COMPLETED'
+          response['status'] == 'COMPLETED'
         elsif path.start_with?('/v2/payments/captures')
-          http_code == 201 && response['status'] == 'COMPLETED'
+          response['status'] == 'COMPLETED'
         end
       end
 
@@ -214,7 +214,7 @@ module ActiveMerchant #:nodoc:
 
       def handle_response(response)
         case response.code.to_i
-        when 200..499
+        when 200..300
           response.body || '{}'
         else
           raise ResponseError.new(response)
