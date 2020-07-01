@@ -16,6 +16,7 @@ module ActiveMerchant #:nodoc:
         add_order_id(post, money, options)
         add_amount(post[:purchase_units].first, money, options)
         add_payment_source(post, payment_method, options)
+        add_three_ds_authentication_results(post, options)
 
         commit(:post, '/v2/checkout/orders', post, options)
       end
@@ -93,6 +94,10 @@ module ActiveMerchant #:nodoc:
         else
           add_payment_source_credit_card(post, payment_method, options)
         end
+      end
+
+      def add_three_ds_authentication_results(post, options)
+        post[:payment_source][:token][:authentication_results] = [options[:three_ds_authentication_results]]
       end
 
       def add_payment_source_token(post, payment_method)
