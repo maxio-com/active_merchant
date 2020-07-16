@@ -5,7 +5,7 @@ class RemotePayPalCommercePlatformTest < Test::Unit::TestCase
     @gateway = PaypalCommercePlatformGateway.new(fixtures(:paypal_commerce_platform))
 
     @amount = 100
-    @credit_card = credit_card('4111111111111111')
+    @credit_card = credit_card('5555555555554444')
 
     @options = {
       currency: 'USD',
