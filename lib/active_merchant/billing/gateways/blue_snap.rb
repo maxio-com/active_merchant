@@ -10,7 +10,6 @@ module ActiveMerchant
       self.default_currency = 'USD'
       self.supported_cardtypes = %i[visa master american_express discover jcb diners_club maestro naranja cabal]
       self.currencies_without_fractions = %w(BYR CLP ILS JPY KRW VND XOF)
-      self.currencies_with_three_decimal_places = %w(BHD JOD KWD OMR TND)
 
       self.homepage_url = 'https://home.bluesnap.com/'
       self.display_name = 'BlueSnap'

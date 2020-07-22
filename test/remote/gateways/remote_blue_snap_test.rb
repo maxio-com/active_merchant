@@ -60,6 +60,7 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
   end
 
   def test_successful_three_decimal_currency_purchase
+    omit "we do not support three decimal currency purchases"
     options = @options.merge(currency: 'BHD')
     response = @gateway.purchase(1234, @credit_card, options)
     assert_success response
@@ -67,6 +68,7 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
   end
 
   def test_successful_purchase_with_cabal_card
+    omit "we do not support cabal cards"
     options = @options.merge({
                                email: 'joe@example.com'
                              })
@@ -76,6 +78,7 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
   end
 
   def test_successful_purchase_with_naranja_card
+    omit "we do not support naranja cards"
     options = @options.merge({
                                email: 'joe@example.com'
                              })
@@ -106,6 +109,7 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
   end
 
   def test_successful_purchase_with_3ds2_auth
+    omit "we do not support 3ds for bluesnap"
     response = @gateway.purchase(@amount, @three_ds_visa_card, @options_3ds2)
     assert_success response
     assert_equal 'Success', response.message
@@ -120,6 +124,7 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
   end
 
   def test_successful_purchase_with_level3_data
+    omit "our sandbox does not support level 3 data"
     l_three_visa = credit_card('4111111111111111', month: 2, year: 2023)
     options = @options.merge({
                                customer_reference_number: '1234A',
@@ -193,6 +198,7 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
   end
 
   def test_fraudulent_purchase
+    omit "our sanbox currently does not support fraudlent checks"
     # Reflects specific settings on Bluesnap sandbox account.
     response = @gateway.purchase(@fraudulent_amount, @fraudulent_card, @options)
     assert_failure response
@@ -263,6 +269,7 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
   end
 
   def test_successful_authorize_and_capture_with_3ds2_auth
+    omit "we do not support 3ds for bluesnap"
     auth = @gateway.authorize(@amount, @three_ds_master_card, @options_3ds2)
     assert_success auth
 
