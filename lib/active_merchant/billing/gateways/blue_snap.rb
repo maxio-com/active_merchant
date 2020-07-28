@@ -235,9 +235,7 @@ module ActiveMerchant
       def add_description(doc, description)
         doc.send('transaction-meta-data') do
           doc.send('meta-data') do
-            doc.send('meta-key', description[:meta_key])
-            doc.send('meta-value', description[:meta-value])
-            doc.send('meta-description', description[:meta-description])
+            doc.send('meta-description', description)
           end
         end
       end
