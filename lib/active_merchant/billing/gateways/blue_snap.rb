@@ -19,7 +19,8 @@ module ActiveMerchant
         authorize: 'AUTH_ONLY',
         capture: 'CAPTURE',
         void: 'AUTH_REVERSAL',
-        refund: 'REFUND'
+        refund: 'REFUND',
+        update: 'UPDATE',
       }
 
       CVC_CODE_TRANSLATOR = {
@@ -146,6 +147,16 @@ module ActiveMerchant
         end
       end
 
+      def update(payment_method, options= {})
+        payment_method_details = PaymentMethodDetails.new(payment_method)
+        payment_method_details.vaulted_shopper_id = options[:vaulted_shopper_id] if options[:vaulted_shopper_id].present?
+        commit(:update, :put, payment_method_details) do |doc|
+          doc.send('first-name', payment_method.first_name)
+          doc.send('last-name', payment_method.last_name)
+          doc.email(options[:email]) if options[:email]
+        end
+      end
+
       def verify_credentials
         begin
           ssl_get(url.to_s, headers)
@@ -172,14 +183,14 @@ module ActiveMerchant
       private
 
       def add_auth_purchase(doc, money, payment_method, options)
-        doc.send('recurring-transaction', options[:recurring] ? 'RECURRING' : 'ECOMMERCE')
+        doc.send('card-transaction-type', options[:recurring] ? 'RECURRING' : 'AUTH_CAPTURE')
         add_order(doc, options)
         doc.send('store-card', options[:store_card] || false)
         add_amount(doc, money, options)
-        add_fraud_info(doc, options)
 
         if payment_method.is_a?(String)
           doc.send('vaulted-shopper-id', payment_method)
+          add_stored_card_info(doc, options)
         else
           doc.send('card-holder-info') do
             add_personal_info(doc, payment_method, options)
@@ -211,6 +222,13 @@ module ActiveMerchant
         end
       end
 
+      def add_stored_card_info(doc, options)
+        doc.send('credit-card') do
+          doc.send('card-last-four-digits', options[:last_four])
+          doc.send('card-type', options[:card_type])
+        end
+      end
+
       def add_description(doc, description)
         doc.send('transaction-meta-data') do
           doc.send('meta-data') do
@@ -224,9 +242,6 @@ module ActiveMerchant
       def add_order(doc, options)
         doc.send('merchant-transaction-id', truncate(options[:order_id], 50)) if options[:order_id]
         doc.send('soft-descriptor', options[:soft_descriptor]) if options[:soft_descriptor]
-        add_description(doc, options[:description]) if options[:description]
-        add_3ds(doc, options[:three_d_secure]) if options[:three_d_secure]
-        add_level_3_data(doc, options)
       end
 
       def add_address(doc, options)
@@ -295,12 +310,6 @@ module ActiveMerchant
 
       def add_authorization(doc, authorization)
         doc.send('transaction-id', authorization)
-      end
-
-      def add_fraud_info(doc, options)
-        doc.send('transaction-fraud-info') do
-          doc.send('shopper-ip-address', options[:ip]) if options[:ip]
-        end
       end
 
       def add_alt_transaction_purchase(doc, money, payment_method_details, options)
@@ -396,8 +405,16 @@ module ActiveMerchant
 
       def url(action = nil, payment_method_details = PaymentMethodDetails.new())
         base = test? ? test_url : live_url
-        resource = action == :store ? 'vaulted-shoppers' : payment_method_details.resource_url
-        "#{base}/#{resource}"
+        resource = if action == :purchase
+                     payment_method_details.resource_url
+                   else
+                     "vaulted-shoppers"
+                   end
+        if payment_method_details.vaulted_shopper_id && resource == "vaulted-shoppers"
+          "#{base}/#{resource}" + "/#{payment_method_details.vaulted_shopper_id}"
+        else
+          "#{base}/#{resource}"
+        end
       end
 
       def cvv_result(parsed)
@@ -469,7 +486,11 @@ module ActiveMerchant
       end
 
       def root_element(action, payment_method_details)
-        action == :store ? 'vaulted-shopper' : payment_method_details.root_element
+        if action == :purchase
+          payment_method_details.root_element
+        else
+          'vaulted-shopper'
+        end
       end
 
       def headers
@@ -482,7 +503,9 @@ module ActiveMerchant
       def build_xml_request(action, payment_method_details)
         builder = Nokogiri::XML::Builder.new
         builder.__send__(root_element(action, payment_method_details), root_attributes) do |doc|
-          doc.send('card-transaction-type', TRANSACTIONS[action]) if TRANSACTIONS[action] && !payment_method_details.alt_transaction?
+          if action == :store
+            doc.send('card-transaction-type', TRANSACTIONS[action]) if TRANSACTIONS[action] && !payment_method_details.alt_transaction?
+          end
           yield(doc)
         end
         builder.doc.root.to_xml
@@ -508,6 +531,7 @@ module ActiveMerchant
 
     class PaymentMethodDetails
       attr_reader :payment_method, :vaulted_shopper_id, :payment_method_type
+      attr_writer :vaulted_shopper_id
 
       def initialize(payment_method = nil)
         @payment_method = payment_method
