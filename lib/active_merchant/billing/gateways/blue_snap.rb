@@ -14,6 +14,8 @@ module ActiveMerchant
       self.homepage_url = 'https://home.bluesnap.com/'
       self.display_name = 'BlueSnap'
 
+      API_VERSION = '3.0'
+
       TRANSACTIONS = {
         purchase: 'AUTH_CAPTURE',
         authorize: 'AUTH_ONLY',
@@ -183,10 +185,11 @@ module ActiveMerchant
       private
 
       def add_auth_purchase(doc, money, payment_method, options)
-        doc.send('card-transaction-type', options[:recurring] ? 'RECURRING' : 'AUTH_CAPTURE')
+        doc.send('card-transaction-type', 'AUTH_CAPTURE')
         add_order(doc, options)
         doc.send('store-card', options[:store_card] || false)
         add_amount(doc, money, options)
+        add_fraud_info(doc, options)
 
         if payment_method.is_a?(String)
           doc.send('vaulted-shopper-id', payment_method)
@@ -232,9 +235,9 @@ module ActiveMerchant
       def add_description(doc, description)
         doc.send('transaction-meta-data') do
           doc.send('meta-data') do
-            doc.send('meta-key', 'description')
-            doc.send('meta-value', truncate(description, 500))
-            doc.send('meta-description', 'Description')
+            doc.send('meta-key', description[:meta_key])
+            doc.send('meta-value', description[:meta-value])
+            doc.send('meta-description', description[:meta-description])
           end
         end
       end
@@ -242,6 +245,9 @@ module ActiveMerchant
       def add_order(doc, options)
         doc.send('merchant-transaction-id', truncate(options[:order_id], 50)) if options[:order_id]
         doc.send('soft-descriptor', options[:soft_descriptor]) if options[:soft_descriptor]
+        add_description(doc, options[:description]) if options[:description]
+        add_3ds(doc, options[:three_d_secure]) if options[:three_d_secure]
+        add_level_3_data(doc, options)
       end
 
       def add_address(doc, options)
@@ -261,13 +267,17 @@ module ActiveMerchant
         xid = three_d_secure_options[:xid]
         ds_transaction_id = three_d_secure_options[:ds_transaction_id]
         version = three_d_secure_options[:version]
+        three_d_secure_reference_id = three_d_secure_options[:three_d_secure_reference_id]
+        three_d_secure_result_token = three_d_secure_options[:three_d_secure_result_token]
 
         doc.send('three-d-secure') do
-          doc.eci(eci) if eci
-          doc.cavv(cavv) if cavv
-          doc.xid(xid) if xid
+          doc.send('eci', eci) if eci
+          doc.send('cavv', cavv) if cavv
+          doc.send('xid', xid) if xid
           doc.send('three-d-secure-version', version) if version
           doc.send('ds-transaction-id', ds_transaction_id) if ds_transaction_id
+          doc.send('three-d-secure-reference-id', three_d_secure_reference_id) if three_d_secure_reference_id
+          doc.send('three-d-secure-result-token', three_d_secure_result_token) if three_d_secure_result_token
         end
       end
 
@@ -310,6 +320,28 @@ module ActiveMerchant
 
       def add_authorization(doc, authorization)
         doc.send('transaction-id', authorization)
+      end
+
+      def add_fraud_info(doc, options)
+        doc.send('transaction-fraud-info') do
+          doc.send('fraud-session-id', options[:fraud_session_id])
+          doc.send('shopper-ip-address', options[:ip]) if options[:ip]
+          doc.send('company', options[:company]) if options[:company]
+          if options[:address_1]
+            doc.send('shipping-contact-info') do
+              doc.send('first-name', options[:first_name])
+              doc.send('last-name', options[:last_name])
+              doc.send('address1', options[:address1])
+              doc.send('address2', options[:address2])
+              doc.send('city', options[:city])
+              doc.send('state', options[:state])
+              doc.send('zip', options[:zip])
+              doc.send('country', options[:country])
+            end
+          end
+          doc.send('enterprise-site-id', options[:enterprise_site_id]) if options[:enterprise_site_id]
+          doc.send('enterprise-udfs', options[:enterprise_udfs]) if options[:enterprise_udfs]
+        end
       end
 
       def add_alt_transaction_purchase(doc, money, payment_method_details, options)
@@ -496,6 +528,7 @@ module ActiveMerchant
       def headers
         {
           'Content-Type' => 'application/xml',
+          'bluesnap-version' => API_VERSION,
           'Authorization' => ('Basic ' + Base64.strict_encode64("#{@options[:api_username]}:#{@options[:api_password]}").strip),
         }
       end
@@ -530,8 +563,8 @@ module ActiveMerchant
     end
 
     class PaymentMethodDetails
-      attr_reader :payment_method, :vaulted_shopper_id, :payment_method_type
-      attr_writer :vaulted_shopper_id
+      attr_reader :payment_method, :payment_method_type
+      attr_accessor :vaulted_shopper_id
 
       def initialize(payment_method = nil)
         @payment_method = payment_method
