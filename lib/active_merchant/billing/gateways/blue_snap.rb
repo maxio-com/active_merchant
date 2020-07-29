@@ -442,10 +442,10 @@ module ActiveMerchant
 
       def url(action = nil, payment_method_details = PaymentMethodDetails.new())
         base = test? ? test_url : live_url
-        resource = if action == :purchase
-                     payment_method_details.resource_url
-                   else
+        resource = if [:store, :update].include?(action)
                      "vaulted-shoppers"
+                   else
+                     payment_method_details.resource_url
                    end
         if payment_method_details.vaulted_shopper_id && resource == "vaulted-shoppers"
           "#{base}/#{resource}" + "/#{payment_method_details.vaulted_shopper_id}"
