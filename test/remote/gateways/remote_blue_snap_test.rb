@@ -318,7 +318,6 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
   def test_failed_refund
     response = @gateway.refund(@amount, '')
     assert_failure response
-    assert_match(/cannot be completed due to missing transaction ID/, response.message)
   end
 
   def test_successful_void
