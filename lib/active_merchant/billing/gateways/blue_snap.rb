@@ -105,7 +105,7 @@ module ActiveMerchant
 
       def refund(money, authorization, options={})
         commit(:refund, :put) do
-          { authorization: authorization, money: money }
+          { authorization: authorization, money: amount(money) }
         end
       end
 
