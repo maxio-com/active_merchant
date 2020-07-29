@@ -202,9 +202,9 @@ class BlueSnapTest < Test::Unit::TestCase
   def test_successful_refund
     @gateway.expects(:raw_ssl_request).returns(successful_refund_response)
 
-    response = @gateway.refund(@amount, 'Authorization')
+    response = @gateway.refund(@amount, '1012082907')
     assert_success response
-    assert_equal '1012082907', response.authorization
+    assert_equal '1012082907', response.params["transaction-id"]
   end
 
   def test_failed_refund
@@ -218,9 +218,9 @@ class BlueSnapTest < Test::Unit::TestCase
   def test_successful_void
     @gateway.expects(:raw_ssl_request).returns(successful_void_response)
 
-    response = @gateway.void('Authorization')
+    response = @gateway.void('1012082919')
     assert_success response
-    assert_equal '1012082919', response.authorization
+    assert_equal '1012082919', response.params["transaction-id"]
   end
 
   def test_failed_void
@@ -351,11 +351,6 @@ class BlueSnapTest < Test::Unit::TestCase
     # Check all 0 decimal currencies
     ActiveMerchant::Billing::BlueSnapGateway.currencies_without_fractions.each do |currency|
       assert_equal '12', check_amount_registered(amount, currency)
-    end
-
-    # Check all 3 decimal currencies
-    ActiveMerchant::Billing::BlueSnapGateway.currencies_with_three_decimal_places.each do |currency|
-      assert_equal '1.234', check_amount_registered(amount, currency)
     end
   end
 
