@@ -354,7 +354,7 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
     assert_equal 'Success', response.message
     assert response.authorization
     assert_equal 'I', response.avs_result['code']
-    assert_equal 'P', response.cvv_result['code']
+    assert_equal 'M', response.cvv_result['code']
     assert_match(/services\/2\/vaulted-shoppers/, response.params['content-location-header'])
   end
 
