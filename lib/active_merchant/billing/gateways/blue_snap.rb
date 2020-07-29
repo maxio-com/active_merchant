@@ -104,17 +104,14 @@ module ActiveMerchant
       end
 
       def refund(money, authorization, options={})
-        commit(:refund, :put) do |doc|
-          add_authorization(doc, authorization)
-          add_amount(doc, money, options)
-          add_order(doc, options)
+        commit(:refund, :put) do
+          { authorization: authorization, money: money }
         end
       end
 
       def void(authorization, options={})
-        commit(:void, :put) do |doc|
-          add_authorization(doc, authorization)
-          add_order(doc, options)
+        commit(:refund, :put) do
+          { authorization: authorization }
         end
       end
 
@@ -142,7 +139,7 @@ module ActiveMerchant
       end
 
       def store_echeck(doc, payment_method)
-        doc.send('ecp-info') do
+        doc.send('ecp-details') do
           doc.send('ecp') do
             add_echeck(doc, payment_method)
           end
@@ -384,6 +381,7 @@ module ActiveMerchant
       def parse(response)
         return bad_authentication_response if response.code.to_i == 401
         return forbidden_response(response.body) if response.code.to_i == 403
+        return {} if response.body.blank?
 
         parsed = {}
         doc = Nokogiri::XML(response.body)
@@ -416,7 +414,16 @@ module ActiveMerchant
       end
 
       def commit(action, verb = :post, payment_method_details = PaymentMethodDetails.new())
-        request = build_xml_request(action, payment_method_details) { |doc| yield(doc) }
+        if action == :refund
+          options = yield
+          request = nil
+          resource_url = "#{payment_method_details.resource_url}/#{options[:authorization]}/refund"
+          resource_url += "?amount=#{options[:money]}" if options[:money].present?
+          payment_method_details = OpenStruct.new(resource_url: resource_url)
+        else
+          request = build_xml_request(action, payment_method_details) { |doc| yield(doc) }
+        end
+
         response = api_request(action, request, verb, payment_method_details)
         parsed = parse(response)
 
@@ -448,10 +455,12 @@ module ActiveMerchant
       end
 
       def cvv_result(parsed)
+        return if parsed.blank?
         CVVResult.new(CVC_CODE_TRANSLATOR[parsed['cvv-response-code']])
       end
 
       def avs_result(parsed)
+        return if parsed.blank?
         AVSResult.new(code: AVS_CODE_TRANSLATOR[avs_lookup_key(parsed)])
       end
 
@@ -494,6 +503,7 @@ module ActiveMerchant
       end
 
       def authorization_from(action, parsed_response, payment_method_details)
+        return if action == :refund
         action == :store ? vaulted_shopper_id(parsed_response, payment_method_details) : parsed_response['transaction-id']
       end
 
@@ -506,6 +516,7 @@ module ActiveMerchant
       end
 
       def error_code_from(parsed_response)
+        return if parsed_response.blank?
         parsed_response['code']
       end
 
