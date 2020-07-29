@@ -225,8 +225,8 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
   def test_cvv_result
     response = @gateway.purchase(@amount, @credit_card, @options)
     assert_success response
-    assert_equal 'CVV not processed', response.cvv_result['message']
-    assert_equal 'P', response.cvv_result['code']
+    assert_equal 'CVV matches', response.cvv_result['message']
+    assert_equal 'M', response.cvv_result['code']
   end
 
   def test_avs_result
