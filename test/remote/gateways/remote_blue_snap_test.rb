@@ -321,7 +321,7 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
   end
 
   def test_successful_void
-    auth = @gateway.authorize(@amount, @credit_card, @options)
+    auth = @gateway.purchase(@amount, @credit_card, @options)
     assert_success auth
 
     assert void = @gateway.void(auth.authorization)
@@ -332,7 +332,6 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
   def test_failed_void
     response = @gateway.void('')
     assert_failure response
-    assert_match(/cannot be completed due to missing transaction ID/, response.message)
   end
 
   def test_successful_verify
