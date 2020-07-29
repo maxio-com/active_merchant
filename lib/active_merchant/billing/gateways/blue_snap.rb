@@ -91,12 +91,13 @@ module ActiveMerchant
 
       def authorize(money, payment_method, options={})
         commit(:authorize) do |doc|
-          add_auth_purchase(doc, money, payment_method, options)
+          add_auth_only(doc, money, payment_method, options)
         end
       end
 
       def capture(money, authorization, options={})
         commit(:capture, :put) do |doc|
+          doc.send('card-transaction-type', 'CAPTURE')
           add_authorization(doc, authorization)
           add_order(doc, options)
           add_amount(doc, money, options) if options[:include_capture_amount] == true
@@ -191,6 +192,23 @@ module ActiveMerchant
         if payment_method.is_a?(String)
           doc.send('vaulted-shopper-id', payment_method)
           add_stored_card_info(doc, options)
+        else
+          doc.send('card-holder-info') do
+            add_personal_info(doc, payment_method, options)
+          end
+          add_credit_card(doc, payment_method)
+        end
+      end
+
+      def add_auth_only(doc, money, payment_method, options)
+        doc.send('card-transaction-type', 'AUTH_ONLY')
+        add_order(doc, options)
+        doc.send('store-card', options[:store_card] || false)
+        add_amount(doc, money, options)
+        add_fraud_info(doc, options)
+
+        if payment_method.is_a?(String)
+          doc.send('vaulted-shopper-id', payment_method)
         else
           doc.send('card-holder-info') do
             add_personal_info(doc, payment_method, options)
@@ -527,7 +545,7 @@ module ActiveMerchant
       end
 
       def root_element(action, payment_method_details)
-        if action == :purchase
+        if [:purchase, :authorize, :capture].include?(action)
           payment_method_details.root_element
         else
           'vaulted-shopper'
