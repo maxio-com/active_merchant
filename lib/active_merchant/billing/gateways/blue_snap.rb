@@ -125,6 +125,7 @@ module ActiveMerchant
 
         commit(:store, :post, payment_method_details) do |doc|
           add_personal_info(doc, payment_method, options)
+          add_fraud_info(doc, options)
           add_echeck_company(doc, payment_method) if payment_method_details.check?
           doc.send('payment-sources') do
             payment_method_details.check? ? store_echeck(doc, payment_method) : store_credit_card(doc, payment_method)
