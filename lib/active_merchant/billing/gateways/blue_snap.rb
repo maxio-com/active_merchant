@@ -80,11 +80,16 @@ module ActiveMerchant
       def purchase(money, payment_method, options={})
         payment_method_details = PaymentMethodDetails.new(payment_method)
 
-        commit(:purchase, :post, payment_method_details) do |doc|
-          if payment_method_details.alt_transaction?
-            add_alt_transaction_purchase(doc, money, payment_method_details, options)
-          else
-            add_auth_purchase(doc, money, payment_method, options)
+        if options[:subscription_id].blank?
+          commit(:create_subscription, :post, payment_method_details) do |doc|
+            add_vault_shopper_id(doc, payment_method)
+            add_order(doc, options)
+            add_amount(doc, money, options)
+            add_fraud_info(doc, options)
+          end
+        else
+          commit(:charge_subscription, :post, payment_method_details, options) do |doc|
+            add_amount(doc, money, options)
           end
         end
       end
@@ -182,6 +187,10 @@ module ActiveMerchant
       end
 
       private
+
+      def add_vault_shopper_id(doc, payment_method)
+        doc.send('vaulted-shopper-id', payment_method)
+      end
 
       def add_auth_purchase(doc, money, payment_method, options)
         doc.send('card-transaction-type', 'AUTH_CAPTURE')
@@ -426,13 +435,13 @@ module ActiveMerchant
         end
       end
 
-      def api_request(action, request, verb, payment_method_details)
-        ssl_request(verb, url(action, payment_method_details), request, headers)
+      def api_request(action, request, verb, payment_method_details, options)
+        ssl_request(verb, url(action, payment_method_details, options), request, headers)
       rescue ResponseError => e
         e.response
       end
 
-      def commit(action, verb = :post, payment_method_details = PaymentMethodDetails.new())
+      def commit(action, verb = :post, payment_method_details = PaymentMethodDetails.new(), options = {})
         if action == :refund
           options = yield
           request = nil
@@ -443,7 +452,8 @@ module ActiveMerchant
           request = build_xml_request(action, payment_method_details) { |doc| yield(doc) }
         end
 
-        response = api_request(action, request, verb, payment_method_details)
+        response = api_request(action, request, verb, payment_method_details, options)
+
         parsed = parse(response)
 
         succeeded = success_from(action, response)
@@ -459,10 +469,14 @@ module ActiveMerchant
         )
       end
 
-      def url(action = nil, payment_method_details = PaymentMethodDetails.new())
+      def url(action = nil, payment_method_details = PaymentMethodDetails.new(), options)
         base = test? ? test_url : live_url
         resource = if [:store, :update].include?(action)
                      "vaulted-shoppers"
+                   elsif action == :create_subscription
+                     "recurring/ondemand"
+                   elsif action == :charge_subscription
+                     "recurring/ondemand/#{options[:subscription_id]}"
                    else
                      payment_method_details.resource_url
                    end
@@ -548,6 +562,8 @@ module ActiveMerchant
       def root_element(action, payment_method_details)
         if [:purchase, :authorize, :capture].include?(action)
           payment_method_details.root_element
+        elsif [:create_subscription, :charge_subscription].include?(action)
+          "charge"
         else
           'vaulted-shopper'
         end
