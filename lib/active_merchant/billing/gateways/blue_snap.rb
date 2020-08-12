@@ -82,10 +82,11 @@ module ActiveMerchant
 
         if options[:subscription_id].blank?
           commit(:create_subscription, :post, payment_method_details) do |doc|
-            add_vault_shopper_id(doc, payment_method)
+            add_vault_shopper_id(doc, payment_method_details.vaulted_shopper_id)
             add_order(doc, options)
             add_amount(doc, money, options)
             add_fraud_info(doc, options)
+            doc.send('authorized-by-shopper', options[:authorized_by_shopper]) if payment_method_details.check?
           end
         else
           commit(:charge_subscription, :post, payment_method_details, options) do |doc|
