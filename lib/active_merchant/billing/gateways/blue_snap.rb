@@ -80,7 +80,11 @@ module ActiveMerchant
       def purchase(money, payment_method, options={})
         payment_method_details = PaymentMethodDetails.new(payment_method)
 
-        if options[:subscription_id].blank?
+        if payment_method_details.alt_transaction?
+          commit(:purchase, :post, payment_method_details) do |doc|
+            add_alt_transaction_purchase(doc, money, payment_method_details, options)
+          end
+        elsif options[:subscription_id].blank?
           commit(:create_subscription, :post, payment_method_details) do |doc|
             add_vaulted_shopper_id(doc, payment_method_details.vaulted_shopper_id)
             add_order(doc, options)
