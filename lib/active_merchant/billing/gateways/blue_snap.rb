@@ -449,8 +449,8 @@ module ActiveMerchant
         if action == :refund
           options = yield
           request = nil
-          resource_url = "#{payment_method_details.resource_url}/#{options[:authorization]}/refund"
-          resource_url += "?amount=#{options[:money]}" if options[:money].present?
+          resource_url = "#{payment_method_details.resource_url}/#{options[:authorization]}/refund?cancelsubscriptions=false"
+          resource_url += "&amount=#{options[:money]}" if options[:money].present?
           payment_method_details = OpenStruct.new(resource_url: resource_url)
         else
           request = build_xml_request(action, payment_method_details) { |doc| yield(doc) }
