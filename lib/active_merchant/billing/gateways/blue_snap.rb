@@ -90,6 +90,7 @@ module ActiveMerchant
             add_order(doc, options)
             add_amount(doc, money, options)
             add_fraud_info(doc, options)
+            add_credit_card_info(doc, options)
             doc.send('authorized-by-shopper', options[:authorized_by_shopper]) if payment_method_details.check?
           end
         else
@@ -195,6 +196,15 @@ module ActiveMerchant
 
       def add_vaulted_shopper_id(doc, payment_method)
         doc.send('vaulted-shopper-id', payment_method)
+      end
+
+      def add_credit_card_info(doc, options)
+        doc.send('payment-source') do
+          doc.send('credit-card-info') do
+            doc.send('card-last-four-digits', options[:last_four])
+            doc.send('card-type', options[:card_type])
+          end
+        end
       end
 
       def add_auth_purchase(doc, money, payment_method, options)
