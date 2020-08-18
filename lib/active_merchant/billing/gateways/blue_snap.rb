@@ -392,7 +392,7 @@ module ActiveMerchant
         add_echeck_transaction(doc, payment_method_details.payment_method, options, vaulted_shopper_id.present?) if payment_method_details.check?
 
         add_fraud_info(doc, options)
-        add_description(doc, options)
+        add_description(doc, options[:description])
       end
 
       def add_echeck_transaction(doc, check, options, vaulted_shopper)
@@ -404,7 +404,13 @@ module ActiveMerchant
         end
 
         doc.send('ecp-transaction') do
-          add_echeck(doc, check) unless vaulted_shopper
+          if vaulted_shopper
+            doc.send('account-type', options[:account_type])
+            doc.send('public-routing-number', options[:public_routing_number])
+            doc.send('public-account-number', options[:public_account_number])
+          else
+            add_echeck(doc, check) unless vaulted_shopper
+          end
         end
 
         doc.send('authorized-by-shopper', options[:authorized_by_shopper])
