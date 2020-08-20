@@ -96,6 +96,7 @@ module ActiveMerchant
         else
           commit(:charge_subscription, :post, payment_method_details, options) do |doc|
             add_amount(doc, money, options)
+            add_charge_description(doc, options[:description])
           end
         end
       end
@@ -134,14 +135,28 @@ module ActiveMerchant
       def store(payment_method, options = {})
         payment_method_details = PaymentMethodDetails.new(payment_method)
 
-        commit(:store, :post, payment_method_details) do |doc|
-          add_personal_info(doc, payment_method, options)
-          add_fraud_info(doc, options)
-          add_echeck_company(doc, payment_method) if payment_method_details.check?
-          doc.send('payment-sources') do
-            payment_method_details.check? ? store_echeck(doc, payment_method) : store_credit_card(doc, payment_method)
+        MultiResponse.run do |r|
+          r.process do
+            commit(:store, :post, payment_method_details) do |doc|
+              add_personal_info(doc, payment_method, options)
+              add_fraud_info(doc, options)
+              add_echeck_company(doc, payment_method) if payment_method_details.check?
+              doc.send('payment-sources') do
+                payment_method_details.check? ? store_echeck(doc, payment_method) : store_credit_card(doc, payment_method)
+              end
+              add_order(doc, options)
+            end
           end
-          add_order(doc, options)
+
+          unless payment_method_details.alt_transaction?
+            r.process do
+              commit(:create_subscription, :post, payment_method_details) do |doc|
+                add_vaulted_shopper_id(doc, r.responses.last.authorization)
+                add_order(doc, options)
+                add_fraud_info(doc, options)
+              end
+            end
+          end
         end
       end
 
@@ -277,6 +292,12 @@ module ActiveMerchant
           doc.send('meta-data') do
             doc.send('meta-description', description)
           end
+        end
+      end
+
+      def add_charge_description(doc, description)
+        doc.send('charge-info') do
+          doc.send('charge-description', description)
         end
       end
 
