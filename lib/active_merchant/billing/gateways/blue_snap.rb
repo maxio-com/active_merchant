@@ -153,6 +153,7 @@ module ActiveMerchant
                 add_vaulted_shopper_id(doc, r.responses.last.authorization)
                 add_order(doc, options)
                 add_fraud_info(doc, options)
+                doc.send('currency', options[:currency])
               end
             end
           end
