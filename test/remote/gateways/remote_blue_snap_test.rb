@@ -223,6 +223,7 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
   end
 
   def test_cvv_result
+    omit "won't work, charge on subscription does not return that kind of data"
     response = @gateway.purchase(@amount, @credit_card, @options)
     assert_success response
     assert_equal 'CVV matches', response.cvv_result['message']
@@ -230,6 +231,7 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
   end
 
   def test_avs_result
+    omit "won't work, charge on subscription does not return that kind of data"
     response = @gateway.purchase(@amount, @credit_card, @options)
     assert_success response
     assert_equal 'Address not verified.', response.avs_result['message']
@@ -352,9 +354,9 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
     assert_success response
     assert_equal 'Success', response.message
     assert response.authorization
-    assert_equal 'I', response.avs_result['code']
-    assert_equal 'M', response.cvv_result['code']
-    assert_match(/services\/2\/vaulted-shoppers/, response.params['content-location-header'])
+    assert_equal 'I', response.responses.first.avs_result['code']
+    assert_equal 'M', response.responses.first.cvv_result['code']
+    assert_match(/services\/2\/vaulted-shoppers/, response.responses.first.params['content-location-header'])
   end
 
   def test_successful_echeck_store
@@ -386,7 +388,7 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
     assert store_response = @gateway.store(@credit_card, @options)
     assert_success store_response
 
-    response = @gateway.purchase(@amount, store_response.authorization, @options)
+    response = @gateway.purchase(@amount, store_response.authorization, @options.merge(subscription_id: store_response.params["subscription-id"]))
     assert_success response
     assert_equal 'Success', response.message
   end
@@ -405,7 +407,7 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
     assert store_response = @gateway.store(@credit_card, @options)
     assert_success store_response
 
-    response = @gateway.authorize(@amount, store_response.authorization, @options)
+    response = @gateway.authorize(@amount, store_response.params["vaulted-shopper-id"], @options)
     assert_success response
     assert_equal 'Success', response.message
   end

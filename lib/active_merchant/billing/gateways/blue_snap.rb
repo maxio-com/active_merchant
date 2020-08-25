@@ -86,11 +86,20 @@ module ActiveMerchant
           end
         elsif options[:subscription_id].blank?
           commit(:create_subscription, :post, payment_method_details) do |doc|
-            add_vaulted_shopper_id(doc, payment_method_details.vaulted_shopper_id)
+            if payment_method_details.vaulted_shopper_id
+              add_vaulted_shopper_id(doc, payment_method_details.vaulted_shopper_id)
+              add_credit_card_info(doc, options)
+            else
+              doc.send('payer-info') do
+                add_personal_info(doc, payment_method, options)
+              end
+              doc.send('payment-source') do
+                store_credit_card(doc, payment_method)
+              end
+            end
             add_order(doc, options)
             add_amount(doc, money, options)
             add_fraud_info(doc, options)
-            add_credit_card_info(doc, options)
           end
         else
           commit(:charge_subscription, :post, payment_method_details, options) do |doc|
