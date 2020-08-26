@@ -157,9 +157,13 @@ module ActiveMerchant
           end
 
           unless payment_method_details.alt_transaction?
+            options[:last_four] = r.responses.last.params["card-last-four-digits"]
+            options[:card_type] = r.responses.last.params["card-type"]
+
             r.process do
               commit(:create_subscription, :post, payment_method_details) do |doc|
                 add_vaulted_shopper_id(doc, r.responses.last.authorization)
+                add_credit_card_info(doc, options)
                 add_order(doc, options)
                 add_fraud_info(doc, options)
                 doc.send('currency', options[:currency])
