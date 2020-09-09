@@ -471,7 +471,9 @@ module ActiveMerchant #:nodoc:
       def add_customer(post, payment, options)
         if options[:customer] && !payment.respond_to?(:number)
           ActiveMerchant.deprecated "Passing the customer in the options is deprecated. Just use the response.authorization instead."
-          post[:customer] = options[:customer]
+          customer_id, card_id = options[:customer].split('|')
+          post[:customer] = customer_id
+          post[:card] = card_id if card_id
         end
       end
 
