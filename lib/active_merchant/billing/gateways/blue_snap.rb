@@ -173,6 +173,17 @@ module ActiveMerchant
         end
       end
 
+      def create_subscription(payment_method, options = {})
+        payment_method_details = PaymentMethodDetails.new(payment_method)
+
+        commit(:create_subscription, :post, payment_method_details) do |doc|
+          add_vaulted_shopper_id(doc, options[:vaulted_shopper_id])
+          add_credit_card_info(doc, options)
+          add_order(doc, options)
+          doc.send('currency', options[:currency])
+        end
+      end
+
       def store_credit_card(doc, payment_method)
         doc.send('credit-card-info') do
           add_credit_card(doc, payment_method)
