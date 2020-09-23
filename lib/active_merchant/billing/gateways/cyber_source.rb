@@ -177,6 +177,10 @@ module ActiveMerchant #:nodoc:
         commit(build_retrieve_subscription_request(reference, options), :retrieve, nil, options)
       end
 
+      def retrieve_with_token(token)
+        commit(build_retrieve_subscription_request_with_token_only(token), :retrieve, nil, options = {})
+      end
+
       # CyberSource requires that you provide line item information for tax
       # calculations. If you do not have prices for each item or want to
       # simplify the situation then pass in one fake line item that costs the
@@ -393,6 +397,16 @@ module ActiveMerchant #:nodoc:
       def build_retrieve_subscription_request(reference, options)
         xml = Builder::XmlMarkup.new :indent => 2
         add_subscription(xml, options, reference)
+        add_subscription_retrieve_service(xml, options)
+        xml.target!
+      end
+
+      def build_retrieve_subscription_request_with_token_only(token, options = {})
+        xml = Builder::XmlMarkup.new :indent => 2
+        xml.tag! 'recurringSubscriptionInfo' do
+          xml.tag! 'subscriptionID', token
+          xml.tag! 'approvalRequired', "false"
+        end
         add_subscription_retrieve_service(xml, options)
         xml.target!
       end

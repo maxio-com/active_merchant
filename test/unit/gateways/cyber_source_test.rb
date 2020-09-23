@@ -312,6 +312,16 @@ class CyberSourceTest < Test::Unit::TestCase
     assert response.success?
     assert response.test?
   end
+  
+  def test_successful_credit_card_retrieve_with_token_request
+    @gateway.stubs(:ssl_post).returns(successful_create_subscription_response, successful_retrieve_subscription_response)
+    assert response = @gateway.store(@credit_card, @subscription_options)
+    assert response.success?
+    assert response.test?
+    assert response = @gateway.retrieve_with_token(response.params["requestID"])
+    assert response.success?
+    assert response.test?
+  end
 
   def test_avs_result
     @gateway.expects(:ssl_post).returns(successful_purchase_response)

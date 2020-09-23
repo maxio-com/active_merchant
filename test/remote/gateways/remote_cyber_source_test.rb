@@ -390,6 +390,16 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
     assert response.test?
   end
 
+  def test_successful_retrieve_subscription_with_token
+    assert response = @gateway.store(@credit_card, @subscription_options)
+    assert response.success?
+    assert response.test?
+
+    assert response = @gateway.retrieve_with_token(response.params["requestID"])
+    assert response.success?
+    assert response.test?
+  end
+
   def test_3ds_enroll_request_via_purchase
     assert response = @gateway.purchase(1202, @three_ds_enrolled_card, @options.merge(payer_auth_enroll_service: true))
     assert_equal '475', response.params['reasonCode']
