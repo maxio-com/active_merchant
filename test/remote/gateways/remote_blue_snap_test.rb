@@ -48,13 +48,8 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
 
   def test_successful_purchase
     subscription = @gateway.store(@credit_card)
-    last_four = @credit_card.number[-4..-1]
-    card_type= @credit_card.brand
-    @options.merge!(
-      subscription_id: subscription.responses.last.params["subscription-id"],
-      last_four: last_four,
-      card_type: card_type
-    )
+    subscription_id = subscription.responses.last.params["subscription-id"]
+    add_subscription_options(@credit_card, @options, subscription_id)
 
     response = @gateway.purchase(@amount, @credit_card, @options)
     assert_success response
@@ -64,14 +59,10 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
   def test_successful_fractionless_currency_purchase
     options1 = { currency: "JPY" }
     subscription = @gateway.store(@credit_card, options1)
-    last_four = @credit_card.number[-4..-1]
-    card_type= @credit_card.brand
+    subscription_id = subscription.responses.last.params["subscription-id"]
     options2 = @options.merge(currency: 'JPY')
-    options2.merge!(
-      subscription_id: subscription.responses.last.params["subscription-id"],
-      last_four: last_four,
-      card_type: card_type
-    )
+    add_subscription_options(@credit_card, options2, subscription_id)
+
     response = @gateway.purchase(12300, @credit_card, options2)
     assert_success response
     assert_equal 'Success', response.message
@@ -115,13 +106,8 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
 
   def test_successful_purchase_with_more_options
     subscription = @gateway.store(@credit_card)
-    last_four = @credit_card.number[-4..-1]
-    card_type= @credit_card.brand
-    @options.merge!(
-      subscription_id: subscription.responses.last.params["subscription-id"],
-      last_four: last_four,
-      card_type: card_type
-    )
+    subscription_id = subscription.responses.last.params["subscription-id"]
+    add_subscription_options(@credit_card, @options, subscription_id)
 
     more_options = @options.merge!({
                                     order_id: '1',
@@ -146,13 +132,8 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
 
   def test_successful_purchase_with_currency
     subscription = @gateway.store(@credit_card, { currency: 'CAD' })
-    last_four = @credit_card.number[-4..-1]
-    card_type= @credit_card.brand
-    @options.merge!(
-      subscription_id: subscription.responses.last.params["subscription-id"],
-      last_four: last_four,
-      card_type: card_type
-    )
+    subscription_id = subscription.responses.last.params["subscription-id"]
+    add_subscription_options(@credit_card, @options, subscription_id)
 
     response = @gateway.purchase(@amount, @credit_card, @options.merge(currency: 'CAD'))
     assert_success response
@@ -216,13 +197,8 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
 
   def test_successful_purchase_with_unused_state_code
     subscription = @gateway.store(@credit_card)
-    last_four = @credit_card.number[-4..-1]
-    card_type= @credit_card.brand
-    @options.merge!(
-      subscription_id: subscription.responses.last.params["subscription-id"],
-      last_four: last_four,
-      card_type: card_type
-    )
+    subscription_id = subscription.responses.last.params["subscription-id"]
+    add_subscription_options(@credit_card, @options, subscription_id)
 
     unrecognized_state_code_options = {
       billing_address: {
@@ -349,13 +325,8 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
 
   def test_successful_refund
     subscription = @gateway.store(@credit_card)
-    last_four = @credit_card.number[-4..-1]
-    card_type= @credit_card.brand
-    @options.merge!(
-      subscription_id: subscription.responses.last.params["subscription-id"],
-      last_four: last_four,
-      card_type: card_type
-    )
+    subscription_id = subscription.responses.last.params["subscription-id"]
+    add_subscription_options(@credit_card, @options, subscription_id)
 
     purchase = @gateway.purchase(@amount, @credit_card, @options)
     assert_success purchase
@@ -367,13 +338,9 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
 
   def test_partial_refund
     subscription = @gateway.store(@credit_card)
-    last_four = @credit_card.number[-4..-1]
-    card_type= @credit_card.brand
-    @options.merge!(
-      subscription_id: subscription.responses.last.params["subscription-id"],
-      last_four: last_four,
-      card_type: card_type
-    )
+    subscription_id = subscription.responses.last.params["subscription-id"]
+    add_subscription_options(@credit_card, @options, subscription_id)
+
     purchase = @gateway.purchase(@amount, @credit_card, @options)
     assert_success purchase
 
@@ -388,13 +355,8 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
 
   def test_successful_void
     subscription = @gateway.store(@credit_card)
-    last_four = @credit_card.number[-4..-1]
-    card_type= @credit_card.brand
-    @options.merge!(
-      subscription_id: subscription.responses.last.params["subscription-id"],
-      last_four: last_four,
-      card_type: card_type
-    )
+    subscription_id = subscription.responses.last.params["subscription-id"]
+    add_subscription_options(@credit_card, @options, subscription_id)
 
     auth = @gateway.purchase(@amount, @credit_card, @options)
     assert_success auth
@@ -515,13 +477,9 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
 
   def test_transcript_scrubbing
     subscription = @gateway.store(@credit_card)
-    last_four = @credit_card.number[-4..-1]
-    card_type= @credit_card.brand
-    @options.merge!(
-      subscription_id: subscription.responses.last.params["subscription-id"],
-      last_four: last_four,
-      card_type: card_type
-    )
+    subscription_id = subscription.responses.last.params["subscription-id"]
+    add_subscription_options(@credit_card, @options, subscription_id)
+
     transcript = capture_transcript(@gateway) do
       @gateway.purchase(@amount, @credit_card, @options)
     end

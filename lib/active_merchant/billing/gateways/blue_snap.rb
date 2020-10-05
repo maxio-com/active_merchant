@@ -79,6 +79,7 @@ module ActiveMerchant
 
       def purchase(money, payment_method, options={})
         payment_method_details = PaymentMethodDetails.new(payment_method)
+
         if payment_method_details.alt_transaction?
           commit(:purchase, :post, payment_method_details) do |doc|
             add_alt_transaction_purchase(doc, money, payment_method_details, options)
