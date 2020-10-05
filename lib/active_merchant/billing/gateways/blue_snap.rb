@@ -1,5 +1,4 @@
 require 'nokogiri'
-require 'pry'
 
 module ActiveMerchant
   module Billing
@@ -80,7 +79,6 @@ module ActiveMerchant
 
       def purchase(money, payment_method, options={})
         payment_method_details = PaymentMethodDetails.new(payment_method)
-
         if payment_method_details.alt_transaction?
           commit(:purchase, :post, payment_method_details) do |doc|
             add_alt_transaction_purchase(doc, money, payment_method_details, options)
@@ -137,7 +135,7 @@ module ActiveMerchant
               add_echeck_company(doc, payment_method) if payment_method_details.check?
               doc.send('payment-sources') do
                 payment_method_details.check? ? store_echeck(doc, payment_method) : store_credit_card(doc, payment_method)
-              endq
+              end
               add_order(doc, options)
             end
           end
@@ -146,7 +144,9 @@ module ActiveMerchant
             options[:last_four] = r.responses.last.params["card-last-four-digits"]
             options[:card_type] = r.responses.last.params["card-type"]
             options[:vaulted_shopper_id] = r.responses.last.params["vaulted-shopper-id"]
-            create_subscription(options)
+            r.process do
+              create_subscription(options)
+            end
           end
         end
       end
