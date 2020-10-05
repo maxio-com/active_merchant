@@ -1,6 +1,7 @@
 # coding: utf-8
 
 require 'test_helper'
+require 'pry'
 
 class BlueSnapCurrencyDocMock
   attr_accessor :received_amount
@@ -267,7 +268,7 @@ class BlueSnapTest < Test::Unit::TestCase
 
   def test_failed_store
     @gateway.expects(:raw_ssl_request).returns(failed_store_response)
-
+    @credit_card.number = ""
     response = @gateway.store(@credit_card, @options)
     assert_failure response
     assert_equal '14002', response.error_code

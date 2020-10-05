@@ -208,11 +208,18 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
     assert_match(/orderTotalDecline/, response.message)
   end
 
-  def test_failed_purchase
-    response = @gateway.purchase(@amount, @declined_card, @options)
-    assert_failure response
-    assert_match(/Authorization has failed for this transaction/, response.message)
-    assert_equal '14002', response.error_code
+  def test_failed_purchase_no_subscription_id
+    assert_raise ActiveMerchant::ActiveMerchantError do
+      @gateway.purchase(@amount, @declined_card, @options)
+    end
+  end
+
+  def test_successful_purchase_with_cc
+    subscription = @gateway.create_subscription(@credit_card, @options)
+
+    @options.merge(subscription_id: subscription.params["subscription-id"])
+    response = @gateway.purchase(@amount, @credit_card, @options)
+    assert_success response
   end
 
   def test_failed_purchase_with_invalid_cabal_card
@@ -349,14 +356,36 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
   end
 
   def test_successful_store
-    assert response = @gateway.store(@credit_card, @options)
+    store_response1 = @gateway.store(@credit_card)
+    credit_card = credit_card('4242424242424242')
+    last_four = "4242"
+    card_type= "VISA"
+    options = {
+      vaulted_shopper_id: store_response1.responses.last.params["vaulted_shopper_id"],
+      last_four: last_four,
+      card_type: card_type
+    }
+    store_response2 = @gateway.store(credit_card, options)
+    responses = store_response2.responses
 
-    assert_success response
-    assert_equal 'Success', response.message
-    assert response.authorization
-    assert_equal 'I', response.responses.first.avs_result['code']
-    assert_equal 'M', response.responses.first.cvv_result['code']
-    assert_match(/services\/2\/vaulted-shoppers/, response.responses.first.params['content-location-header'])
+    assert_success store_response2
+    assert_instance_of MultiResponse, store_response2
+    assert_equal 2, responses.size
+
+    create_paymethod_response = responses[0]
+    assert_success create_paymethod_response
+
+    update_customer_response = responses[1]
+    assert_success update_customer_response
+    #
+    # assert_success response
+    # assert_equal 'Success', response.message
+    # assert response.authorization
+    # assert_equal 'I', response.responses.first.avs_result['code']
+    # assert_equal 'M', response.responses.first.cvv_result['code']
+    # binding.pry
+    # assert_not_empty response.responses.first.params["subscription-id"]
+    # assert_match(/services\/2\/vaulted-shoppers/, response.responses.first.params['content-location-header'])
   end
 
   def test_successful_echeck_store
