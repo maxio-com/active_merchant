@@ -53,27 +53,15 @@ class BlueSnapTest < Test::Unit::TestCase
 
   def test_successful_purchase
     @gateway.expects(:raw_ssl_request).returns(successful_purchase_response)
+    add_subscription_options(@credit_card, @options, "21906519")
 
-    last_four = @credit_card.number[-4..-1]
-    card_type= @credit_card.brand
-    @options.merge!(
-      subscription_id: "21906519",
-      last_four: last_four,
-      card_type: card_type
-    )
     response = @gateway.purchase(@amount, @credit_card, @options)
     assert_success response
     assert_equal '1035736225', response.authorization
   end
 
   def test_successful_purchase_with_unused_state_code
-    last_four = @credit_card.number[-4..-1]
-    card_type= @credit_card.brand
-    @options.merge!(
-      subscription_id: "21906519",
-      last_four: last_four,
-      card_type: card_type
-    )
+    add_subscription_options(@credit_card, @options, "21906519")
 
     unrecognized_state_code_options = {
       billing_address: {
@@ -103,13 +91,7 @@ class BlueSnapTest < Test::Unit::TestCase
 
   def test_successful_purchase_with_3ds_auth
     omit "We do not support 3ds actions yet."
-    last_four = @credit_card.number[-4..-1]
-    card_type= @credit_card.brand
-    @options_3ds2.merge!(
-      subscription_id: "21906519",
-      last_four: last_four,
-      card_type: card_type
-    )
+    add_subscription_options(@credit_card, @options, "21906519")
 
     response = stub_comms(@gateway, :raw_ssl_request) do
       @gateway.purchase(@amount, @credit_card, @options_3ds2)
@@ -129,13 +111,7 @@ class BlueSnapTest < Test::Unit::TestCase
   end
 
   def test_does_not_send_3ds_auth_when_empty
-    last_four = @credit_card.number[-4..-1]
-    card_type= @credit_card.brand
-    @options.merge!(
-      subscription_id: "21906519",
-      last_four: last_four,
-      card_type: card_type
-    )
+    add_subscription_options(@credit_card, @options, "21906519")
 
     stub_comms(@gateway, :raw_ssl_request) do
       @gateway.purchase(@amount, @credit_card, @options)
@@ -150,13 +126,8 @@ class BlueSnapTest < Test::Unit::TestCase
   end
 
   def test_failed_purchase
-    last_four = @credit_card.number[-4..-1]
-    card_type= @credit_card.brand
-    @options.merge!(
-      subscription_id: "21906519",
-      last_four: last_four,
-      card_type: card_type
-    )
+    add_subscription_options(@credit_card, @options, "21906519")
+
     @gateway.expects(:raw_ssl_request).returns(failed_purchase_response)
 
     response = @gateway.purchase(@amount, @credit_card, @options)
@@ -165,13 +136,7 @@ class BlueSnapTest < Test::Unit::TestCase
   end
 
   def test_failed_echeck_purchase
-    last_four = @credit_card.number[-4..-1]
-    card_type= @credit_card.brand
-    @options.merge!(
-      subscription_id: "21906519",
-      last_four: last_four,
-      card_type: card_type
-    )
+    add_subscription_options(@credit_card, @options, "21906519")
 
     @gateway.expects(:raw_ssl_request).returns(failed_echeck_purchase_response)
 
@@ -330,13 +295,7 @@ class BlueSnapTest < Test::Unit::TestCase
   end
 
   def test_currency_added_correctly
-    last_four = @credit_card.number[-4..-1]
-    card_type= @credit_card.brand
-    @options.merge!(
-      subscription_id: "21906519",
-      last_four: last_four,
-      card_type: card_type
-    )
+    add_subscription_options(@credit_card, @options, "21906519")
 
     stub_comms(@gateway, :raw_ssl_request) do
       @gateway.purchase(@amount, @credit_card, @options.merge(currency: 'CAD'))
@@ -356,13 +315,8 @@ class BlueSnapTest < Test::Unit::TestCase
   end
 
   def test_failed_forbidden_response
-    last_four = @credit_card.number[-4..-1]
-    card_type= @credit_card.brand
-    @options.merge!(
-      subscription_id: "21906519",
-      last_four: last_four,
-      card_type: card_type
-    )
+    add_subscription_options(@credit_card, @options, "21906519")
+
     @gateway.expects(:raw_ssl_request).returns(forbidden_response)
 
     response = @gateway.purchase(@amount, @credit_card, @options)
@@ -371,13 +325,7 @@ class BlueSnapTest < Test::Unit::TestCase
   end
 
   def test_does_not_send_level_3_when_empty
-    last_four = @credit_card.number[-4..-1]
-    card_type= @credit_card.brand
-    @options.merge!(
-      subscription_id: "21906519",
-      last_four: last_four,
-      card_type: card_type
-    )
+    add_subscription_options(@credit_card, @options, "21906519")
 
     response = stub_comms(@gateway, :raw_ssl_request) do
       @gateway.purchase(@amount, @credit_card, @options)
@@ -388,13 +336,7 @@ class BlueSnapTest < Test::Unit::TestCase
   end
 
   def test_fraud_response_handling
-    last_four = @credit_card.number[-4..-1]
-    card_type= @credit_card.brand
-    @options.merge!(
-      subscription_id: "21906519",
-      last_four: last_four,
-      card_type: card_type
-    )
+    add_subscription_options(@credit_card, @options, "21906519")
 
     @gateway.expects(:raw_ssl_request).returns(fraudulent_purchase_response)
 
@@ -405,13 +347,7 @@ class BlueSnapTest < Test::Unit::TestCase
   end
 
   def test_fraud_response_handling_multiple_triggers
-    last_four = @fraudulent_card.number[-4..-1]
-    card_type= @fraudulent_card.brand
-    @options.merge!(
-      subscription_id: "21906519",
-      last_four: last_four,
-      card_type: card_type
-    )
+    add_subscription_options(@fraudulent_card, @options, "21906519")
 
     @gateway.expects(:raw_ssl_request).returns(fraudulent_purchase_response_multiple_triggers)
 
