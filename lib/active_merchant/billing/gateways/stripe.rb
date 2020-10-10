@@ -102,7 +102,6 @@ module ActiveMerchant #:nodoc:
           end
           r.process do
             post = create_post_for_auth_or_purchase(money, payment, options)
-            post.delete(:card) if post[:payment_method]
             commit(:post, options[:three_d_secure] && post[:payment_method] ? 'payment_intents' : 'charges', post, options)
           end
         end.responses.last
@@ -306,7 +305,7 @@ module ActiveMerchant #:nodoc:
         end
 
         if options[:three_d_secure]
-          payment_method = card_payment_method_for_customer(options[:customer]) # TODO: only if 'payment' isn't provided, otherwise we know.
+          payment_method = post.delete(:card) || card_payment_method_for_customer(options[:customer])
 
           if payment_method
             post[:confirmation_method] = "manual"

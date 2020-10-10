@@ -9,6 +9,7 @@ class RemoteStripeTest < Test::Unit::TestCase
     @declined_card = credit_card('4000000000000002')
     @new_credit_card = credit_card('5105105105105100')
     @debit_card = credit_card('4000056655665556')
+    @regulatory_credit_card = credit_card('4000002500003155')
 
     @check = check({
       bank_name: "STRIPE TEST BANK",
@@ -72,6 +73,15 @@ class RemoteStripeTest < Test::Unit::TestCase
     assert_match %r{Your card was declined}, response.message
     assert_match Gateway::STANDARD_ERROR_CODE[:card_declined], response.error_code
     assert_match /ch_[a-zA-Z\d]+/, response.authorization
+  end
+
+  def test_unsuccessful_purchase_using_stored_regulatory_card
+    assert store = @gateway.store(@regulatory_credit_card)
+    assert_success store
+
+    assert response = @gateway.purchase(@amount, store.authorization, three_d_secure: true)
+    assert_failure response
+    assert_equal "Your card was declined. This transaction requires 3D secure authentication.", response.message
   end
 
   def test_successful_echeck_purchase_with_verified_account
