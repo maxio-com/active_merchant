@@ -1215,6 +1215,10 @@ trust_commerce:
   aggregator_id: 'abc123'
 
 # Working credentials, no need to replace
+unipaas:
+  private_key: 'vabuisbPU/+/XWYM6RQ75A=='
+
+# Working credentials, no need to replace
 usa_epay:
   login: '4EoZ5U2Q55j976W7eplC71i6b7kn4pcV'
 
