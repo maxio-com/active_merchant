@@ -4,7 +4,7 @@ class RemoteUnipaasTest < Test::Unit::TestCase
   def setup
     @gateway = UnipaasGateway.new(fixtures(:unipaas))
 
-    @amount = 100
+    @amount = 10000
     @credit_card = credit_card('4000100011112224')
     @declined_card = credit_card('4000300011112220')
     @options = {

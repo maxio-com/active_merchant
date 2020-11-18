@@ -1216,7 +1216,7 @@ trust_commerce:
 
 # Working credentials, no need to replace
 unipaas:
-  private_key: 'vabuisbPU/+/XWYM6RQ75A=='
+  private_key: '8qkp6AwDcQdLtc9TLGGZgQ=='
 
 # Working credentials, no need to replace
 usa_epay:
