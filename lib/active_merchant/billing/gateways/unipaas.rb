@@ -174,6 +174,8 @@ module ActiveMerchant #:nodoc:
 
       def message_from(response)
         if response['data']['status']
+          return response['data']['data']['error'] if response['data']['status'] == 500
+
           (response['data']['status'] != 'Approved' ? response['data']['processor']['processorDescription'] : 'Success')
         else #token
           (response['status'] === 201 ? 'Success' : 'Failed')
