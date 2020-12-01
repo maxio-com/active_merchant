@@ -70,12 +70,6 @@ class RemoteUnipaasTest < Test::Unit::TestCase
     assert_success capture
   end
 
-  # def test_failed_capture
-  #   response = @gateway.capture(@amount, '')
-  #   assert_failure response
-  #   assert_equal 'REPLACE WITH FAILED REFUND MESSAGE', response.message
-  # end
-
   def test_successful_refund
     purchase = @gateway.purchase(@amount, @credit_card, @options)
     assert_success purchase
@@ -93,12 +87,6 @@ class RemoteUnipaasTest < Test::Unit::TestCase
     assert_success refund
   end
 
-  # def test_failed_refund
-  #   response = @gateway.refund(@amount, '')
-  #   assert_failure response
-  #   assert_equal 'REPLACE WITH FAILED REFUND MESSAGE', response.message
-  # end
-
   def test_successful_void
     auth = @gateway.authorize(@amount, @credit_card, @options)
     assert_success auth
@@ -108,40 +96,11 @@ class RemoteUnipaasTest < Test::Unit::TestCase
     assert_equal 'Success', void.message
   end
 
-  # def test_failed_void
-  #   response = @gateway.void('')
-  #   assert_failure response
-  #   assert_equal 'REPLACE WITH FAILED VOID MESSAGE', response.message
-  # end
-
   def test_successful_verify
     response = @gateway.verify(@credit_card, @options)
     assert_success response
     assert_match %r{Success}, response.message
   end
-
-  # def test_failed_verify
-  #   response = @gateway.verify(@declined_card, @options)
-  #   assert_failure response
-  #   assert_match %r{REPLACE WITH FAILED PURCHASE MESSAGE}, response.message
-  # end
-
-  # def test_invalid_login
-  #   gateway = UnipaasGateway.new(private_key: '')
-  #
-  #   response = gateway.purchase(@amount, @credit_card, @options)
-  #   assert_failure response
-  #   assert_match %r{REPLACE WITH FAILED LOGIN MESSAGE}, response.message
-  # end
-
-  # def test_dump_transcript
-  #   # This test will run a purchase transaction on your gateway
-  #   # and dump a transcript of the HTTP conversation so that
-  #   # you can use that transcript as a reference while
-  #   # implementing your scrubbing logic.  You can delete
-  #   # this helper after completing your scrub implementation.
-  #   dump_transcript_and_fail(@gateway, @amount, @credit_card, @options)
-  # end
 
   def test_transcript_scrubbing
     transcript = capture_transcript(@gateway) do
@@ -153,5 +112,4 @@ class RemoteUnipaasTest < Test::Unit::TestCase
     assert_scrubbed(@credit_card.verification_value, transcript)
     assert_scrubbed(@gateway.options[:private_key], transcript)
   end
-
 end

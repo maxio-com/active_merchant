@@ -1,9 +1,7 @@
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
     class UnipaasGateway < Gateway
-      # self.test_url = 'https://dev.unipaas.com/api'
       self.test_url = 'https://sandbox.unipaas.com/api'
-      # self.test_url = 'http://localhost:3000/api'
       self.live_url = 'https://api.unipaas.com/api'
 
       self.supported_countries = %w[AT BE BG CY CZ DE DK EE GR ES FI FR GI HK HR HU IE IS IT LI LT LU LV MT MX NL NO PL PT RO SE SG SI SK GB US]
@@ -27,8 +25,6 @@ module ActiveMerchant #:nodoc:
         add_address(post, payment, options)
         add_customer_data(post, options)
         post[:transactionType] = 'Sale'
-
-        # logger&.warn post
 
         commit('sale', post)
       end
