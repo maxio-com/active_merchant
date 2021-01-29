@@ -515,10 +515,6 @@ module ActiveMerchant #:nodoc:
         builder.doc.root.to_xml
       end
 
-      def has_credentials?
-        @options[:login].present? && @options[:password].present?
-      end
-
       def url
         if test? && has_credentials?
           pre_live_url
@@ -527,6 +523,10 @@ module ActiveMerchant #:nodoc:
         else
           live_url
         end
+      end
+
+      def has_credentials?
+        @options[:login].present? && @options[:password].present?
       end
 
       def headers
