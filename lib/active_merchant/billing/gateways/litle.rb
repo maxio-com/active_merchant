@@ -277,6 +277,7 @@ module ActiveMerchant #:nodoc:
         if payment_method.is_a?(String)
           doc.token do
             doc.litleToken(payment_method)
+            doc.expDate(options[:expiration_date]) if options[:expiration_date].present?
             doc.expDate(format_exp_date(options[:basis_expiration_month], options[:basis_expiration_year])) if options[:basis_expiration_month] && options[:basis_expiration_year]
           end
         elsif payment_method.respond_to?(:track_data) && payment_method.track_data.present?
@@ -415,6 +416,10 @@ module ActiveMerchant #:nodoc:
           order_source = 'installment'
         when 'recurring'
           order_source = 'recurring'
+        end
+
+        if order_source == 'recurring' && options[:stored_credential][:initial_transaction]
+          order_source = 'ecommerce'
         end
 
         order_source
