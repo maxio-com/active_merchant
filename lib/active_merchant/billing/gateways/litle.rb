@@ -343,16 +343,25 @@ module ActiveMerchant #:nodoc:
         doc.originalNetworkTransactionId(options[:stored_credential][:network_transaction_id])
       end
 
+      def skip_billing_address?(payment_method, options)
+        return false if options[:email]
+        return true if payment_method.is_a?(String)
+        
+        false
+      end
+
       def add_billing_address(doc, payment_method, options)
-        return if payment_method.is_a?(String)
+        return if skip_billing_address?(payment_method, options)
 
         doc.billToAddress do
           if check?(payment_method)
             doc.name(payment_method.name)
             doc.firstName(payment_method.first_name)
             doc.lastName(payment_method.last_name)
-          else
+          elsif !payment_method.is_a?(String)
             doc.name(payment_method.name)
+          else
+            doc.name(options[:full_name])
           end
           doc.email(options[:email]) if options[:email]
 
