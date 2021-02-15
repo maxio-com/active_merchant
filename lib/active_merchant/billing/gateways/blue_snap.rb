@@ -100,6 +100,10 @@ module ActiveMerchant
         end
       end
 
+      def payment_fields_token
+        commit(:get_payment_fields_token)
+      end
+
       def capture(money, authorization, options={})
         commit(:capture, :put) do |doc|
           doc.send('card-transaction-type', 'CAPTURE')
@@ -449,9 +453,12 @@ module ActiveMerchant
         doc.send('account-type', BANK_ACCOUNT_TYPE_MAPPING["#{check.account_holder_type}_#{check.account_type}"])
       end
 
-      def parse(response)
+      def parse(response, action = nil)
         return bad_authentication_response if response.code.to_i == 401
         return forbidden_response(response.body) if response.code.to_i == 403
+        if action == :get_payment_fields_token
+          return { payment_fields_token: response.to_hash['location'].first.split('/').last }
+        end
         return {} if response.body.blank?
 
         parsed = {}
@@ -491,13 +498,13 @@ module ActiveMerchant
           resource_url = "#{payment_method_details.resource_url}/#{options[:authorization]}/refund?cancelsubscriptions=false"
           resource_url += "&amount=#{options[:money]}" if options[:money].present?
           payment_method_details = OpenStruct.new(resource_url: resource_url)
-        else
+        elsif action != :get_payment_fields_token
           request = build_xml_request(action, payment_method_details) { |doc| yield(doc) }
         end
 
         response = api_request(action, request, verb, payment_method_details, options)
 
-        parsed = parse(response)
+        parsed = parse(response, action)
 
         succeeded = success_from(action, response)
         Response.new(
@@ -520,6 +527,8 @@ module ActiveMerchant
                      "recurring/ondemand"
                    elsif action == :charge_subscription
                      "recurring/ondemand/#{options[:subscription_id]}"
+                   elsif action == :get_payment_fields_token
+                     "payment-fields-tokens"
                    else
                      payment_method_details.resource_url
                    end
