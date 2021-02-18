@@ -161,7 +161,7 @@ module ActiveMerchant
           add_vaulted_shopper_id(doc, options[:vaulted_shopper_id])
           add_credit_card_info(doc, options)
           add_fraud_info(doc, options)
-          add_order(doc, options)
+          add_order(doc, options, true)
           doc.send('currency', options[:currency])
         end
       end
@@ -307,10 +307,10 @@ module ActiveMerchant
         end
       end
 
-      def add_order(doc, options)
+      def add_order(doc, options, add_3ds = false)
         doc.send('merchant-transaction-id', truncate(options[:order_id], 50)) if options[:order_id]
         doc.send('soft-descriptor', options[:soft_descriptor]) if options[:soft_descriptor]
-        add_3ds(doc, options[:three_d_secure]) if options[:three_d_secure]
+        add_3ds(doc, options[:three_d_secure]) if add_3ds && options[:three_d_secure]
         add_level_3_data(doc, options)
       end
 
