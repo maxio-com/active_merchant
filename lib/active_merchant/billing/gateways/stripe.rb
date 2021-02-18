@@ -388,7 +388,7 @@ module ActiveMerchant #:nodoc:
         payment_methods = r.params["data"]
 
         return OpenStruct.new(
-          payment_methods_count: payment_methods.count,
+          count: payment_methods.count,
           default_payment_method: payment_methods[0]["id"]
         ) if payment_methods&.count == 1
 
@@ -401,7 +401,7 @@ module ActiveMerchant #:nodoc:
           default_payment_method: default_payment_method
         ) if default_payment_method
 
-        return OpenStruct.new(payment_methods_count: payment_methods.count, default_payment_method: nil)
+        return OpenStruct.new(count: payment_methods.count, default_payment_method: nil)
       end
 
       def customer_default_source(customer)
