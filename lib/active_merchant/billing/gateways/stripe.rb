@@ -425,23 +425,6 @@ module ActiveMerchant #:nodoc:
         end
       end
 
-      def sepa_debit_payment_method_for_customer(customer)
-        r = commit(:get, "payment_methods?customer=#{customer}&type=sepa_debit", nil, options)
-        raise r.message unless r.success?
-
-        payment_methods = r.params["data"]
-        return payment_methods[0]["id"] if payment_methods&.count == 1
-
-        r = commit(:get, "customers/#{customer}", nil, options)
-        # if customer has default payment method
-        default_payment_method = r.params.dig("invoice_settings", "default_payment_method")
-        return default_payment_method if default_payment_method
-
-        if payment_methods&.count > 1 && !default_payment_method
-          raise "Customer has more than one payment method but doesn't have default one."
-        end
-      end
-
       def add_amount(post, money, options, include_currency = false)
         currency = options[:currency] || currency(money)
         post[:amount] = localized_amount(money, currency)
