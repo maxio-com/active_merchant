@@ -103,7 +103,7 @@ module ActiveMerchant #:nodoc:
           r.process do
             post = create_post_for_auth_or_purchase(money, payment, options)
             post[:payment_method_types] = ["sepa_debit"] if options[:use_sepa_debit]
-            commit(:post, should_use_payment_intents?(post, options) ? 'payment_intents' : 'charges', post, options)
+            commit(:post, use_payment_intents?(post, options) ? 'payment_intents' : 'charges', post, options)
           end
         end.responses.last
 
@@ -218,11 +218,20 @@ module ActiveMerchant #:nodoc:
           commit(:post, "accounts/#{CGI.escape(options[:account])}/external_accounts", post, options)
         elsif options[:customer]
           MultiResponse.run(:first) do |r|
-            # The /cards endpoint does not update other customer parameters.
-            r.process { commit(:post, "customers/#{CGI.escape(options[:customer])}/cards", params, options) }
+            if params[:payment_method_id].present?
+              r.process { setup_intents(options[:customer], params[:payment_method_id], options) }
 
-            if options[:set_default] and r.success? and !r.params['id'].blank?
-              post[:default_card] = r.params['id']
+              if options[:set_default] && r.success?
+                post[:invoice_settings] = {}
+                post[:invoice_settings][:default_payment_method] = params[:payment_method_id]
+              end
+            else
+              # The /cards endpoint does not update other customer parameters.
+              r.process { commit(:post, "customers/#{CGI.escape(options[:customer])}/cards", params, options) }
+
+              if options[:set_default] and r.success? and r.params['id'].present?
+                post[:default_card] = r.params['id']
+              end
             end
 
             if post.count > 0
@@ -236,7 +245,7 @@ module ActiveMerchant #:nodoc:
               r.process { setup_intents(r.responses.last.authorization.split("|").first, params[:payment_method_id], options) }
             end
           else
-            commit(:post, 'customers', post.merge(params.except(:payment_method_id)), options)
+            commit(:post, 'customers', post.merge(params), options)
           end
         end
       end
@@ -320,7 +329,7 @@ module ActiveMerchant #:nodoc:
         end
 
         if options[:three_d_secure]
-          payment_method = card_payment_method_for_customer(options[:customer], options[:payment_type])
+          payment_method = card_payment_method_for_customer(options[:customer])
 
           if payment_method
             post[:confirmation_method] = "manual"
@@ -359,47 +368,60 @@ module ActiveMerchant #:nodoc:
         post
       end
 
-      def card_payment_method_for_customer(customer, payment_type)
-        # if customer has only one payment method we choose that one
-        r = commit(:get, "payment_methods?customer=#{customer}&type=card", nil, options)
+      def card_payment_method_for_customer(customer)
+        payment_methods = customer_payment_methods(customer, "card")
+        return payment_methods.default_payment_method if payment_methods.default_payment_method
+
+        # in last resort we choose default source
+        default_source = customer_default_source(customer)
+        return default_source if default_source
+
+        if payment_methods.count > 1
+          raise "Customer has more than one payment method but doesn't have default one."
+        end
+      end
+
+      def sepa_debit_payment_method_for_customer(customer)
+        payment_methods = customer_payment_methods(customer, "sepa_debit")
+        return payment_methods.default_payment_method if payment_methods.default_payment_method
+
+        if payment_methods.count > 1
+          raise "Customer has more than one payment method but doesn't have default one."
+        end
+      end
+
+      def customer_payment_methods(customer, payment_type)
+        r = commit(:get, "payment_methods?customer=#{customer}&type=#{payment_type}", nil, options)
         raise r.message unless r.success?
 
         payment_methods = r.params["data"]
-        return payment_methods[0]["id"] if payment_methods&.count == 1
+
+        return OpenStruct.new(
+          count: payment_methods.count,
+          default_payment_method: payment_methods[0]["id"]
+        ) if payment_methods&.count == 1
 
         r = commit(:get, "customers/#{customer}", nil, options)
         # if customer has default payment method
         default_payment_method = r.params.dig("invoice_settings", "default_payment_method")
-        return default_payment_method if default_payment_method
 
-        # in last resort we choose default source
+        return OpenStruct.new(
+          count: payment_methods.count,
+          default_payment_method: default_payment_method
+        ) if default_payment_method
+
+        return OpenStruct.new(count: payment_methods.count, default_payment_method: nil)
+      end
+
+      def customer_default_source(customer)
+        r = commit(:get, "customers/#{customer}", nil, options)
+
         default_source = r.params["default_source"]
         return default_source if default_source&.start_with?("card_")
 
         if default_source&.start_with?("src_")
           r = commit(:get, "sources/#{default_source}", nil, options)
           return r.params["id"] if r.params["type"] == "card"
-        end
-
-        if payment_methods&.count > 1 && !default_payment_method
-          raise "Customer has more than one payment method but doesn't have default one."
-        end
-      end
-
-      def sepa_debit_payment_method_for_customer(customer)
-        r = commit(:get, "payment_methods?customer=#{customer}&type=sepa_debit", nil, options)
-        raise r.message unless r.success?
-
-        payment_methods = r.params["data"]
-        return payment_methods[0]["id"] if payment_methods&.count == 1
-
-        r = commit(:get, "customers/#{customer}", nil, options)
-        # if customer has default payment method
-        default_payment_method = r.params.dig("invoice_settings", "default_payment_method")
-        return default_payment_method if default_payment_method
-
-        if payment_methods&.count > 1 && !default_payment_method
-          raise "Customer has more than one payment method but doesn't have default one."
         end
       end
 
@@ -799,7 +821,7 @@ module ActiveMerchant #:nodoc:
         end
       end
 
-      def should_use_payment_intents?(post, options)
+      def use_payment_intents?(post, options)
         (options[:three_d_secure] && post[:payment_method]) || options[:use_sepa_debit]
       end
 
