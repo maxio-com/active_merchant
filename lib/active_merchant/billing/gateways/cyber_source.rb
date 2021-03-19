@@ -731,15 +731,15 @@ module ActiveMerchant #:nodoc:
       def add_stored_credential_subsequent_auth(xml, options = {})
         return unless options[:stored_credential]
 
-        xml.subsequentAuth 'true' if options.dig(:stored_credential, :initiator) == 'merchant'
+        xml.tag! 'subsequentAuth', 'true' if options.dig(:stored_credential, :initiator) == 'merchant'
       end
 
       # Temporary fix, revert and cherry-pick commits from the upstream AM
       def add_stored_credential_options(xml, options = {})
         return unless options[:stored_credential]
 
-        xml.subsequentAuthFirst 'true' if options.dig(:stored_credential, :initial_transaction)
-        xml.subsequentAuthTransactionID options.dig(:stored_credential, :network_transaction_id) if options.dig(:stored_credential, :initiator) == 'merchant'
+        xml.tag! 'subsequentAuthFirst', 'true' if options.dig(:stored_credential, :initial_transaction)
+        xml.tag! 'subsequentAuthTransactionID', options.dig(:stored_credential, :network_transaction_id) if options.dig(:stored_credential, :initiator) == 'merchant'
       end
 
       # Where we actually build the full SOAP request using builder
