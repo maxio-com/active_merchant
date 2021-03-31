@@ -70,6 +70,8 @@ module ActiveMerchant #:nodoc:
 
       def purchase(money, payment, options = {})
         post = create_post_for_purchase(money, payment, options)
+
+        add_descriptor(post, options)
         post[:autocomplete] = true
 
         commit(:payments, :create_payment, post)
@@ -87,27 +89,31 @@ module ActiveMerchant #:nodoc:
       end
 
       def store(payment, options = {})
-        post = {}
-
-        add_customer(post, options)
-
         MultiResponse.run(:first) do |r|
-          r.process { commit(:customers, :create_customer, post) }
+          if !(options[:customer_id])
+            post = {}
+            add_customer(post, options)
 
-          customer_id = r.responses.last.params["customer"]["id"]
-          if r.success? && r.params && r.params["customer"] && r.params["customer"]["id"]
-            r.process do
-              commit(:customers, :create_customer_card, { card_nonce: payment },
-                     customer_id: customer_id)
-            end
+            r.process { commit(:customers, :create_customer, post) }
+
+            options[:customer_id] = r.responses.last.params["customer"]["id"]
+          end
+
+          r.process do
+            commit(:customers, :create_customer_card, { card_nonce: payment },
+                   customer_id: options[:customer_id])
           end
         end
       end
 
       def delete_customer(identification)
-        commit(:customers, :delete_customer, nil, customer_id: identification)
+        commit(:customers, :delete_customer_card, nil, customer_id: identification)
       end
-      alias unstore delete_customer
+
+      def delete_customer_card(customer_id, card_id)
+        commit(:customers, :delete_customer_card, nil, customer_id: customer_id, card_id: card_id)
+      end
+      alias unstore delete_customer_card
 
       def update_customer(identification, options = {})
         post = {}
@@ -128,6 +134,12 @@ module ActiveMerchant #:nodoc:
           amount: localized_amount(money, currency).to_i,
           currency: currency.upcase
         }
+      end
+
+      def add_descriptor(post, options)
+        return unless options[:descriptor]
+
+        post[:statement_description_identifier] = options[:descriptor]
       end
 
       def create_post_for_purchase(money, payment, options)

@@ -27,6 +27,18 @@ class RemoteSquareOfficialTest < Test::Unit::TestCase
     assert_equal "COMPLETED", purchase.params["payment"]["status"]
   end
 
+  def test_successful_purchase_with_descriptor
+    assert purchase = @gateway.purchase(@amount, @card_nonce, @options.merge(descriptor: "trial end"))
+
+    assert_success purchase
+    assert purchase.test?
+
+    assert_equal "Transaction approved", purchase.message
+    assert purchase.authorization
+
+    assert_match /trial end$/, purchase.params["payment"]["statement_description_identifier"]
+  end
+
   def test_unsuccessful_purchase
     @options[:idempotency_key] = SecureRandom.hex(10)
 
@@ -91,8 +103,9 @@ class RemoteSquareOfficialTest < Test::Unit::TestCase
 
     assert_success store
     customer_response = store.responses[0]
+    card_response = store.responses[1]
 
-    assert unstore = @gateway.unstore(customer_response.params["customer"]["id"])
+    assert unstore = @gateway.unstore(customer_response.params["customer"]["id"], card_response.params["card"]["id"])
 
     assert_success unstore
     assert_empty unstore.params

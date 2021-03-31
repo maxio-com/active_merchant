@@ -29,6 +29,16 @@ class SquareOfficialTest < Test::Unit::TestCase
     assert response.test?
   end
 
+  def test_successful_purchase_with_descriptor
+    @gateway.expects(:sdk_request).returns(successful_purchase_response_with_descriptor)
+
+    assert response = @gateway.purchase(@amount, @card_nonce, @options.merge(descriptor: "trial end"))
+    assert_instance_of Response, response
+    assert_success response
+
+    assert_match /trial end$/, response.params["payment"]["statement_description_identifier"]
+  end
+
   def test_unsuccessful_purchase
     @gateway.expects(:sdk_request).returns(unsuccessful_purchase_response)
 
@@ -121,6 +131,12 @@ class SquareOfficialTest < Test::Unit::TestCase
         "delay_action" => "CANCEL",
         "delayed_until" => "2021-04-06T10:24:29.166Z",
         "version_token" => "WUv6LTInrxHPtceqM6iNH6etE2f65iEPjrQLfusda0M6o" } }
+  end
+
+  def successful_purchase_response_with_descriptor
+    successful_purchase_response.merge(
+      { "payment" => { "statement_description_identifier" => "trial end" } }
+    )
   end
 
   def unsuccessful_purchase_response
