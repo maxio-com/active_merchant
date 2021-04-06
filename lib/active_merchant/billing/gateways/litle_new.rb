@@ -277,6 +277,7 @@ module ActiveMerchant #:nodoc:
         if payment_method.is_a?(String)
           doc.token do
             doc.litleToken(payment_method)
+            doc.expDate(options[:expiration_date]) if options[:expiration_date].present?
             doc.expDate(format_exp_date(options[:basis_expiration_month], options[:basis_expiration_year])) if options[:basis_expiration_month] && options[:basis_expiration_year]
           end
         elsif payment_method.respond_to?(:track_data) && payment_method.track_data.present?
@@ -342,16 +343,25 @@ module ActiveMerchant #:nodoc:
         doc.originalNetworkTransactionId(options[:stored_credential][:network_transaction_id])
       end
 
+      def skip_billing_address?(payment_method, options)
+        return false if options[:email]
+        return true if payment_method.is_a?(String)
+
+        false
+      end
+
       def add_billing_address(doc, payment_method, options)
-        return if payment_method.is_a?(String)
+        return if skip_billing_address?(payment_method, options)
 
         doc.billToAddress do
           if check?(payment_method)
             doc.name(payment_method.name)
             doc.firstName(payment_method.first_name)
             doc.lastName(payment_method.last_name)
-          else
+          elsif !payment_method.is_a?(String)
             doc.name(payment_method.name)
+          else
+            doc.name(options[:full_name])
           end
           doc.email(options[:email]) if options[:email]
 
@@ -415,6 +425,10 @@ module ActiveMerchant #:nodoc:
           order_source = 'installment'
         when 'recurring'
           order_source = 'recurring'
+        end
+
+        if order_source == 'recurring' && options[:stored_credential][:initial_transaction]
+          order_source = 'ecommerce'
         end
 
         order_source
