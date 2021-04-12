@@ -1,9 +1,8 @@
 require "square"
-require "pry"
 
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
-    class SquareOfficialGateway < Gateway
+    class SquareNewGateway < Gateway
       self.test_url = "https://connect.squareupsandbox.com/v2"
       self.live_url = "https://connect.squareup.com/v2"
 
@@ -92,22 +91,31 @@ module ActiveMerchant #:nodoc:
         MultiResponse.run(:first) do |r|
           if !(options[:customer_id])
             post = {}
+
             add_customer(post, options)
+            add_address(post, options, :address)
 
             r.process { commit(:customers, :create_customer, post) }
+            return r unless r.responses.last.params["customer"]
 
             options[:customer_id] = r.responses.last.params["customer"]["id"]
           end
 
+          add_address(post, options, :billing_address)
+
           r.process do
-            commit(:customers, :create_customer_card, { card_nonce: payment },
+            commit(:customers, :create_customer_card, {
+                     card_nonce: payment,
+                     billing_address: post[:billing_address],
+                     cardholder_name: options[:cardholder_name]
+                   },
                    customer_id: options[:customer_id])
           end
         end
       end
 
       def delete_customer(identification)
-        commit(:customers, :delete_customer_card, nil, customer_id: identification)
+        commit(:customers, :delete_customer, nil, customer_id: identification)
       end
 
       def delete_customer_card(customer_id, card_id)
@@ -117,12 +125,58 @@ module ActiveMerchant #:nodoc:
 
       def update_customer(identification, options = {})
         post = {}
+
         add_customer(post, options)
+        add_address(post, options, :address)
 
         commit(:customers, :update_customer, post, customer_id: identification)
       end
 
       private
+
+      def add_customer(post, options)
+        post[:given_name] = options[:given_name] || options[:billing_address][:name].split(" ")[0]
+        post[:family_name] = options[:family_name] || options[:billing_address][:name].split(" ")[1]
+        post[:company_name] = options[:company_name] if options[:company_name]
+        post[:phone_number] = options[:phone_number] || options[:billing_address][:phone]
+        post[:email_address] = options[:email] if options[:email]
+        post[:note] = options[:description] if options[:description]
+        post[:reference_id] = options[:reference_id] if options[:reference_id]
+      end
+
+      def add_address(post, options, addr_key = :billing_address)
+        # if address = options[:billing_address] || options[:address]
+        #   add_address_for(post, address, :billing_address)
+        # end
+        # non_billing_addr_key = non_billing_addr_key.to_sym
+        if address = options[addr_key] || options[:address] || options[:billing_address]
+          add_address_for(post, address, addr_key)
+        end
+      end
+
+      def add_address_for(post, address, addr_key)
+        addr_key = addr_key.to_sym
+        post[addr_key] ||= {} # Or-Equals in case they passed in using Square's key format
+        if address[:name]
+          post[addr_key][:first_name] = address[:name].split(" ")[0]
+          post[addr_key][:last_name] = address[:name].split(" ")[1] if address[:name].split(" ")[1]
+        end
+        post[addr_key][:address_line_1] = address[:address1] if address[:address1]
+        post[addr_key][:address_line_2] = address[:address2] if address[:address2]
+        post[addr_key][:address_line_3] = address[:address3] if address[:address3]
+
+        post[addr_key][:locality] = address[:city] if address[:city]
+        post[addr_key][:sublocality] = address[:sublocality] if address[:sublocality]
+        post[addr_key][:sublocality_2] = address[:sublocality_2] if address[:sublocality_2]
+        post[addr_key][:sublocality_3] = address[:sublocality_3] if address[:sublocality_3]
+
+        post[addr_key][:administrative_district_level_1] = address[:state] if address[:state]
+        if address[:administrative_district_level_2] # In the US, this is the county.
+          post[addr_key][:administrative_district_level_2] = address[:administrative_district_level_2]
+        end
+        post[addr_key][:postal_code] = address[:zip] if address[:zip]
+        post[addr_key][:country] = address[:country] if address[:country]
+      end
 
       def add_idempotency_key(post, options)
         post[:idempotency_key] = options[:idempotency_key] || generate_unique_id
@@ -142,39 +196,40 @@ module ActiveMerchant #:nodoc:
         post[:statement_description_identifier] = options[:descriptor]
       end
 
+      # def add_customer(post, options)
+      #   first_name = options[:billing_address][:name].split(" ")[0]
+      #   if options[:billing_address][:name].split(" ").length > 1
+      #     last_name = options[:billing_address][:name].split(" ")[1]
+      #   end
+
+      #   post[:email_address] = options[:email] || nil
+      #   post[:phone_number] = options[:billing_address] ? options[:billing_address][:phone] : nil
+      #   post[:given_name] = first_name
+      #   post[:family_name] = last_name
+
+      #   post[:address] = {}
+      #   post[:address][:address_line_1] = options[:billing_address] ? options[:billing_address][:address1] : nil
+      #   post[:address][:address_line_2] = options[:billing_address] ? options[:billing_address][:address2] : nil
+      #   post[:address][:locality] = options[:billing_address] ? options[:billing_address][:city] : nil
+      #   post[:address][:administrative_district_level_1] =
+      #     options[:billing_address] ? options[:billing_address][:state] : nil
+      #   post[:address][:administrative_district_level_2] =
+      #     options[:billing_address] ? options[:billing_address][:country] : nil
+      #   post[:address][:country] = options[:billing_address] ? options[:billing_address][:country] : nil
+      #   post[:address][:postal_code] = options[:billing_address] ? options[:billing_address][:zip] : nil
+      # end
+
       def create_post_for_purchase(money, payment, options)
         post = {}
 
         post[:source_id] = payment
-        post[:customer_id] = options[:customer] unless options[:customer].nil? || options[:customer].blank?
+        post[:customer_id] = options[:customer] if options[:customer].present?
+        post[:note] = options[:description] if options[:description]
 
         add_idempotency_key(post, options)
         add_amount(post, money, options)
 
         post
-      end
-
-      def add_customer(post, options)
-        first_name = options[:billing_address][:name].split(" ")[0]
-        if options[:billing_address][:name].split(" ").length > 1
-          last_name = options[:billing_address][:name].split(" ")[1]
-        end
-
-        post[:email_address] = options[:email] || nil
-        post[:phone_number] = options[:billing_address] ? options[:billing_address][:phone] : nil
-        post[:given_name] = first_name
-        post[:family_name] = last_name
-
-        post[:address] = {}
-        post[:address][:address_line_1] = options[:billing_address] ? options[:billing_address][:address1] : nil
-        post[:address][:address_line_2] = options[:billing_address] ? options[:billing_address][:address2] : nil
-        post[:address][:locality] = options[:billing_address] ? options[:billing_address][:city] : nil
-        post[:address][:administrative_district_level_1] =
-          options[:billing_address] ? options[:billing_address][:state] : nil
-        post[:address][:administrative_district_level_2] =
-          options[:billing_address] ? options[:billing_address][:country] : nil
-        post[:address][:country] = options[:billing_address] ? options[:billing_address][:country] : nil
-        post[:address][:postal_code] = options[:billing_address] ? options[:billing_address][:zip] : nil
       end
 
       def sdk_request(api_name, method, body, params = {})

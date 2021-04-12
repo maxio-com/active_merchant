@@ -1,8 +1,8 @@
 require "test_helper"
 
-class RemoteSquareOfficialTest < Test::Unit::TestCase
+class RemoteSquareNewTest < Test::Unit::TestCase
   def setup
-    @gateway = SquareOfficialGateway.new(fixtures(:square_official))
+    @gateway = SquareNewGateway.new(fixtures(:square_new))
 
     @amount = 200
     @refund_amount = 100
@@ -12,7 +12,7 @@ class RemoteSquareOfficialTest < Test::Unit::TestCase
 
     @options = {
       email: "customer@example.com",
-      billing_address: address
+      billing_address: address.merge(zip: "94103")
     }
   end
 

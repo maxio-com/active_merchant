@@ -1,9 +1,8 @@
 require "test_helper"
-require "pry"
 
-class SquareOfficialTest < Test::Unit::TestCase
+class SquareNewTest < Test::Unit::TestCase
   def setup
-    @gateway = SquareOfficialGateway.new(access_token: "token")
+    @gateway = SquareNewGateway.new(access_token: "token")
 
     @amount = 200
     @refund_amount = 100
