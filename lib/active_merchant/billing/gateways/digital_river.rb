@@ -37,7 +37,7 @@ module ActiveMerchant
             r.process { res = create_fulfillment(options[:digital_river_order_id], items_from_order(res.value!.items)) }
           end
           if res.success?
-            r.process { get_charge_id(options[:digital_river_order_id]) }
+            r.process { get_charge_capture_id(options[:digital_river_order_id]) }
           end
         end
       end
@@ -57,14 +57,16 @@ module ActiveMerchant
       def get_charge_id(order_id)
         # for now we assume only one charge will be processed at one order
         order = @digital_river_gateway.order.find(order_id)
+        capture = order.value!.charges.first.captures.first if order.success?
         ActiveMerchant::Billing::Response.new(
           order.success?,
           message_from_result(order),
           {
             order_id: (order.value!.id if order.success?),
-            charge_id: (order.value!.charges.first.id if order.success?)
+            charge_id: (order.value!.charges.first.id if order.success?),
+            source_id: (order.value!.charges.first.source_id if order.success?)
           },
-          authorization: (order.value!.charges.first.id if order.success?)
+          authorization: (capture.id)
         )
       end
 
