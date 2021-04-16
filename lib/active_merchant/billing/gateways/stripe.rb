@@ -202,7 +202,7 @@ module ActiveMerchant #:nodoc:
           params = { card: token_exchange_response.params["token"]["id"] } if token_exchange_response.success?
         elsif payment.is_a?(StripePaymentToken)
           add_payment_token(params, payment, options)
-        elsif payment.is_a?(Check)#          DIRECT_D
+        elsif payment.is_a?(Check)
           if DIRECT_DEBIT_SUPPORTED_CURRENCIES.include?(options[:currency])
             direct_debit_token_response = tokenize_direct_debit(payment, options)
             return direct_debit_token_response unless direct_debit_token_response.success?
