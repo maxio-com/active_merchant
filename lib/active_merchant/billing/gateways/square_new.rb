@@ -57,6 +57,7 @@ module ActiveMerchant #:nodoc:
       def initialize(options = {})
         requires!(options, :access_token)
         @access_token = options[:access_token]
+        @location_id = options[:location_id]
         super
       end
 
@@ -89,9 +90,9 @@ module ActiveMerchant #:nodoc:
 
       def store(payment, options = {})
         MultiResponse.run(:first) do |r|
-          if !(options[:customer_id])
-            post = {}
+          post = {}
 
+          if !(options[:customer_id])
             add_customer(post, options)
             add_address(post, options, :address)
 
@@ -145,10 +146,6 @@ module ActiveMerchant #:nodoc:
       end
 
       def add_address(post, options, addr_key = :billing_address)
-        # if address = options[:billing_address] || options[:address]
-        #   add_address_for(post, address, :billing_address)
-        # end
-        # non_billing_addr_key = non_billing_addr_key.to_sym
         if address = options[addr_key] || options[:address] || options[:billing_address]
           add_address_for(post, address, addr_key)
         end
@@ -179,7 +176,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def add_idempotency_key(post, options)
-        post[:idempotency_key] = options[:idempotency_key] || generate_unique_id
+        post[:idempotency_key] = options[:order_id] || generate_unique_id
       end
 
       def add_amount(post, money, options)
@@ -196,35 +193,13 @@ module ActiveMerchant #:nodoc:
         post[:statement_description_identifier] = options[:descriptor]
       end
 
-      # def add_customer(post, options)
-      #   first_name = options[:billing_address][:name].split(" ")[0]
-      #   if options[:billing_address][:name].split(" ").length > 1
-      #     last_name = options[:billing_address][:name].split(" ")[1]
-      #   end
-
-      #   post[:email_address] = options[:email] || nil
-      #   post[:phone_number] = options[:billing_address] ? options[:billing_address][:phone] : nil
-      #   post[:given_name] = first_name
-      #   post[:family_name] = last_name
-
-      #   post[:address] = {}
-      #   post[:address][:address_line_1] = options[:billing_address] ? options[:billing_address][:address1] : nil
-      #   post[:address][:address_line_2] = options[:billing_address] ? options[:billing_address][:address2] : nil
-      #   post[:address][:locality] = options[:billing_address] ? options[:billing_address][:city] : nil
-      #   post[:address][:administrative_district_level_1] =
-      #     options[:billing_address] ? options[:billing_address][:state] : nil
-      #   post[:address][:administrative_district_level_2] =
-      #     options[:billing_address] ? options[:billing_address][:country] : nil
-      #   post[:address][:country] = options[:billing_address] ? options[:billing_address][:country] : nil
-      #   post[:address][:postal_code] = options[:billing_address] ? options[:billing_address][:zip] : nil
-      # end
-
       def create_post_for_purchase(money, payment, options)
         post = {}
 
         post[:source_id] = payment
         post[:customer_id] = options[:customer] if options[:customer].present?
         post[:note] = options[:description] if options[:description]
+        post[:location_id] = @location_id if @location_id
 
         add_idempotency_key(post, options)
         add_amount(post, money, options)
@@ -236,6 +211,7 @@ module ActiveMerchant #:nodoc:
         parameters = body ? { body: body }.merge(params) : params
 
         raw_response = square_client.send(api_name).send(method, parameters)
+        log(raw_response)
 
         parse(raw_response)
       end
@@ -301,6 +277,20 @@ module ActiveMerchant #:nodoc:
 
       def parse(raw_response)
         raw_response.body.to_h.with_indifferent_access
+      end
+
+      def log(raw_response)
+        return unless wiredump_device
+
+        scrubbed_response = scrub(raw_response.to_yaml)
+
+        wiredump_device.write(scrubbed_response)
+      end
+
+      def scrub(transcript)
+        transcript
+          .gsub(%r((Authorization: Bearer )[^\r\n]+), "\1[FILTERED]")
+          .gsub(%r(("card_nonce\\*":\\*")[^"]+), "\1[FILTERED]")
       end
     end
   end
