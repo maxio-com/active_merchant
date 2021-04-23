@@ -18,7 +18,7 @@ module ActiveMerchant
             r.process do
               check_customer_exists(options[:customer_vault_token])
             end
-            return unless r.responses.last.success?
+            return r unless r.responses.last.success?
             r.process do
               add_source_to_customer(payment_method, options[:customer_vault_token])
             end
@@ -26,7 +26,7 @@ module ActiveMerchant
             r.process do
               create_customer(options)
             end
-            return unless r.responses.last.success?
+            return r unless r.responses.last.success?
             r.process do
               add_source_to_customer(payment_method, r.responses.last.authorization)
             end
@@ -50,7 +50,7 @@ module ActiveMerchant
             r.process do
               create_fulfillment(options[:order_id], items_from_order(order_exists.value!.items))
             end
-            return unless r.responses.last.success?
+            return r unless r.responses.last.success?
             r.process do
               get_charge_capture_id(options[:order_id])
             end
@@ -148,11 +148,10 @@ module ActiveMerchant
       end
 
       def check_customer_exists(customer_vault_id)
-        begin
-          @digital_river_gateway.customer.find(customer_vault_id)
+        if @digital_river_gateway.customer.find(customer_vault_id).success?
           ActiveMerchant::Billing::Response.new(true, "Customer found", {exists: true}, authorization: customer_vault_id)
-        rescue Dry::Monads::Result::Failure
-          ActiveMerchant::Billing::Response.new(true, "Customer not found", {exists: false})
+        else
+          ActiveMerchant::Billing::Response.new(false, "Customer '#{customer_vault_id}' not found", {exists: false})
         end
       end
 

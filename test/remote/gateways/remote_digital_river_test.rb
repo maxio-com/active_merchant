@@ -65,7 +65,7 @@ class RemoteDigitalRiverTest < Test::Unit::TestCase
     source = payment_source('4444222233331111')
     assert response = @gateway.store(source, @store_options.merge(customer_vault_token: '123'))
     assert_failure response
-    assert_equal "Customer '123' not found ()", response.message
+    assert_equal "Customer '123' not found", response.message
   end
 
   def test_unsuccessful_store_when_source_already_attached
