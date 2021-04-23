@@ -1,4 +1,5 @@
 require 'digital_river'
+require 'pry'
 
 module ActiveMerchant
   module Billing
@@ -15,29 +16,54 @@ module ActiveMerchant
         MultiResponse.new.tap do |r|
           if options[:customer_vault_token]
             r.process do
-              customer_exists_response = check_customer_exists(options[:customer_vault_token])
-              if customer_exists_response.params["exists"]
-                add_source_to_customer(payment_method, payment_method[:customer_vault_token])
-              end
+              check_customer_exists(options[:customer_vault_token])
+            end
+            return unless r.responses.last.success?
+            r.process do
+              add_source_to_customer(payment_method, options[:customer_vault_token])
             end
           else
             r.process do
-              customer_id = create_customer(options).params["customer_vault_token"]
-              add_source_to_customer(payment_method, customer_id) if customer_id
+              create_customer(options)
+            end
+            return unless r.responses.last.success?
+            r.process do
+              add_source_to_customer(payment_method, r.responses.last.authorization)
             end
           end
         end
       end
 
-      def purchase(money, source_id, options)
+      def purchase(options)
         MultiResponse.new.tap do |r|
-          res = nil
-          r.process { res = @digital_river_gateway.order.find(options[:digital_river_order_id]) }
-          if res.success?
-            r.process { res = create_fulfillment(options[:digital_river_order_id], items_from_order(res.value!.items)) }
+          order_exists = nil
+          r.process do
+            order_exists = @digital_river_gateway.order.find(options[:order_id])
+
+            return ActiveMerchant::Billing::Response.new(
+              order_exists.success?,
+              message_from_result(order_exists)
+            ) unless order_exists.success?
           end
-          if res.success?
-            r.process { get_charge_capture_id(options[:digital_river_order_id]) }
+
+          if order_exists.value!.state == 'accepted'
+            r.process do
+              create_fulfillment(options[:order_id], items_from_order(order_exists.value!.items))
+            end
+            return unless r.responses.last.success?
+            r.process do
+              get_charge_capture_id(options[:order_id])
+            end
+          else
+            ActiveMerchant::Billing::Response.new(
+              false,
+              "Order not in 'accepted' state",
+              {
+                order_id: order_exists.value!.id,
+                order_state: order_exists.value!.state
+              },
+              authorization: order_exists.value!.id
+            )
           end
         end
       end
@@ -45,7 +71,7 @@ module ActiveMerchant
       private
 
       def create_fulfillment(order_id, items)
-        fulfillment_params = { orderId: order_id, items: items }
+        fulfillment_params = { order_id: order_id, items: items }
         result = @digital_river_gateway.fulfillment.create(fulfillment_params)
         ActiveMerchant::Billing::Response.new(
           result.success?,
@@ -54,19 +80,23 @@ module ActiveMerchant
         )
       end
 
-      def get_charge_id(order_id)
+      def get_charge_capture_id(order_id)
+        # we know that the order exists here from previous action
+        # so this will always be a success response
+        charge = @digital_river_gateway.order.find(order_id).value!.charges.first
         # for now we assume only one charge will be processed at one order
-        order = @digital_river_gateway.order.find(order_id)
-        capture = order.value!.charges.first.captures.first if order.success?
+
+        capture = @digital_river_gateway.charge.find(charge.id).value!.captures.first
         ActiveMerchant::Billing::Response.new(
-          order.success?,
-          message_from_result(order),
+          true,
+          "OK",
           {
-            order_id: (order.value!.id if order.success?),
-            charge_id: (order.value!.charges.first.id if order.success?),
-            source_id: (order.value!.charges.first.source_id if order.success?)
+            order_id: order_id,
+            charge_id: charge.id,
+            capture_id: capture.id,
+            source_id: charge.source_id
           },
-          authorization: (capture.id)
+          authorization: capture.id
         )
       end
 
