@@ -739,10 +739,9 @@ module ActiveMerchant #:nodoc:
         return unless options[:stored_credential]
 
         xml.tag! 'subsequentAuthFirst', 'true' if options.dig(:stored_credential, :initial_transaction)
+        network_transaction_id = options.dig(:stored_credential, :network_transaction_id)
 
-        return if options.dig(:stored_credential, :network_transaction_id).nil?
-
-        xml.tag! 'subsequentAuthTransactionID', options.dig(:stored_credential, :network_transaction_id) if options.dig(:stored_credential, :initiator) == 'merchant'
+        xml.tag! 'subsequentAuthTransactionID', network_transaction_id if network_transaction_id && options.dig(:stored_credential, :initiator) == 'merchant'
       end
 
       # Where we actually build the full SOAP request using builder
