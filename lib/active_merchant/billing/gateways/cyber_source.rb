@@ -739,6 +739,9 @@ module ActiveMerchant #:nodoc:
         return unless options[:stored_credential]
 
         xml.tag! 'subsequentAuthFirst', 'true' if options.dig(:stored_credential, :initial_transaction)
+
+        return if options.dig(:stored_credential, :network_transaction_id).nil?
+
         xml.tag! 'subsequentAuthTransactionID', options.dig(:stored_credential, :network_transaction_id) if options.dig(:stored_credential, :initiator) == 'merchant'
       end
 
