@@ -55,7 +55,7 @@ module ActiveMerchant
               get_charge_capture_id(options[:order_id])
             end
           else
-            ActiveMerchant::Billing::Response.new(
+            return ActiveMerchant::Billing::Response.new(
               false,
               "Order not in 'accepted' state",
               {

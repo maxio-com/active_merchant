@@ -1,6 +1,5 @@
 require 'test_helper'
 require 'digital_river'
-require 'pry'
 
 class RemoteDigitalRiverTest < Test::Unit::TestCase
   def setup
