@@ -56,8 +56,6 @@ class RemoteSquareNewTest < Test::Unit::TestCase
     assert_success purchase
     assert_equal "COMPLETED", purchase.params["payment"]["status"]
 
-    sleep 2
-
     @options[:idempotency_key] = SecureRandom.hex(10)
     assert refund = @gateway.refund(@refund_amount, purchase.authorization, @options)
 
