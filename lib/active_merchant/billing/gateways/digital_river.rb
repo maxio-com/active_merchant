@@ -1,5 +1,4 @@
 require 'digital_river'
-require 'pry'
 
 module ActiveMerchant
   module Billing
