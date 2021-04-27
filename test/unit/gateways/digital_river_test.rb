@@ -73,6 +73,17 @@ class DigitalRiverTest < Test::Unit::TestCase
     assert_equal false, response.primary_response.params["exists"]
   end
 
+  def test_unsuccessful_store_when_customer_create_fails
+    DigitalRiver::ApiClient
+      .expects(:post)
+      .with("/customers", anything)
+      .returns(unsucccessful_customer_response)
+
+    assert response = @gateway.store('456', { address: ""})
+    assert_failure response
+    assert_equal "A parameter is missing. (missing_parameter)", response.message
+  end
+
   def test_unsuccessful_store_when_source_already_attached
     DigitalRiver::ApiClient
       .expects(:post)
@@ -126,6 +137,22 @@ class DigitalRiverTest < Test::Unit::TestCase
     assert_equal "Order '123' not found. (not_found)", response.message
   end
 
+  def test_unsuccessful_purchase_fulfillment_fails
+    DigitalRiver::ApiClient
+      .expects(:get)
+      .with("/orders/123", anything)
+      .returns(successful_order_exists_response)
+
+    DigitalRiver::ApiClient
+      .expects(:post)
+      .with("/fulfillments", anything)
+      .returns(unsuccessful_fulfillment_create_response)
+
+    assert response = @gateway.purchase(order_id: '123')
+    assert_failure response
+    assert_equal "A parameter is missing. (missing_parameter)", response.message
+  end
+
   def test_purchase_with_order_in_review_state
     DigitalRiver::ApiClient
       .expects(:get)
@@ -164,6 +191,22 @@ class DigitalRiverTest < Test::Unit::TestCase
         request_to_be_forgotten: false,
         locale: "en_US",
         type: "individual"
+      }
+    )
+  end
+
+  def unsucccessful_customer_response
+    stub(
+      success?: false,
+      parsed_response: {
+        type: "bad_request",
+        errors: [
+          {
+            code: "missing_parameter",
+            parameter: "shipping.address.country",
+            message: "A parameter is missing."
+          }
+        ]
       }
     )
   end
@@ -279,6 +322,22 @@ class DigitalRiverTest < Test::Unit::TestCase
         ],
         order_id: "188311480336",
         live_mode: false
+      }
+    )
+  end
+
+  def unsuccessful_fulfillment_create_response
+    stub(
+      success?: false,
+      parsed_response: {
+          type: "bad_request",
+          errors: [
+            {
+              code: "missing_parameter",
+              parameter: "orderId",
+              message: "A parameter is missing."
+            }
+          ]
       }
     )
   end

@@ -41,7 +41,10 @@ module ActiveMerchant
 
             return ActiveMerchant::Billing::Response.new(
               order_exists.success?,
-              message_from_result(order_exists)
+              message_from_result(order_exists),
+              {
+                order_id: (order_exists.value!.id if order_exists.success?)
+              }
             ) unless order_exists.success?
           end
 
@@ -75,7 +78,9 @@ module ActiveMerchant
         ActiveMerchant::Billing::Response.new(
           result.success?,
           message_from_result(result),
-          fulfillment_params(result)
+          {
+            fulfillment_id: (result.value!.id if result.success?)
+          }
         )
       end
 
@@ -120,18 +125,18 @@ module ActiveMerchant
       def create_customer(options)
         params =
         {
-          "email": options[:email],
+          "email": options.dig(:email),
           "shipping": {
-            "name": options[:billing_address][:name],
-            "organization": options[:organization],
-            "phone": options[:phone],
+            "name": options.dig(:billing_address, :name),
+            "organization": options.dig(:organization),
+            "phone": options.dig(:phone),
             "address": {
-              "line1": options[:billing_address][:address1],
-              "line2": options[:billing_address][:address2],
-              "city": options[:billing_address][:city],
-              "state": options[:billing_address][:state],
-              "postalCode": options[:billing_address][:zip],
-              "country": options[:billing_address][:country],
+              "line1": options.dig(:billing_address, :address1),
+              "line2": options.dig(:billing_address, :address2),
+              "city": options.dig(:billing_address, :city),
+              "state": options.dig(:billing_address, :state),
+              "postalCode": options.dig(:billing_address, :zip),
+              "country": options.dig(:billing_address, :country),
             }
           }
         }
@@ -167,10 +172,6 @@ module ActiveMerchant
         elsif result.failure?
           result.failure[:errors].map { |e| "#{e[:message]} (#{e[:code]})" }.join(" ")
         end
-      end
-
-      def fulfillment_params(result)
-        { fulfillment_id: result.value!.id } if result.success?
       end
 
       def items_from_order(items)

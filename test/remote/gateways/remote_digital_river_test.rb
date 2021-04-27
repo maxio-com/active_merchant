@@ -4,7 +4,7 @@ require 'digital_river'
 class RemoteDigitalRiverTest < Test::Unit::TestCase
   def setup
     @gateway = DigitalRiverGateway.new(fixtures(:digital_river))
-    @digital_river_backend = @gateway.instance_eval{@digital_river_gateway}
+    @digital_river_backend = @gateway.instance_variable_get(:@digital_river_gateway)
 
     @customer = @digital_river_backend.customer.create(
       {
@@ -65,6 +65,13 @@ class RemoteDigitalRiverTest < Test::Unit::TestCase
     assert response = @gateway.store(source, @store_options.merge(customer_vault_token: '123'))
     assert_failure response
     assert_equal "Customer '123' not found", response.message
+  end
+
+  def test_unsuccessful_store_when_customer_create_fails
+    source = payment_source('4444222233331111')
+    assert response = @gateway.store(source, { address: ""})
+    assert_failure response
+    assert_equal "A parameter is missing. (missing_parameter)", response.message
   end
 
   def test_unsuccessful_store_when_source_already_attached
