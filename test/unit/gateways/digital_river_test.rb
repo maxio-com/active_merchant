@@ -4,7 +4,6 @@ require 'digital_river'
 class DigitalRiverTest < Test::Unit::TestCase
   def setup
     @gateway = DigitalRiverGateway.new(token: 'test')
-    @backend_gateway = @gateway.instance_variable_get(:@digital_river_gateway)
 
     @store_options = {
       email: 'test@example.com',
