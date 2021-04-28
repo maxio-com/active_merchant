@@ -38,15 +38,15 @@ module ActiveMerchant
           order_exists = nil
           r.process do
             order_exists = @digital_river_gateway.order.find(options[:order_id])
-
-            return ActiveMerchant::Billing::Response.new(
+            ActiveMerchant::Billing::Response.new(
               order_exists.success?,
               message_from_result(order_exists),
               {
                 order_id: (order_exists.value!.id if order_exists.success?)
               }
-            ) unless order_exists.success?
+            )
           end
+          return r unless order_exists.success?
 
           if order_exists.value!.state == 'accepted'
             r.process do
