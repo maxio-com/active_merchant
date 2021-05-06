@@ -46,6 +46,14 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
     }
   end
 
+  def test_payment_fields_token
+    assert response = @gateway.payment_fields_token
+    assert_success response
+    assert response.test?
+    assert_equal 'Success', response.message
+    assert_not_empty response.params['payment_fields_token']
+  end
+
   def test_successful_purchase
     subscription = @gateway.store(@credit_card)
     subscription_id = subscription.responses.last.params["subscription-id"]
@@ -458,6 +466,21 @@ class RemoteBlueSnapTest < Test::Unit::TestCase
     response = @gateway.authorize(@amount, store_response.params["vaulted-shopper-id"], @options)
     assert_success response
     assert_equal 'Success', response.message
+  end
+
+  def test_successful_create_subscription
+    store_response = @gateway.store(@credit_card)
+
+    options = {
+      vaulted_shopper_id: store_response.responses.last.params["vaulted-shopper-id"],
+      last_four: store_response.responses.last.params["card-last-four-digits"],
+      card_type: store_response.responses.last.params["card-type"]
+    }
+
+    create_subscription_response = @gateway.create_subscription(options)
+
+    assert_success create_subscription_response
+    assert_equal 'Success', create_subscription_response.message
   end
 
   def test_invalid_login
