@@ -74,7 +74,7 @@ module ActiveMerchant #:nodoc:
         add_descriptor(post, options)
         post[:autocomplete] = true
 
-        commit(:payments, :create_payment, post)
+        commit(:payments, :create_payment, { body: post })
       end
 
       def refund(money, identification, options = {})
@@ -85,7 +85,7 @@ module ActiveMerchant #:nodoc:
 
         post[:reason] = options[:reason] if options[:reason]
 
-        commit(:refunds, :refund_payment, post)
+        commit(:refunds, :refund_payment, { body: post })
       end
 
       def store(payment, options = {})
@@ -96,7 +96,7 @@ module ActiveMerchant #:nodoc:
             add_customer(post, options)
             add_address(post, options, :address)
 
-            r.process { commit(:customers, :create_customer, post) }
+            r.process { commit(:customers, :create_customer, { body: post }) }
             return r unless r.responses.last.params["customer"]
 
             options[:customer_id] = r.responses.last.params["customer"]["id"]
@@ -106,21 +106,23 @@ module ActiveMerchant #:nodoc:
 
           r.process do
             commit(:customers, :create_customer_card, {
-                     card_nonce: payment,
-                     billing_address: post[:billing_address],
-                     cardholder_name: options[:cardholder_name]
-                   },
-                   customer_id: options[:customer_id])
+                     customer_id: options[:customer_id],
+                     body: {
+                       card_nonce: payment,
+                       billing_address: post[:billing_address],
+                       cardholder_name: options[:cardholder_name]
+                     }
+                   })
           end
         end
       end
 
       def delete_customer(identification)
-        commit(:customers, :delete_customer, nil, customer_id: identification)
+        commit(:customers, :delete_customer, customer_id: identification)
       end
 
       def delete_customer_card(customer_id, card_id)
-        commit(:customers, :delete_customer_card, nil, customer_id: customer_id, card_id: card_id)
+        commit(:customers, :delete_customer_card, { customer_id: customer_id, card_id: card_id })
       end
       alias unstore delete_customer_card
 
@@ -130,7 +132,7 @@ module ActiveMerchant #:nodoc:
         add_customer(post, options)
         add_address(post, options, :address)
 
-        commit(:customers, :update_customer, post, customer_id: identification)
+        commit(:customers, :update_customer, { customer_id: identification, body: post })
       end
 
       private
@@ -207,17 +209,15 @@ module ActiveMerchant #:nodoc:
         post
       end
 
-      def sdk_request(api_name, method, body, params = {})
-        parameters = body ? { body: body }.merge(params) : params
-
-        raw_response = square_client.send(api_name).send(method, parameters)
+      def sdk_request(api_name, method, params = {})
+        raw_response = square_client.send(api_name).send(method, params)
         log(raw_response)
 
         parse(raw_response)
       end
 
-      def commit(api_name, method, body, params = {})
-        response = sdk_request(api_name, method, body, params)
+      def commit(api_name, method, params = {})
+        response = sdk_request(api_name, method, params)
         success = success_from(response)
 
         card = card_from_response(response)
