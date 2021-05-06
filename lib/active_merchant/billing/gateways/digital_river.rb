@@ -85,6 +85,7 @@ module ActiveMerchant
       end
 
       def get_charge_capture_id(order_id)
+        sleep 1
         # we know that the order exists here from previous action
         # so this will always be a success response
         charge = @digital_river_gateway.order.find(order_id).value!.charges.first
