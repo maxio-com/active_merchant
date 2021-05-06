@@ -85,21 +85,24 @@ module ActiveMerchant
       end
 
       def get_charge_capture_id(order_id)
-        sleep 1
-        # we know that the order exists here from previous action
-        # so this will always be a success response
-        charge = @digital_river_gateway.order.find(order_id).value!.charges.first
-        # for now we assume only one charge will be processed at one order
+        charges = @digital_river_gateway.order.find(order_id).value!.charges
+        if charges.empty?
+          # in CI environment it happened that the requests were too fast and
+          # there were no charges yet when we hit this place
+          sleep 0.5
+          charges = @digital_river_gateway.order.find(order_id).value!.charges
+        end
 
-        capture = @digital_river_gateway.charge.find(charge.id).value!.captures.first
+        # for now we assume only one charge will be processed at one order
+        capture = @digital_river_gateway.charge.find(charges.first.id).value!.captures.first
         ActiveMerchant::Billing::Response.new(
           true,
           "OK",
           {
             order_id: order_id,
-            charge_id: charge.id,
+            charge_id: charges.first.id,
             capture_id: capture.id,
-            source_id: charge.source_id
+            source_id: charges.first.source_id
           },
           authorization: capture.id
         )
