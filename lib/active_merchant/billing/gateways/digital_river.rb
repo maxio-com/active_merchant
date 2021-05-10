@@ -89,7 +89,7 @@ module ActiveMerchant
         if charges.empty?
           # in CI environment it happened that the requests were too fast and
           # there were no charges yet when we hit this place
-          sleep 2
+          sleep 3
           charges = @digital_river_gateway.order.find(order_id).value!.charges
         end
 
