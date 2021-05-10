@@ -88,6 +88,7 @@ module ActiveMerchant
         if charges.empty? && ENV["BUILDKITE"]
           # in CI environment it happened that the requests were too fast and
           # there were no charges yet when we hit this place
+          puts "BUILDKITE + charges"
           sleep 2
           charges = @digital_river_gateway.order.find(order_id).value!.charges
         end
@@ -95,9 +96,10 @@ module ActiveMerchant
         # for now we assume only one charge will be processed at one order
         captures = @digital_river_gateway.charge.find(charges.first.id).value!.captures
         if captures.blank? && ENV["BUILDKITE"]
+          puts "BUILDKITE + captures"
           # in CI environment it happened that the requests were too fast and
           # there were no captures yet when we hit this place
-          sleep 2
+          sleep 3
           captures = @digital_river_gateway.charge.find(charges.first.id).value!.captures
         end
         ActiveMerchant::Billing::Response.new(
