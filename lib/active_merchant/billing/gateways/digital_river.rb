@@ -47,7 +47,8 @@ module ActiveMerchant
             )
           end
           return r unless order_exists.success?
-
+          p "ORDER:"
+          p order_exists
           if order_exists.value!.state == 'accepted'
             r.process do
               create_fulfillment(options[:order_id], items_from_order(order_exists.value!.items))
@@ -75,6 +76,8 @@ module ActiveMerchant
       def create_fulfillment(order_id, items)
         fulfillment_params = { order_id: order_id, items: items }
         result = @digital_river_gateway.fulfillment.create(fulfillment_params)
+        p "FULFILLMENT:"
+        p result
         ActiveMerchant::Billing::Response.new(
           result.success?,
           message_from_result(result),
@@ -86,10 +89,12 @@ module ActiveMerchant
 
       def get_charge_capture_id(order_id)
         charges = @digital_river_gateway.order.find(order_id).value!.charges
+        p "CHARGES:"
+        p charges
         if charges.empty?
           # in CI environment it happened that the requests were too fast and
           # there were no charges yet when we hit this place
-          sleep 3
+          sleep 10
           charges = @digital_river_gateway.order.find(order_id).value!.charges
         end
 
