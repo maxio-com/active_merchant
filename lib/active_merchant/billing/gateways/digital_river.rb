@@ -85,22 +85,19 @@ module ActiveMerchant
 
       def get_charge_capture_id(order_id)
         charges = @digital_river_gateway.order.find(order_id).value!.charges
-        puts ENV
-        if charges.empty? && ENV["BUILDKITE"]
+        if charges.empty? && Rails.env.test?
           # in CI environment it happened that the requests were too fast and
           # there were no charges yet when we hit this place
-          puts "BUILDKITE + charges"
           sleep 2
           charges = @digital_river_gateway.order.find(order_id).value!.charges
         end
 
         # for now we assume only one charge will be processed at one order
         captures = @digital_river_gateway.charge.find(charges.first.id).value!.captures
-        if captures.blank? && ENV["BUILDKITE"]
-          puts "BUILDKITE + captures"
+        if captures.blank? && Rails.env.test?
           # in CI environment it happened that the requests were too fast and
           # there were no captures yet when we hit this place
-          sleep 3
+          sleep 2
           captures = @digital_river_gateway.charge.find(charges.first.id).value!.captures
         end
         ActiveMerchant::Billing::Response.new(
