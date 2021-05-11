@@ -85,7 +85,7 @@ module ActiveMerchant
 
       def get_charge_capture_id(order_id)
         charges = @digital_river_gateway.order.find(order_id).value!.charges
-        if charges.empty? && Rails.env.test?
+        if charges.empty? && chargify_run_tests?
           # in CI environment it happened that the requests were too fast and
           # there were no charges yet when we hit this place
           sleep 2
@@ -94,7 +94,7 @@ module ActiveMerchant
 
         # for now we assume only one charge will be processed at one order
         captures = @digital_river_gateway.charge.find(charges.first.id).value!.captures
-        if captures.blank? && Rails.env.test?
+        if captures.blank? && chargify_run_tests?
           # in CI environment it happened that the requests were too fast and
           # there were no captures yet when we hit this place
           sleep 2
@@ -185,6 +185,10 @@ module ActiveMerchant
 
       def items_from_order(items)
         items.map { |item| { itemId: item.id, quantity: item.quantity.to_i, skuId: item.sku_id } }
+      end
+
+      def chargify_run_tests?
+        !!(defined?(::Rails) && ::Rails.env.test? || defined?(::Test::Unit))
       end
     end
   end
