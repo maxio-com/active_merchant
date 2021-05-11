@@ -84,32 +84,26 @@ module ActiveMerchant
       end
 
       def get_charge_capture_id(order_id)
-        charges = @digital_river_gateway.order.find(order_id).value!.charges
-        if charges.empty? && chargify_run_tests?
-          # in CI environment it happened that the requests were too fast and
-          # there were no charges yet when we hit this place
-          sleep 2
-          charges = @digital_river_gateway.order.find(order_id).value!.charges
+        charge = nil
+        retry_until(2, "charge not found", 0.5) do
+          charge = @digital_river_gateway.order.find(order_id).value!.charges.first
         end
 
         # for now we assume only one charge will be processed at one order
-        captures = @digital_river_gateway.charge.find(charges.first.id).value!.captures
-        if captures.blank? && chargify_run_tests?
-          # in CI environment it happened that the requests were too fast and
-          # there were no captures yet when we hit this place
-          sleep 2
-          captures = @digital_river_gateway.charge.find(charges.first.id).value!.captures
+        capture = nil
+        retry_until(2, "capture not found", 0.5) do
+          capture = @digital_river_gateway.charge.find(charge.id).value!.captures.first
         end
         ActiveMerchant::Billing::Response.new(
           true,
           "OK",
           {
             order_id: order_id,
-            charge_id: charges.first.id,
-            capture_id: captures.first.id,
-            source_id: charges.first.source_id
+            charge_id: charge.id,
+            capture_id: capture.id,
+            source_id: charge.source_id
           },
-          authorization: captures.first.id
+          authorization: capture.id
         )
       end
 
@@ -185,10 +179,6 @@ module ActiveMerchant
 
       def items_from_order(items)
         items.map { |item| { itemId: item.id, quantity: item.quantity.to_i, skuId: item.sku_id } }
-      end
-
-      def chargify_run_tests?
-        !!(defined?(::Rails) && ::Rails.env.test? || defined?(::Test::Unit))
       end
     end
   end
