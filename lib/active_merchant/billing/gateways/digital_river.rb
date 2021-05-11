@@ -85,6 +85,7 @@ module ActiveMerchant
 
       def get_charge_capture_id(order_id)
         charges = @digital_river_gateway.order.find(order_id).value!.charges
+        puts ENV
         if charges.empty? && ENV["BUILDKITE"]
           # in CI environment it happened that the requests were too fast and
           # there were no charges yet when we hit this place
