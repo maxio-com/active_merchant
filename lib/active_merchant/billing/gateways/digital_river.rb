@@ -84,28 +84,28 @@ module ActiveMerchant
       end
 
       def get_charge_capture_id(order_id)
-        charge = nil
+        charges = nil
         retry_until(2, "charge not found", 0.5) do
-          charge = @digital_river_gateway.order.find(order_id).value!.charges.first
-          charge.present?
+          charges = @digital_river_gateway.order.find(order_id).value!.charges
+          charges&.first.present?
         end
 
         # for now we assume only one charge will be processed at one order
-        capture = nil
+        captures = nil
         retry_until(2, "capture not found", 0.5) do
-          capture = @digital_river_gateway.charge.find(charge.id).value!.captures.first
-          capture.present?
+          captures = @digital_river_gateway.charge.find(charges.first.id).value!.captures
+          captures&.first.present?
         end
         ActiveMerchant::Billing::Response.new(
           true,
           "OK",
           {
             order_id: order_id,
-            charge_id: charge.id,
-            capture_id: capture.id,
-            source_id: charge.source_id
+            charge_id: charges.first.id,
+            capture_id: captures.first.id,
+            source_id: charges.first.source_id
           },
-          authorization: capture.id
+          authorization: captures.first.id
         )
       end
 
