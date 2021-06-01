@@ -102,8 +102,12 @@ class DigitalRiverTest < Test::Unit::TestCase
 
   def test_successful_purchase
     DigitalRiver::ApiClient
+      .expects(:post)
+      .with("/orders", anything)
+      .returns(successful_order_exists_response)
+
+    DigitalRiver::ApiClient
       .expects(:get)
-      .twice
       .with("/orders/123", anything)
       .returns(successful_order_exists_response)
 
@@ -117,7 +121,7 @@ class DigitalRiverTest < Test::Unit::TestCase
       .with("/charges/456", anything)
       .returns(successful_charge_find_response)
 
-    assert response = @gateway.purchase(order_id: '123')
+    assert response = @gateway.purchase(checkout_id: '123')
     assert_success response
     assert_equal "OK", response.message
     assert_equal "123", response.params["order_id"]
@@ -126,21 +130,10 @@ class DigitalRiverTest < Test::Unit::TestCase
     assert_equal "789", response.params["capture_id"]
   end
 
-  def test_unsuccessful_purchase_order_not_exist
-    DigitalRiver::ApiClient
-      .expects(:get)
-      .with("/orders/123", anything)
-      .returns(unsuccessful_order_not_exists_response)
-
-    assert response = @gateway.purchase(order_id: '123')
-    assert_failure response
-    assert_equal "Order '123' not found. (not_found)", response.message
-  end
-
   def test_unsuccessful_purchase_fulfillment_fails
     DigitalRiver::ApiClient
-      .expects(:get)
-      .with("/orders/123", anything)
+      .expects(:post)
+      .with("/orders", anything)
       .returns(successful_order_exists_response)
 
     DigitalRiver::ApiClient
@@ -148,18 +141,18 @@ class DigitalRiverTest < Test::Unit::TestCase
       .with("/fulfillments", anything)
       .returns(unsuccessful_fulfillment_create_response)
 
-    assert response = @gateway.purchase(order_id: '123')
+    assert response = @gateway.purchase(checkout_id: '123')
     assert_failure response
     assert_equal "A parameter is missing. (missing_parameter)", response.message
   end
 
   def test_purchase_with_order_in_review_state
     DigitalRiver::ApiClient
-      .expects(:get)
-      .with("/orders/123", anything)
+      .expects(:post)
+      .with("/orders", anything)
       .returns(order_in_pending_state_response)
 
-    assert response = @gateway.purchase(order_id: '123')
+    assert response = @gateway.purchase(checkout_id: '123')
     assert_failure response
     assert_equal "Order not in 'accepted' state", response.message
     assert_equal "123", response.params["order_id"]

@@ -84,23 +84,16 @@ class RemoteDigitalRiverTest < Test::Unit::TestCase
 
   def test_successful_purchase
     source = payment_source('4444222233331111')
-    order = order_with_source(source)
-    purchase_options = { order_id: order }
+    checkout_id = checkout_with_source(source)
+    purchase_options = { checkout_id: checkout_id }
 
     assert response = @gateway.purchase(purchase_options)
     assert_success response
     assert_equal "OK", response.message
-    assert_equal order, response.params["order_id"]
     assert_equal source, response.params["source_id"]
     assert response.params["charge_id"].present?
+    assert response.params["order_id"].present?
     assert response.params["capture_id"].present?
-  end
-
-  def test_unsuccessful_purchase_order_not_exist
-    purchase_options = { order_id: '123' }
-    assert response = @gateway.purchase(purchase_options)
-    assert_failure response
-    assert_equal "Order '123' not found. (not_found)", response.message
   end
 
   # For now we do not have a card to test this scenario
@@ -142,8 +135,8 @@ class RemoteDigitalRiverTest < Test::Unit::TestCase
     ).value!.id
   end
 
-  def order_with_source(source)
-    checkout = @digital_river_backend.checkout.create(
+  def checkout_with_source(source)
+    @digital_river_backend.checkout.create(
       {
         "currency": 'USD',
         "taxInclusive": true,
@@ -157,18 +150,6 @@ class RemoteDigitalRiverTest < Test::Unit::TestCase
           }
         ],
         "chargeType": "merchant_initiated"
-      }
-    ).value!.id
-    @digital_river_backend.order.create(
-      {
-        'checkout_id' => checkout,
-        'source_id' => source,
-        'customer_id' => @customer,
-        'items' => [{
-          'sku_id' => @sku,
-          'quantity' => 1,
-          'price' => 9.99
-        }]
       }
     ).value!.id
   end

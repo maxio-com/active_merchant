@@ -35,35 +35,29 @@ module ActiveMerchant
 
       def purchase(options)
         MultiResponse.new.tap do |r|
-          order_exists = nil
           r.process do
-            order_exists = @digital_river_gateway.order.find(options[:order_id])
-            ActiveMerchant::Billing::Response.new(
-              order_exists.success?,
-              message_from_result(order_exists),
-              {
-                order_id: (order_exists.value!.id if order_exists.success?)
-              }
-            )
+            create_order(options[:checkout_id])
           end
-          return r unless order_exists.success?
-          if order_exists.value!.state == 'accepted'
+
+          return r unless r.responses.last.success?
+
+          if order.state == 'accepted'
             r.process do
-              create_fulfillment(options[:order_id], items_from_order(order_exists.value!.items))
+              create_fulfillment(order.id, items_from_order(order.items))
             end
             return r unless r.responses.last.success?
             r.process do
-              get_charge_capture_id(options[:order_id])
+              get_charge_capture_id(order.id)
             end
           else
             return ActiveMerchant::Billing::Response.new(
               false,
               "Order not in 'accepted' state",
               {
-                order_id: order_exists.value!.id,
-                order_state: order_exists.value!.state
+                order_id: order.id,
+                order_state: order.state
               },
-              authorization: order_exists.value!.id
+              authorization: order.id
             )
           end
         end
@@ -162,6 +156,24 @@ module ActiveMerchant
         else
           ActiveMerchant::Billing::Response.new(false, "Customer '#{customer_vault_id}' not found", {exists: false})
         end
+      end
+
+      def create_order(checkout_id)
+        order_params = { checkout_id: checkout_id }
+        @order = @digital_river_gateway.order.create(order_params)
+        ActiveMerchant::Billing::Response.new(
+          @order.success?,
+          message_from_result(@order),
+          {
+            order_id: (@order.value!.id if @order.success?)
+          }
+        )
+      end
+
+      def order
+        return unless @order
+
+        @order.success? ? @order.value! : @order.failure
       end
 
       def headers(options)
