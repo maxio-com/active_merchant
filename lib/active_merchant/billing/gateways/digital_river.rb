@@ -34,6 +34,13 @@ module ActiveMerchant
       end
 
       def purchase(options)
+        unless options[:order_id]
+          return ActiveMerchant::Billing::Response.new(
+            false,
+            "Order does not exist"
+          )
+        end
+
         MultiResponse.new.tap do |r|
           order_exists = nil
           r.process do
