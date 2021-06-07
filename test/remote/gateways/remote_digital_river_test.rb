@@ -116,6 +116,53 @@ class RemoteDigitalRiverTest < Test::Unit::TestCase
   #   assert response.params["order_state"].present?
   # end
 
+  def test_successful_full_refund
+    source = payment_source('4444222233331111')
+    order = order_with_source(source)
+    transition_order_to_complete(order)
+
+    assert response = @gateway.refund(9.99, order, currency: 'USD')
+    assert_success response
+    assert_equal "OK", response.message
+    assert response.params['refund_id'].present?
+  end
+
+  def test_successful_partial_refund
+    source = payment_source('4444222233331111')
+    order = order_with_source(source)
+    transition_order_to_complete(order)
+
+    assert response = @gateway.refund(1.99, order, currency: 'USD')
+    assert_success response
+    assert_equal "OK", response.message
+    assert response.params['refund_id'].present?
+  end
+
+  def test_unsuccessful_refund_order_doesnt_exist
+    assert response = @gateway.refund(9.99, '123456780012', currency: 'USD')
+    assert_failure response
+    assert_equal "Requisition not found. (invalid_parameter)", response.message
+  end
+
+  def test_unsuccessful_refund_order_in_fulfilled_state
+    source = payment_source('4444222233331111')
+    order = order_with_source(source)
+
+    assert response = @gateway.refund(9.99, order, currency: 'USD')
+    assert_failure response
+    assert_equal "The requested refund amount is greater than the available amount. (invalid_parameter)", response.message
+  end
+
+  def test_unsuccessful_refund_amount_larger_than_available
+    source = payment_source('4444222233331111')
+    order = order_with_source(source)
+    transition_order_to_complete(order)
+
+    assert response = @gateway.refund(10.00, order, currency: 'USD')
+    assert_failure response
+    assert_equal "The requested refund amount is greater than the available amount. (invalid_parameter)", response.message
+  end
+
   def payment_source(number)
     @digital_river_backend.testing_source.create(
       {
@@ -172,5 +219,8 @@ class RemoteDigitalRiverTest < Test::Unit::TestCase
       }
     ).value!.id
   end
-end
 
+  def transition_order_to_complete(order)
+    # TODO
+  end
+end

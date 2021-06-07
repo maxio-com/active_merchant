@@ -69,6 +69,26 @@ module ActiveMerchant
         end
       end
 
+      def refund(amount, order_id, options)
+        params =
+          {
+            'order_id' => order_id,
+            'currency' => options[:currency],
+            'amount' => amount,
+            'reason' => options[:reason],
+            'metadata' => options[:metadata],
+          }
+        result = @digital_river_gateway.refund.create(params)
+
+        ActiveMerchant::Billing::Response.new(
+          result.success?,
+          message_from_result(result),
+          {
+            refund_id: (result.value!.id if result.success?)
+          }
+        )
+      end
+
       private
 
       def create_fulfillment(order_id, items)
