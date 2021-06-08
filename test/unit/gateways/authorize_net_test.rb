@@ -475,6 +475,29 @@ class AuthorizeNetTest < Test::Unit::TestCase
     assert_not_nil response.message
   end
 
+  def test_successfulverify_with_amount
+    response = stub_comms do
+      @gateway.verify_with_amount(100, @credit_card)
+    end.respond_with(successful_authorize_response, successful_void_response)
+    assert_success response
+  end
+
+  def test_successfulverify_with_amount_failed_void
+    response = stub_comms do
+      @gateway.verify_with_amount(100, @credit_card, @options)
+    end.respond_with(successful_authorize_response, failed_void_response)
+    assert_success response
+    assert_match %r{This transaction has been approved}, response.message
+  end
+
+  def test_unsuccessfulverify_with_amount
+    response = stub_comms do
+      @gateway.verify_with_amount(100, @credit_card, @options)
+    end.respond_with(failed_authorize_response, successful_void_response)
+    assert_failure response
+    assert_not_nil response.message
+  end
+
   def test_failed_refund_using_stored_card
     @gateway.expects(:ssl_post).returns(successful_store_response)
     store = @gateway.store(@credit_card, @options)

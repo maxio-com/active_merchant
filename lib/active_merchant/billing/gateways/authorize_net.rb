@@ -147,7 +147,7 @@ module ActiveMerchant
       end
 
       def verify(credit_card, options = {})
-        verify_with_amount(100, payment, options={})
+        verify_with_amount(100, credit_card, options={})
       end
 
       def verify_with_amount(amount, credit_card, options={})
