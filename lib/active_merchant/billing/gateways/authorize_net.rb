@@ -147,8 +147,12 @@ module ActiveMerchant
       end
 
       def verify(credit_card, options = {})
+        verify_with_amount(100, payment, options={})
+      end
+
+      def verify_with_amount(amount, credit_card, options={})
         MultiResponse.run(:use_first_response) do |r|
-          r.process { authorize(100, credit_card, options) }
+          r.process { authorize(amount, credit_card, options) }
           r.process(:ignore_result) { void(r.authorization, options) }
         end
       end
