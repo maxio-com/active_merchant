@@ -69,13 +69,13 @@ module ActiveMerchant
         end
       end
 
-      def refund(amount, order_id, options)
+      def refund(amount, _transaction_id, options)
         params =
           {
-            'order_id' => order_id,
+            'order_id' => options[:order_id],
             'currency' => options[:currency],
-            'amount' => amount,
-            'reason' => options[:reason],
+            'amount' => amount.amount,
+            'reason' => options[:memo],
             'metadata' => options[:metadata],
           }
         result = @digital_river_gateway.refund.create(params)
