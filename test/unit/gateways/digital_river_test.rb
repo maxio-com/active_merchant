@@ -172,7 +172,8 @@ class DigitalRiverTest < Test::Unit::TestCase
       .with("/refunds", anything)
       .returns(successful_full_refund_response)
 
-    assert response = @gateway.refund(9.99, '123456780012', currency: 'USD')
+    options = { order_id: '123456780012', currency: 'USD' }
+    assert response = @gateway.refund(9.99, nil, options)
     assert_success response
     assert_equal "OK", response.message
     assert_equal "re_123", response.params['refund_id']
@@ -184,7 +185,8 @@ class DigitalRiverTest < Test::Unit::TestCase
       .with("/refunds", anything)
       .returns(successful_partial_refund_response)
 
-    assert response = @gateway.refund(1.99, '123456780012', currency: 'USD')
+    options = { order_id: '123456780012', currency: 'USD' }
+    assert response = @gateway.refund(1.99, nil, options)
     assert_success response
     assert_equal "OK", response.message
     assert_equal "re_456", response.params['refund_id']
@@ -196,7 +198,8 @@ class DigitalRiverTest < Test::Unit::TestCase
       .with("/refunds", anything)
       .returns(unsuccessful_refund_order_doesnt_exist_response)
 
-    assert response = @gateway.refund(9.99, '123456780012', currency: 'USD')
+    options = { order_id: '123456780012', currency: 'USD' }
+    assert response = @gateway.refund(9.99, nil, options)
     assert_failure response
     assert_equal "Requisition not found. (invalid_parameter)", response.message
   end
@@ -207,7 +210,8 @@ class DigitalRiverTest < Test::Unit::TestCase
       .with("/refunds", anything)
       .returns(unsuccessful_refund_order_in_fulfilled_state_response)
 
-    assert response = @gateway.refund(9.99, '123456780012', currency: 'USD')
+    options = { order_id: '123456780012', currency: 'USD' }
+    assert response = @gateway.refund(9.99, nil, options)
     assert_failure response
     assert_equal "The requested refund amount is greater than the available amount. (invalid_parameter)", response.message
   end
@@ -218,7 +222,8 @@ class DigitalRiverTest < Test::Unit::TestCase
       .with("/refunds", anything)
       .returns(unsuccessful_refund_amount_larger_than_available_response)
 
-    assert response = @gateway.refund(10.00, '123456780012', currency: 'USD')
+    options = { order_id: '123456780012', currency: 'USD' }
+    assert response = @gateway.refund(10.00, nil, options)
     assert_failure response
     assert_equal "The requested refund amount is greater than the available amount. (invalid_parameter)", response.message
   end

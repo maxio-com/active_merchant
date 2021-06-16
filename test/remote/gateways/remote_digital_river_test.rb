@@ -162,7 +162,7 @@ class RemoteDigitalRiverTest < Test::Unit::TestCase
     order = order_factory.find_or_create_complete.value!
     options = { order_id: order.id, currency: 'USD' }
 
-    assert response = @gateway.refund(order.total_amount * 100, nil, options)
+    assert response = @gateway.refund(order.total_amount * 1000, nil, options)
     assert_failure response
     assert_equal "The requested refund amount is greater than the available amount. (invalid_parameter)", response.message
   end
