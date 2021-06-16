@@ -117,48 +117,52 @@ class RemoteDigitalRiverTest < Test::Unit::TestCase
   # end
 
   def test_successful_full_refund
-    source = payment_source('4444222233331111')
-    order = order_with_source(source)
-    transition_order_to_complete(order)
+    order = order_factory.find_or_create_complete.value!
+    options = { order_id: order.id, currency: 'USD' }
 
-    assert response = @gateway.refund(9.99, order, currency: 'USD')
+    assert response = @gateway.refund(order.available_to_refund_amount, nil, options)
     assert_success response
     assert_equal "OK", response.message
     assert response.params['refund_id'].present?
   end
 
   def test_successful_partial_refund
-    source = payment_source('4444222233331111')
-    order = order_with_source(source)
-    transition_order_to_complete(order)
+    order = order_factory.find_or_create_complete.value!
+    options = { order_id: order.id, currency: 'USD' }
+    amount = if order.available_to_refund_amount == order.total_amount
+               order.total_amount - 0.1
+             else
+               order.available_to_refund_amount
+             end
 
-    assert response = @gateway.refund(1.99, order, currency: 'USD')
+    assert response = @gateway.refund(amount, nil, options)
     assert_success response
     assert_equal "OK", response.message
     assert response.params['refund_id'].present?
   end
 
   def test_unsuccessful_refund_order_doesnt_exist
-    assert response = @gateway.refund(9.99, '123456780012', currency: 'USD')
+    options = { order_id: '123456780012', currency: 'USD' }
+
+    assert response = @gateway.refund(9.99, nil, options)
     assert_failure response
     assert_equal "Requisition not found. (invalid_parameter)", response.message
   end
 
   def test_unsuccessful_refund_order_in_fulfilled_state
-    source = payment_source('4444222233331111')
-    order = order_with_source(source)
+    order = order_factory.create_fulfilled.value!
+    options = { order_id: order.id, currency: 'USD' }
 
-    assert response = @gateway.refund(9.99, order, currency: 'USD')
+    assert response = @gateway.refund(9.99, nil, options)
     assert_failure response
     assert_equal "The requested refund amount is greater than the available amount. (invalid_parameter)", response.message
   end
 
   def test_unsuccessful_refund_amount_larger_than_available
-    source = payment_source('4444222233331111')
-    order = order_with_source(source)
-    transition_order_to_complete(order)
+    order = order_factory.find_or_create_complete.value!
+    options = { order_id: order.id, currency: 'USD' }
 
-    assert response = @gateway.refund(10.00, order, currency: 'USD')
+    assert response = @gateway.refund(order.total_amount * 100, nil, options)
     assert_failure response
     assert_equal "The requested refund amount is greater than the available amount. (invalid_parameter)", response.message
   end
@@ -220,7 +224,11 @@ class RemoteDigitalRiverTest < Test::Unit::TestCase
     ).value!.id
   end
 
-  def transition_order_to_complete(order)
-    # TODO
+  def order_factory(number = '4444222233331111')
+    DigitalRiver::Testing::OrderFactory.new(
+      @digital_river_backend,
+      source_id: payment_source(number),
+      customer_id: @customer
+    )
   end
 end

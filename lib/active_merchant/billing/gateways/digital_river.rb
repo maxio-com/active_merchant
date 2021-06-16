@@ -69,12 +69,13 @@ module ActiveMerchant
         end
       end
 
-      def refund(amount, _transaction_id, options)
+      def refund(money, _transaction_id, options)
+        currency = options[:currency] || currency(money)
         params =
           {
             'order_id' => options[:order_id],
-            'currency' => options[:currency],
-            'amount' => amount.amount,
+            'currency' => currency.upcase,
+            'amount' => localized_amount(money, currency).to_f,
             'reason' => options[:memo],
             'metadata' => options[:metadata],
           }
