@@ -272,7 +272,7 @@ class DigitalRiverTest < Test::Unit::TestCase
 
   def successful_unstore_response
     stub(
-      success?: false,
+      success?: true,
       parsed_response: {}
     )
   end
