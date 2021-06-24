@@ -154,6 +154,23 @@ class CreditCardMethodsTest < Test::Unit::TestCase
     assert_equal 'laser', CreditCard.brand?('677117111234')
   end
 
+  # UnionPay BINs beginning with 62 overlap with Discover's range of valid card numbers.
+  # We intentionally misidentify these cards as Discover, which works because transactions with
+  # UnionPay cards will run on Discover rails.
+  def test_should_detect_unionpay_cards_beginning_with_62_as_discover
+    assert_equal 'discover', CreditCard.brand?('6212345678901265')
+    assert_equal 'discover', CreditCard.brand?('6221260000000000')
+    assert_equal 'discover', CreditCard.brand?('6250941006528599')
+    assert_equal 'discover', CreditCard.brand?('6212345678900000003')
+  end
+
+  def test_should_detect_unionpay_card
+    assert_equal 'unionpay', CreditCard.brand?('8100000000000000')
+    assert_equal 'unionpay', CreditCard.brand?('814400000000000000')
+    assert_equal 'unionpay', CreditCard.brand?('8171999927660000')
+    assert_equal 'unionpay', CreditCard.brand?('8171999900000000021')
+  end
+
   def test_should_detect_when_an_argument_brand_does_not_match_calculated_brand
     assert CreditCard.matching_brand?('4175001000000000', 'visa')
     assert_false CreditCard.matching_brand?('4175001000000000', 'master')

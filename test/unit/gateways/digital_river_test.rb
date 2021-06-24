@@ -816,4 +816,8 @@ class DigitalRiverTest < Test::Unit::TestCase
       }
     )
   end
+
+  def test_supported_cardtypes
+    assert_equal [:visa, :master, :american_express, :discover, :diners_club, :union_pay, :jcb, :maestro], DigitalRiverGateway.supported_cardtypes
+  end
 end
