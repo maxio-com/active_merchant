@@ -55,6 +55,10 @@ module ActiveMerchant #:nodoc:
         end
       end
 
+      def unstore(customer_id, options = {})
+        commit(:delete, "/customers/#{customer_id}", nil, options)
+      end
+
       def refund(money, identification, options = {})
         res = nil
         money_in_cents = money.respond_to?(:cents) ? money.cents : money.to_i
@@ -104,7 +108,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def parse(response)
-        JSON.parse(response)
+        JSON.parse(response || '{}')
       end
 
       def commit(method, action, params, options={})
