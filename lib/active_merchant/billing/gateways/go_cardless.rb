@@ -100,6 +100,8 @@ module ActiveMerchant #:nodoc:
       private
 
       def test?
+        return true if @options[:access_token].nil?
+
         @options[:access_token].start_with?('sandbox_')
       end
 
