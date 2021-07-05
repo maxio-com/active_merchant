@@ -559,33 +559,33 @@ class DigitalRiverTest < Test::Unit::TestCase
               source_id: "source",
               type: "merchant_initiated"
             }
-          ]
-        },
-        sources:  [
-          {
-            id: "source",
-            type: "creditCard",
-            amount: 249.99,
-            owner:{
-              first_name: "William",
-              last_name: "Brown",
-              email: "testing@example.com",
-              address:  {
-                line1: "10380 Bren Road West",
-                city: "Minnetonka",
-                postal_code: "55343",
-                state: "MN",
-                country: "US"
+          ],
+          sources:  [
+            {
+              id: "source",
+              type: "creditCard",
+              amount: 249.99,
+              owner:{
+                first_name: "William",
+                last_name: "Brown",
+                email: "testing@example.com",
+                address:  {
+                  line1: "10380 Bren Road West",
+                  city: "Minnetonka",
+                  postal_code: "55343",
+                  state: "MN",
+                  country: "US"
+                }
+              },
+              credit_card: {
+                brand: "Visa",
+                expiration_month: 7,
+                expiration_year: 2027,
+                last_four_digits: "1111"
               }
-            },
-            credit_card: {
-              brand: "Visa",
-              expiration_month: 7,
-              expiration_year: 2027,
-              last_four_digits: "1111"
             }
-          }
-        ]
+          ]
+        }
       }
     )
   end
@@ -712,33 +712,33 @@ class DigitalRiverTest < Test::Unit::TestCase
               source_id: "source",
               type: "merchant_initiated"
             }
-          ]
-        },
-        sources:  [
-          {
-            id: "source",
-            type: "creditCard",
-            amount: 249.99,
-            owner:{
-              first_name: "William",
-              last_name: "Brown",
-              email: "testing@example.com",
-              address:  {
-                line1: "10380 Bren Road West",
-                city: "Minnetonka",
-                postal_code: "55343",
-                state: "MN",
-                country: "US"
+          ],
+          sources:  [
+            {
+              id: "source",
+              type: "creditCard",
+              amount: 249.99,
+              owner:{
+                first_name: "William",
+                last_name: "Brown",
+                email: "testing@example.com",
+                address:  {
+                  line1: "10380 Bren Road West",
+                  city: "Minnetonka",
+                  postal_code: "55343",
+                  state: "MN",
+                  country: "US"
+                }
+              },
+              credit_card: {
+                brand: "Visa",
+                expiration_month: 7,
+                expiration_year: 2027,
+                last_four_digits: "1111"
               }
-            },
-            credit_card: {
-              brand: "Visa",
-              expiration_month: 7,
-              expiration_year: 2027,
-              last_four_digits: "1111"
             }
-          }
-        ]
+          ]
+        }
       }
     )
   end
