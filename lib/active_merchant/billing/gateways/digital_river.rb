@@ -109,20 +109,6 @@ module ActiveMerchant
         )
       end
 
-      private
-
-      def create_fulfillment(order_id, items)
-        fulfillment_params = { order_id: order_id, items: items }
-        result = @digital_river_gateway.fulfillment.create(fulfillment_params)
-        ActiveMerchant::Billing::Response.new(
-          result.success?,
-          message_from_result(result),
-          {
-            fulfillment_id: (result.value!.id if result.success?)
-          }
-        )
-      end
-
       def get_charge_capture_id(order_id)
         charges = nil
         retry_until(2, "charge not found", 0.5) do
@@ -146,6 +132,20 @@ module ActiveMerchant
             source_id: charges.first.source_id
           },
           authorization: captures.first.id
+        )
+      end
+
+      private
+
+      def create_fulfillment(order_id, items)
+        fulfillment_params = { order_id: order_id, items: items }
+        result = @digital_river_gateway.fulfillment.create(fulfillment_params)
+        ActiveMerchant::Billing::Response.new(
+          result.success?,
+          message_from_result(result),
+          {
+            fulfillment_id: (result.value!.id if result.success?)
+          }
         )
       end
 
