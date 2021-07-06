@@ -59,6 +59,10 @@ module ActiveMerchant #:nodoc:
         commit(:delete, "/customers/#{customer_id}", nil, options)
       end
 
+      def cancel_mandate(mandate, options = {})
+        commit(:post, "/mandates/#{mandate}/actions/cancel", options)
+      end
+
       def refund(money, identification, options = {})
         res = nil
         money_in_cents = money.respond_to?(:cents) ? money.cents : money.to_i
