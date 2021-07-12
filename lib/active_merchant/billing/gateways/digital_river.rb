@@ -8,7 +8,7 @@ module ActiveMerchant
         super
 
         token = options[:token]
-        @digital_river_gateway = DigitalRiver::Gateway.new(token)
+        @digital_river_gateway = DigitalRiver::Gateway.new(token, wiredump_device)
       end
 
       def store(payment_method, options = {})
@@ -109,10 +109,36 @@ module ActiveMerchant
         )
       end
 
+      def supports_scrubbing?
+        true
+      end
+
+      def scrub(transcript)
+        transcript
+          .gsub(%r((Authorization: Bearer )\w+)i, '\1[FILTERED]\2')
+      end
+
+      private
+
+      def create_fulfillment(order_id, items)
+        fulfillment_params = { order_id: order_id, items: items }
+        result = @digital_river_gateway.fulfillment.create(fulfillment_params)
+        ActiveMerchant::Billing::Response.new(
+          result.success?,
+          message_from_result(result),
+          {
+            fulfillment_id: (result.value!.id if result.success?)
+          }
+        )
+      end
+
       def get_charge_capture_id(order_id)
         charges = nil
+        sources = nil
         retry_until(2, "charge not found", 0.5) do
-          charges = @digital_river_gateway.order.find(order_id).value!.payment.charges
+          order = @digital_river_gateway.order.find(order_id).value!
+          charges = order.payment.charges
+          sources = order.payment.sources
           charges&.first.present?
         end
 
@@ -129,23 +155,9 @@ module ActiveMerchant
             order_id: order_id,
             charge_id: charges.first.id,
             capture_id: captures.first.id,
-            source_id: charges.first.source_id
+            source_id: sources.detect { |s| s.type == 'creditCard' }.id
           },
           authorization: captures.first.id
-        )
-      end
-
-      private
-
-      def create_fulfillment(order_id, items)
-        fulfillment_params = { order_id: order_id, items: items }
-        result = @digital_river_gateway.fulfillment.create(fulfillment_params)
-        ActiveMerchant::Billing::Response.new(
-          result.success?,
-          message_from_result(result),
-          {
-            fulfillment_id: (result.value!.id if result.success?)
-          }
         )
       end
 
