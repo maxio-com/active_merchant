@@ -110,29 +110,6 @@ module ActiveMerchant
         )
       end
 
-      def supports_scrubbing?
-        true
-      end
-
-      def scrub(transcript)
-        transcript
-          .gsub(%r((Authorization: Bearer )\w+)i, '\1[FILTERED]\2')
-      end
-
-      private
-
-      def create_fulfillment(order_id, items)
-        fulfillment_params = { order_id: order_id, items: items }
-        result = @digital_river_gateway.fulfillment.create(fulfillment_params)
-        ActiveMerchant::Billing::Response.new(
-          result.success?,
-          message_from_result(result),
-          {
-            fulfillment_id: (result.value!.id if result.success?)
-          }
-        )
-      end
-
       def get_charge_capture_id(order_id)
         charges = nil
         sources = nil
@@ -159,6 +136,29 @@ module ActiveMerchant
             source_id: sources.detect { |s| s.type == 'creditCard' }.id
           },
           authorization: captures.first.id
+        )
+      end
+
+      def supports_scrubbing?
+        true
+      end
+
+      def scrub(transcript)
+        transcript
+          .gsub(%r((Authorization: Bearer )\w+)i, '\1[FILTERED]\2')
+      end
+
+      private
+
+      def create_fulfillment(order_id, items)
+        fulfillment_params = { order_id: order_id, items: items }
+        result = @digital_river_gateway.fulfillment.create(fulfillment_params)
+        ActiveMerchant::Billing::Response.new(
+          result.success?,
+          message_from_result(result),
+          {
+            fulfillment_id: (result.value!.id if result.success?)
+          }
         )
       end
 
