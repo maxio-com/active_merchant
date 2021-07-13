@@ -116,12 +116,13 @@ class RemoteDigitalRiverTest < Test::Unit::TestCase
   end
 
   def test_purchase_with_success_pending_order_option
-    purchase_options = { order_id: '123', success_pending_order: true }
+    purchase_options = { order_id: '123', success_pending_order: true, source_id: '456' }
 
     assert response = @gateway.purchase(purchase_options)
     assert_success response
     assert_equal "Order not in 'accepted' state", response.message
     assert_equal '123', response.params["order_id"]
+    assert_equal '456', response.params["source_id"]
   end
 
   def test_successful_full_refund

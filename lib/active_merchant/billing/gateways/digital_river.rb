@@ -51,7 +51,8 @@ module ActiveMerchant
 
       def purchase(options)
         return failed_order_response(options) if options[:order_failure_message].present?
-        return pending_order_with_success_response(options) if options[:success_pending_order].present?
+        return pending_order_with_success_response(options) if options[:success_pending_order].present? &&
+                                                                 options[:source_id].present?
 
         MultiResponse.new.tap do |r|
           order_exists = nil
@@ -229,6 +230,7 @@ module ActiveMerchant
           "Order not in 'accepted' state",
           {
             order_id: options[:order_id],
+            source_id: options[:source_id]
           },
           authorization: options[:order_id]
         )
