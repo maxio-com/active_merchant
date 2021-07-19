@@ -172,6 +172,16 @@ class DigitalRiverTest < Test::Unit::TestCase
     assert_equal "in_review", response.params["order_state"]
   end
 
+  def test_purchase_with_success_pending_order_option
+    purchase_options = { order_id: '123', success_pending_order: true, source_id: '456' }
+
+    assert response = @gateway.purchase(purchase_options)
+    assert_success response
+    assert_equal "Order not in 'accepted' state", response.message
+    assert_equal '123', response.params["order_id"]
+    assert_equal '456', response.params["source_id"]
+  end
+
   def test_successful_full_refund
     DigitalRiver::ApiClient
       .expects(:post)
@@ -252,6 +262,11 @@ class DigitalRiverTest < Test::Unit::TestCase
 
     assert response = @gateway.unstore('456', { customer_vault_token: '123' })
     assert_failure response
+  end
+
+  def test_scrub
+    assert @gateway.supports_scrubbing?
+    assert_equal @gateway.scrub(pre_scrubbed), post_scrubbed
   end
 
   def unsuccessful_unstore_response
@@ -559,33 +574,33 @@ class DigitalRiverTest < Test::Unit::TestCase
               source_id: "source",
               type: "merchant_initiated"
             }
-          ]
-        },
-        sources:  [
-          {
-            id: "source",
-            type: "creditCard",
-            amount: 249.99,
-            owner:{
-              first_name: "William",
-              last_name: "Brown",
-              email: "testing@example.com",
-              address:  {
-                line1: "10380 Bren Road West",
-                city: "Minnetonka",
-                postal_code: "55343",
-                state: "MN",
-                country: "US"
+          ],
+          sources:  [
+            {
+              id: "source",
+              type: "creditCard",
+              amount: 249.99,
+              owner:{
+                first_name: "William",
+                last_name: "Brown",
+                email: "testing@example.com",
+                address:  {
+                  line1: "10380 Bren Road West",
+                  city: "Minnetonka",
+                  postal_code: "55343",
+                  state: "MN",
+                  country: "US"
+                }
+              },
+              credit_card: {
+                brand: "Visa",
+                expiration_month: 7,
+                expiration_year: 2027,
+                last_four_digits: "1111"
               }
-            },
-            credit_card: {
-              brand: "Visa",
-              expiration_month: 7,
-              expiration_year: 2027,
-              last_four_digits: "1111"
             }
-          }
-        ]
+          ]
+        }
       }
     )
   end
@@ -712,33 +727,33 @@ class DigitalRiverTest < Test::Unit::TestCase
               source_id: "source",
               type: "merchant_initiated"
             }
-          ]
-        },
-        sources:  [
-          {
-            id: "source",
-            type: "creditCard",
-            amount: 249.99,
-            owner:{
-              first_name: "William",
-              last_name: "Brown",
-              email: "testing@example.com",
-              address:  {
-                line1: "10380 Bren Road West",
-                city: "Minnetonka",
-                postal_code: "55343",
-                state: "MN",
-                country: "US"
+          ],
+          sources:  [
+            {
+              id: "source",
+              type: "creditCard",
+              amount: 249.99,
+              owner:{
+                first_name: "William",
+                last_name: "Brown",
+                email: "testing@example.com",
+                address:  {
+                  line1: "10380 Bren Road West",
+                  city: "Minnetonka",
+                  postal_code: "55343",
+                  state: "MN",
+                  country: "US"
+                }
+              },
+              credit_card: {
+                brand: "Visa",
+                expiration_month: 7,
+                expiration_year: 2027,
+                last_four_digits: "1111"
               }
-            },
-            credit_card: {
-              brand: "Visa",
-              expiration_month: 7,
-              expiration_year: 2027,
-              last_four_digits: "1111"
             }
-          }
-        ]
+          ]
+        }
       }
     )
   end
@@ -815,6 +830,32 @@ class DigitalRiverTest < Test::Unit::TestCase
         ]
       }
     )
+  end
+
+  def pre_scrubbed
+    %q{
+      opening connection to api.digitalriver.com:443...
+      opened
+      starting SSL for api.digitalriver.com:443...
+      SSL established, protocol: TLSv1.3, cipher: TLS_AES_128_GCM_SHA256
+      <- "POST /customers HTTP/1.1\r\nAuthorization: Bearer sk_test_a3bd3f2ba5db4e2db94dd6b02b4dec33\r\nContent-Type: application/json\r\nAccept-Encoding: gzip;q=1.0,deflate;q=0.6,identity;q=0.3\r\nAccept: */*\r\nUser-Agent: Ruby\r\nConnection: close\r\nHost: api.digitalriver.com\r\nContent-Length: 202\r\n\r\n"
+      <- "{\"email\":\"holdpass@fraud.com\",\"shipping\":{\"name\":\"Jane Doe\",\"organization\":null,\"phone\":\"123456789\",\"address\":{\"line1\":\"Test\",\"line2\":\"\",\"city\":\"Test\",\"state\":\"AL\",\"postalCode\":\"12345\",\"country\":\"US\"}}}"
+      -> "HTTP/1.1 201 \r\n"
+      -> "access-control-allow-credentials: true\r\n"
+    }
+  end
+
+  def post_scrubbed
+    %q{
+      opening connection to api.digitalriver.com:443...
+      opened
+      starting SSL for api.digitalriver.com:443...
+      SSL established, protocol: TLSv1.3, cipher: TLS_AES_128_GCM_SHA256
+      <- "POST /customers HTTP/1.1\r\nAuthorization: Bearer [FILTERED]\r\nContent-Type: application/json\r\nAccept-Encoding: gzip;q=1.0,deflate;q=0.6,identity;q=0.3\r\nAccept: */*\r\nUser-Agent: Ruby\r\nConnection: close\r\nHost: api.digitalriver.com\r\nContent-Length: 202\r\n\r\n"
+      <- "{\"email\":\"holdpass@fraud.com\",\"shipping\":{\"name\":\"Jane Doe\",\"organization\":null,\"phone\":\"123456789\",\"address\":{\"line1\":\"Test\",\"line2\":\"\",\"city\":\"Test\",\"state\":\"AL\",\"postalCode\":\"12345\",\"country\":\"US\"}}}"
+      -> "HTTP/1.1 201 \r\n"
+      -> "access-control-allow-credentials: true\r\n"
+    }
   end
 
   def test_supported_cardtypes
