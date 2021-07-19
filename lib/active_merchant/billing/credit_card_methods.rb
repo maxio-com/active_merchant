@@ -5,17 +5,16 @@ module ActiveMerchant #:nodoc:
       CARD_COMPANIES = {
         'visa'               => /^4\d{12}(\d{3})?(\d{3})?$/,
         'master'             => /^(5[1-5]\d{4}|677189|222[1-9]\d{2}|22[3-9]\d{3}|2[3-6]\d{4}|27[01]\d{3}|2720\d{2})\d{10}$/,
-        'discover'           => ->(num) { num =~ /^(6011|65\d{2}|64[4-9]\d)\d{12,15}|(62\d{14,17})$/ },
+        'discover'           => /^(6011|65\d{2}|64[4-9]\d)\d{12}|(62\d{14})$/,
         'american_express'   => /^3[47]\d{13}$/,
         'diners_club'        => /^3(0[0-5]|[68]\d)\d{11}$/,
         'jcb'                => /^35(28|29|[3-8]\d)\d{12}$/,
         'switch'             => /^6759\d{12}(\d{2,3})?$/,
         'solo'               => /^6767\d{12}(\d{2,3})?$/,
         'dankort'            => /^5019\d{12}$/,
-        'maestro'            => ->(num) { (12..19).cover?(num&.size) && in_bin_range?(num.slice(0, 6), MAESTRO_RANGES) },
+        'maestro'            => /^(5[06-8]|6\d)\d{10,17}$/,
         'forbrugsforeningen' => /^600722\d{10}$/,
-        'laser'              => /^(6304|6706|6709|6771(?!89))\d{8}(\d{4}|\d{6,7})?$/,
-        'unionpay'           => ->(num) { (16..19).cover?(num&.size) && in_bin_range?(num.slice(0, 8), UNIONPAY_RANGES) }
+        'laser'              => /^(6304|6706|6709|6771(?!89))\d{8}(\d{4}|\d{6,7})?$/
       }
 
       # http://www.barclaycard.co.uk/business/files/bin_rules.pdf
@@ -36,38 +35,6 @@ module ActiveMerchant #:nodoc:
         (484418..484418),
         (484428..484455),
         (491730..491759),
-      ]
-
-      # https://www.mastercard.us/content/dam/mccom/global/documents/mastercard-rules.pdf, page 73
-      MAESTRO_RANGES = [
-        (561200..561269),
-        (561271..561299),
-        (561320..561356),
-        (581700..581751),
-        (581753..581800),
-        (589998..591259),
-        (591261..596770),
-        (596772..598744),
-        (598746..599999),
-        (600297..600314),
-        (600316..600335),
-        (600337..600362),
-        (600364..600382),
-        (601232..601254),
-        (601256..601276),
-        (601640..601652),
-        (601689..601700),
-        (602011..602050),
-        (639000..639099),
-        (670000..679999),
-      ]
-
-      # In addition to the BIN ranges listed here that all begin with 81, UnionPay cards
-      # include many ranges that start with 62.
-      # Prior to adding UnionPay, cards that start with 62 were all classified as Discover.
-      # Because UnionPay cards are able to run on Discover rails, this was kept the same.
-      UNIONPAY_RANGES = [
-        81000000..81099999, 81100000..81319999, 81320000..81519999, 81520000..81639999, 81640000..81719999
       ]
 
       def self.included(base)
