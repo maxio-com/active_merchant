@@ -13,7 +13,7 @@ module ActiveMerchant #:nodoc:
       self.currencies_without_fractions = %w(BIF DJF GNF ISK KMF XAF CLF XPF JPY PYG RWF KRW VUV VND XOF)
 
       def initialize(options = {})
-        requires!(options, :secret_key)
+        requires!(options, :secret_key, :public_key)
         super
       end
 
@@ -173,14 +173,14 @@ module ActiveMerchant #:nodoc:
         post[:customer][:name] = options[:name]
         post[:payment_ip] = options[:ip] if options[:ip]
         address = options[:billing_address]
-        if address && post[:source]
-          post[:source][:billing_address] = {}
-          post[:source][:billing_address][:address_line1] = address[:address1] unless address[:address1].blank?
-          post[:source][:billing_address][:address_line2] = address[:address2] unless address[:address2].blank?
-          post[:source][:billing_address][:city] = address[:city] unless address[:city].blank?
-          post[:source][:billing_address][:state] = address[:state] unless address[:state].blank?
-          post[:source][:billing_address][:country] = address[:country] unless address[:country].blank?
-          post[:source][:billing_address][:zip] = address[:zip] unless address[:zip].blank?
+        if address
+          post[:billing_address] = {}
+          post[:billing_address][:address_line1] = address[:address1] unless address[:address1].blank?
+          post[:billing_address][:address_line2] = address[:address2] unless address[:address2].blank?
+          post[:billing_address][:city] = address[:city] unless address[:city].blank?
+          post[:billing_address][:state] = address[:state] unless address[:state].blank?
+          post[:billing_address][:country] = address[:country] unless address[:country].blank?
+          post[:billing_address][:zip] = address[:zip] unless address[:zip].blank?
         end
       end
 
