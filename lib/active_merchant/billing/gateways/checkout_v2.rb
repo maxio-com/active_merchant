@@ -84,6 +84,11 @@ module ActiveMerchant #:nodoc:
         end
       end
 
+      def delete_card(authorization)
+        commit(:delete_card, nil, authorization)
+      end
+      alias unstore delete_card
+
       def supports_scrubbing?
         true
       end
@@ -230,8 +235,15 @@ module ActiveMerchant #:nodoc:
 
       def commit(action, post, authorization = nil)
         begin
-          raw_response = (action == :verify_payment ? ssl_get("#{base_url}/payments/#{post}", headers(action)) : ssl_post(url(post, action, authorization), post.to_json, headers(action)))
-          response = parse(raw_response)
+          raw_response = if action == :verify_payment
+            ssl_get("#{base_url}/payments/#{post}", headers(action))
+          elsif action == :delete_card
+            ssl_request(:delete, "#{base_url}/instruments/#{authorization}", nil, headers(action))
+          else
+            ssl_post(url(post, action, authorization), post.to_json, headers(action))
+          end
+
+          response = parse(raw_response || {})
           response['id'] = response['_links']['payment']['href'].split('/')[-1] if action == :capture && response.key?('_links')
         rescue ResponseError => e
           raise unless e.response.code.to_s =~ /4\d\d/
