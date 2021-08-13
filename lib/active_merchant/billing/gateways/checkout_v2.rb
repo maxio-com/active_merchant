@@ -84,10 +84,9 @@ module ActiveMerchant #:nodoc:
         end
       end
 
-      def delete_card(authorization)
+      def unstore(authorization)
         commit(:delete_card, nil, authorization)
       end
-      alias unstore delete_card
 
       def supports_scrubbing?
         true
@@ -238,7 +237,7 @@ module ActiveMerchant #:nodoc:
           raw_response = if action == :verify_payment
             ssl_get("#{base_url}/payments/#{post}", headers(action))
           elsif action == :delete_card
-            ssl_request(:delete, "#{base_url}/instruments/#{authorization}", nil, headers(action))
+            ssl_request(:delete, url(post, action, authorization), nil, headers(action))
           else
             ssl_post(url(post, action, authorization), post.to_json, headers(action))
           end
@@ -293,6 +292,8 @@ module ActiveMerchant #:nodoc:
           "#{base_url}/instruments"
         elsif action == :tokens
           "#{base_url}/tokens"
+        elsif action == :delete_card
+          "#{base_url}/instruments/#{authorization}"
         else
           "#{base_url}/payments/#{authorization}/#{action}"
         end
