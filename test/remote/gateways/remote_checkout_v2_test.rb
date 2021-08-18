@@ -135,6 +135,15 @@ class RemoteCheckoutV2Test < Test::Unit::TestCase
     assert_equal 'Bad Track Data', response.message
   end
 
+  def test_successful_unstore
+    response = @gateway.store(@credit_card, @options)
+    assert_success response
+
+    authorization = response.params["id"]
+    unstore_response = @gateway.unstore(authorization)
+    assert_success unstore_response
+  end
+
   def test_successful_authorize_includes_avs_result
     response = @gateway.authorize(@amount, @credit_card, @options)
     assert_success response
