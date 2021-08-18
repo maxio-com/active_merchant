@@ -326,6 +326,7 @@ module ActiveMerchant #:nodoc:
       def success_from(response, action)
         return true if action == :instruments && response['id'].present?
         return true if action == :tokens && response['token'].present?
+        return true if action == :delete_card && response == {}
 
         response['response_summary'] == 'Approved' || response['approved'] == true || !response.key?('response_summary') && response.key?('action_id')
       end
