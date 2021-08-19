@@ -76,10 +76,11 @@ module ActiveMerchant #:nodoc:
 
           r.process do
             post = {}
-            add_token(post, r.authorization)
-            add_customer_data(post, options)
+            post[:currency] = options[:currency]
+            add_payment_method(post, r.authorization, options)
+            add_customer_data(post, options, :source)
 
-            commit(:instruments, post)
+            commit(:card_verification, post)
           end
         end
       end
@@ -146,7 +147,7 @@ module ActiveMerchant #:nodoc:
       def build_auth_or_purchase(post, amount, payment_method, options)
         add_invoice(post, amount, options)
         add_payment_method(post, payment_method, options)
-        add_customer_data(post, options)
+        add_customer_data(post, options, :source)
         add_stored_credential_options(post, options)
         add_transaction_data(post, options)
         add_3ds(post, options)
@@ -182,8 +183,13 @@ module ActiveMerchant #:nodoc:
           post[:source][:expiry_year] = format(payment_method.year, :four_digits)
           post[:source][:expiry_month] = format(payment_method.month, :two_digits)
           elsif payment_method.is_a?(String)
-          post[:source][:type] = 'id'
-          post[:source][:id] = payment_method
+            if payment_method.start_with?("tok_")
+              post[:source][:type] = 'token'
+              post[:source][:token] = payment_method
+            else
+              post[:source][:type] = 'id'
+              post[:source][:id] = payment_method
+            end
         else
           post[:source][:type] = 'card'
           post[:source][:name] = payment_method.name
@@ -195,18 +201,19 @@ module ActiveMerchant #:nodoc:
         end
       end
 
-      def add_customer_data(post, options)
+      def add_customer_data(post, options, billing_address_key=nil)
         post[:customer] = {}
         post[:customer][:email] = options[:email] || nil
         post[:customer][:name] = options[:name]
         post[:payment_ip] = options[:ip] if options[:ip]
 
-        add_address(post, options)
+        add_address(post, options, billing_address_key)
       end
 
       def add_address(post, options, billing_address_key=nil)
         address = options[:billing_address]
         if address
+          post[:customer][:name] = options[:billing_address][:name]
           billing_address = { billing_address: {} }
           billing_address[:billing_address][:address_line1] = address[:address1] unless address[:address1].blank?
           billing_address[:billing_address][:address_line2] = address[:address2] unless address[:address2].blank?
@@ -314,7 +321,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def url(_post, action, authorization)
-        if %i[authorize purchase].include?(action)
+        if %i[authorize purchase card_verification].include?(action)
           "#{base_url}/payments"
         elsif action == :capture
           "#{base_url}/payments/#{authorization}/captures"
@@ -360,7 +367,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def success_from(response, action)
-        return true if action == :instruments && response['id'].present?
+        return true if action == :card_verification && response['approved'] && response["status"] == "Card Verified"
         return true if action == :tokens && response['token'].present?
         return true if action == :update_card && response['fingerprint'].present?
         return true if [:delete_card, :update_customer].include?(action) && response == {}
