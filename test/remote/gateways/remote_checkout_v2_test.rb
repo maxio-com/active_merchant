@@ -139,7 +139,7 @@ class RemoteCheckoutV2Test < Test::Unit::TestCase
     response = @gateway.store(@credit_card, @options)
     assert_success response
 
-    authorization = response.params["id"]
+    authorization = response.params["source"]["id"]
     unstore_response = @gateway.unstore(authorization)
     assert_success unstore_response
   end
