@@ -84,6 +84,30 @@ module ActiveMerchant #:nodoc:
         end
       end
 
+      def update(paymethod_token, customer_token, options = {})
+        return unless paymethod_token
+        return unless customer_token
+
+        MultiResponse.run do |r|
+          r.process do
+            post = {}
+            add_address(post, options, :account_holder)
+            post[:name] = options[:billing_address][:name]
+            post[:expiry_month] = options[:expiration_month]
+            post[:expiry_year] = options[:expiration_year]
+
+            commit(:update_card, post, paymethod_token)
+          end
+
+          r.process do
+            post = {}
+            post[:name] = options[:billing_address][:name]
+
+            commit(:update_customer, post, customer_token)
+          end
+        end
+      end
+
       def unstore(authorization)
         commit(:delete_card, nil, authorization)
       end
@@ -176,15 +200,21 @@ module ActiveMerchant #:nodoc:
         post[:customer][:email] = options[:email] || nil
         post[:customer][:name] = options[:name]
         post[:payment_ip] = options[:ip] if options[:ip]
+
+        add_address(post, options)
+      end
+
+      def add_address(post, options, billing_address_key=nil)
         address = options[:billing_address]
         if address
-          post[:billing_address] = {}
-          post[:billing_address][:address_line1] = address[:address1] unless address[:address1].blank?
-          post[:billing_address][:address_line2] = address[:address2] unless address[:address2].blank?
-          post[:billing_address][:city] = address[:city] unless address[:city].blank?
-          post[:billing_address][:state] = address[:state] unless address[:state].blank?
-          post[:billing_address][:country] = address[:country] unless address[:country].blank?
-          post[:billing_address][:zip] = address[:zip] unless address[:zip].blank?
+          billing_address = { billing_address: {} }
+          billing_address[:billing_address][:address_line1] = address[:address1] unless address[:address1].blank?
+          billing_address[:billing_address][:address_line2] = address[:address2] unless address[:address2].blank?
+          billing_address[:billing_address][:city] = address[:city] unless address[:city].blank?
+          billing_address[:billing_address][:state] = address[:state] unless address[:state].blank?
+          billing_address[:billing_address][:country] = address[:country] unless address[:country].blank?
+          billing_address[:billing_address][:zip] = address[:zip] unless address[:zip].blank?
+          billing_address_key ? post[billing_address_key] = billing_address : post.merge!(billing_address)
         end
       end
 
@@ -238,6 +268,10 @@ module ActiveMerchant #:nodoc:
             ssl_get("#{base_url}/payments/#{post}", headers(action))
           elsif action == :delete_card
             ssl_request(:delete, url(post, action, authorization), nil, headers(action))
+          elsif action == :update_card
+            ssl_request(:patch, url(post, action, authorization), post.to_json, headers(action))
+          elsif action == :update_customer
+            ssl_request(:patch, url(post, action, authorization), post.to_json, headers(action))
           else
             ssl_post(url(post, action, authorization), post.to_json, headers(action))
           end
@@ -292,8 +326,10 @@ module ActiveMerchant #:nodoc:
           "#{base_url}/instruments"
         elsif action == :tokens
           "#{base_url}/tokens"
-        elsif action == :delete_card
+        elsif [:update_card, :delete_card].include?(action)
           "#{base_url}/instruments/#{authorization}"
+        elsif action == :update_customer
+          "#{base_url}/customers/#{authorization}"
         else
           "#{base_url}/payments/#{authorization}/#{action}"
         end
@@ -326,7 +362,8 @@ module ActiveMerchant #:nodoc:
       def success_from(response, action)
         return true if action == :instruments && response['id'].present?
         return true if action == :tokens && response['token'].present?
-        return true if action == :delete_card && response == {}
+        return true if action == :update_card && response['fingerprint'].present?
+        return true if [:delete_card, :update_customer].include?(action) && response == {}
 
         response['response_summary'] == 'Approved' || response['approved'] == true || !response.key?('response_summary') && response.key?('action_id')
       end
