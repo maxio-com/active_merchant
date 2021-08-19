@@ -213,7 +213,7 @@ module ActiveMerchant #:nodoc:
       def add_address(post, options, billing_address_key=nil)
         address = options[:billing_address]
         if address
-          post[:customer][:name] = options[:billing_address][:name]
+          post[:customer][:name] = options[:billing_address][:name] if post[:customer]
           billing_address = { billing_address: {} }
           billing_address[:billing_address][:address_line1] = address[:address1] unless address[:address1].blank?
           billing_address[:billing_address][:address_line2] = address[:address2] unless address[:address2].blank?
@@ -221,7 +221,7 @@ module ActiveMerchant #:nodoc:
           billing_address[:billing_address][:state] = address[:state] unless address[:state].blank?
           billing_address[:billing_address][:country] = address[:country] unless address[:country].blank?
           billing_address[:billing_address][:zip] = address[:zip] unless address[:zip].blank?
-          billing_address_key ? post[billing_address_key] = billing_address : post.merge!(billing_address)
+          post[billing_address_key] ? post[billing_address_key].merge!(billing_address) : post.merge!(billing_address)
         end
       end
 
