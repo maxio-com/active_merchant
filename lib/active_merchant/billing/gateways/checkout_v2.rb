@@ -94,8 +94,8 @@ module ActiveMerchant #:nodoc:
             post = {}
             add_address(post, options, :account_holder)
             post[:name] = options[:billing_address][:name]
-            post[:expiry_month] = options[:expiration_month]
-            post[:expiry_year] = options[:expiration_year]
+            post[:expiry_month] = options[:expiration_month] if options[:expiration_month]
+            post[:expiry_year] = options[:expiration_year] if options[:expiration_year]
 
             commit(:update_card, post, paymethod_token)
           end

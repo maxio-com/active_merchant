@@ -147,7 +147,7 @@ class RemoteCheckoutV2Test < Test::Unit::TestCase
   def test_successful_update
     response = @gateway.store(@credit_card, @options)  
 
-    paymethod_token = response.params["id"]
+    paymethod_token = response.params["source"]["id"]
     customer_token = response.params["customer"]["id"]
     options = {
       billing_address: {
