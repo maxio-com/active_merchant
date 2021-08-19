@@ -275,17 +275,7 @@ module ActiveMerchant #:nodoc:
 
       def commit(action, post, authorization = nil)
         begin
-          raw_response = if action == :verify_payment
-            ssl_get("#{base_url}/payments/#{post}", headers(action))
-          elsif action == :delete_card
-            ssl_request(:delete, url(post, action, authorization), nil, headers(action))
-          elsif action == :update_card
-            ssl_request(:patch, url(post, action, authorization), post.to_json, headers(action))
-          elsif action == :update_customer
-            ssl_request(:patch, url(post, action, authorization), post.to_json, headers(action))
-          else
-            ssl_post(url(post, action, authorization), post.to_json, headers(action))
-          end
+          raw_response = ssl_request(http_method(action), url(post, action, authorization), http_data(action, post), headers(action))
 
           response = parse(raw_response || "{}")
           response['id'] = response['_links']['payment']['href'].split('/')[-1] if action == :capture && response.key?('_links')
@@ -324,9 +314,11 @@ module ActiveMerchant #:nodoc:
         }
       end
 
-      def url(_post, action, authorization)
+      def url(post, action, authorization)
         if %i[authorize purchase card_verification].include?(action)
           "#{base_url}/payments"
+        elsif action == :verify_payment
+          "#{base_url}/payments/#{post}"
         elsif action == :capture
           "#{base_url}/payments/#{authorization}/captures"
         elsif action == :refund
@@ -343,6 +335,27 @@ module ActiveMerchant #:nodoc:
           "#{base_url}/customers/#{authorization}"
         else
           "#{base_url}/payments/#{authorization}/#{action}"
+        end
+      end
+
+      def http_method(action)
+        case action
+        when :verify_payment
+          :get
+        when :delete_card
+          :delete
+        when :update_card, :update_customer
+          :patch
+        else
+          :post
+        end
+      end
+
+      def http_data(action, post)
+        if [:verify_payment, :delete_card].include?(action)
+          nil
+        else
+          post.to_json
         end
       end
 
