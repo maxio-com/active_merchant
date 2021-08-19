@@ -221,7 +221,11 @@ module ActiveMerchant #:nodoc:
           billing_address[:billing_address][:state] = address[:state] unless address[:state].blank?
           billing_address[:billing_address][:country] = address[:country] unless address[:country].blank?
           billing_address[:billing_address][:zip] = address[:zip] unless address[:zip].blank?
-          post[billing_address_key] ? post[billing_address_key].merge!(billing_address) : post.merge!(billing_address)
+          if billing_address_key
+            post[billing_address_key] ? post[billing_address_key].merge!(billing_address) : post[billing_address_key] = billing_address
+          else
+            post.merge!(billing_address)
+          end
         end
       end
 
