@@ -265,8 +265,8 @@ module ActiveMerchant #:nodoc:
         if options[:three_d_secure] || options[:execute_threed]
           post[:'3ds'] = {}
           post[:'3ds'][:enabled] = true
-          post[:success_url] = options[:three_d_secure][:success_url] if options[:three_d_secure][:success_url]
-          post[:failure_url] = options[:three_d_secure][:failure_url] if options[:three_d_secure][:failure_url]
+          post[:success_url] = options[:three_d_secure][:success_url] if options.dig(:three_d_secure, :success_url)
+          post[:failure_url] = options[:three_d_secure][:failure_url] if options.dig(:three_d_secure, :failure_url)
           post[:'3ds'][:attempt_n3d] = options[:attempt_n3d] if options[:attempt_n3d]
         end
 
