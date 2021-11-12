@@ -11,7 +11,7 @@ class RemoteOrbitalGatewayTest < Test::Unit::TestCase
     @credit_card = credit_card('4556761029983886')
     @declined_card = credit_card('4000300011112220')
     # Electronic Check object with test credentials of saving account
-    @echeck = check(account_number: '072403004', account_type: 'savings', routing_number: '072403004')
+    # @echeck = check(account_number: '072403004', account_type: 'savings', routing_number: '072403004')
 
     @options = {
       order_id: generate_unique_id,
@@ -28,73 +28,73 @@ class RemoteOrbitalGatewayTest < Test::Unit::TestCase
       jcb: '3566002020140006'
     }
 
-    @level_2_options = {
-      tax_indicator: '1',
-      tax: '75',
-      advice_addendum_1: 'taa1 - test',
-      advice_addendum_2: 'taa2 - test',
-      advice_addendum_3: 'taa3 - test',
-      advice_addendum_4: 'taa4 - test',
-      purchase_order: '123abc',
-      name: address[:name],
-      address1: address[:address1],
-      address2: address[:address2],
-      city: address[:city],
-      state: address[:state],
-      zip: address[:zip]
-    }
+    # @level_2_options = {
+    #   tax_indicator: '1',
+    #   tax: '75',
+    #   advice_addendum_1: 'taa1 - test',
+    #   advice_addendum_2: 'taa2 - test',
+    #   advice_addendum_3: 'taa3 - test',
+    #   advice_addendum_4: 'taa4 - test',
+    #   purchase_order: '123abc',
+    #   name: address[:name],
+    #   address1: address[:address1],
+    #   address2: address[:address2],
+    #   city: address[:city],
+    #   state: address[:state],
+    #   zip: address[:zip]
+    # }
 
-    @level_3_options_visa = {
-      freight_amount: 1,
-      duty_amount: 1,
-      ship_from_zip: 27604,
-      dest_country: 'USA',
-      discount_amount: 1,
-      vat_tax: 1,
-      vat_rate: 25
-    }
+    # @level_3_options_visa = {
+    #   freight_amount: 1,
+    #   duty_amount: 1,
+    #   ship_from_zip: 27604,
+    #   dest_country: 'USA',
+    #   discount_amount: 1,
+    #   vat_tax: 1,
+    #   vat_rate: 25
+    # }
 
-    @level_2_options_master = {
-      freight_amount: 1,
-      duty_amount: 1,
-      ship_from_zip: 27604,
-      dest_country: 'USA',
-      alt_tax: 1,
-      alt_ind: 25
-    }
+    # @level_2_options_master = {
+    #   freight_amount: 1,
+    #   duty_amount: 1,
+    #   ship_from_zip: 27604,
+    #   dest_country: 'USA',
+    #   alt_tax: 1,
+    #   alt_ind: 25
+    # }
 
-    @line_items_visa = [
-      {
-        desc: 'another item',
-        prod_cd: generate_unique_id[0, 11],
-        qty: 1,
-        u_o_m: 'LBR',
-        tax_amt: 250,
-        tax_rate: 10000,
-        line_tot: 2500,
-        disc: 250,
-        comm_cd: '00584',
-        unit_cost: 2500,
-        gross_net: 'Y',
-        tax_type: 'sale',
-        debit_ind: 'C'
-      },
-      {
-        desc: 'something else',
-        prod_cd: generate_unique_id[0, 11],
-        qty: 1,
-        u_o_m: 'LBR',
-        tax_amt: 125,
-        tax_rate: 5000,
-        line_tot: 2500,
-        disc: 250,
-        comm_cd: '00584',
-        unit_cost: 250000,
-        gross_net: 'Y',
-        tax_type: 'sale',
-        debit_ind: 'C'
-      }
-    ]
+    # @line_items_visa = [
+    #   {
+    #     desc: 'another item',
+    #     prod_cd: generate_unique_id[0, 11],
+    #     qty: 1,
+    #     u_o_m: 'LBR',
+    #     tax_amt: 250,
+    #     tax_rate: 10000,
+    #     line_tot: 2500,
+    #     disc: 250,
+    #     comm_cd: '00584',
+    #     unit_cost: 2500,
+    #     gross_net: 'Y',
+    #     tax_type: 'sale',
+    #     debit_ind: 'C'
+    #   },
+    #   {
+    #     desc: 'something else',
+    #     prod_cd: generate_unique_id[0, 11],
+    #     qty: 1,
+    #     u_o_m: 'LBR',
+    #     tax_amt: 125,
+    #     tax_rate: 5000,
+    #     line_tot: 2500,
+    #     disc: 250,
+    #     comm_cd: '00584',
+    #     unit_cost: 250000,
+    #     gross_net: 'Y',
+    #     tax_type: 'sale',
+    #     debit_ind: 'C'
+    #   }
+    # ]
 
     @test_suite = [
       { card: :visa, AVSzip: 11111, CVD: 111,  amount: 3000 },
@@ -147,12 +147,12 @@ class RemoteOrbitalGatewayTest < Test::Unit::TestCase
     assert_equal 'Approved', response.message
   end
 
-  def test_successful_purchase_with_level_2_data
-    response = @gateway.purchase(@amount, @credit_card, @options.merge(level_2_data: @level_2_options))
+  # def test_successful_purchase_with_level_2_data
+  #   response = @gateway.purchase(@amount, @credit_card, @options.merge(level_2_data: @level_2_options))
 
-    assert_success response
-    assert_equal 'Approved', response.message
-  end
+  #   assert_success response
+  #   assert_equal 'Approved', response.message
+  # end
 
   # def test_successful_purchase_with_level_3_data
   #   response = @gateway.purchase(@amount, @credit_card, @options.merge(level_2_data: @level_2_options, level_3_data: @level_3_options_visa, line_items: @line_items_visa))
@@ -546,23 +546,23 @@ class RemoteOrbitalGatewayTest < Test::Unit::TestCase
     assert_success capture
   end
 
-  def test_successful_authorize_and_capture_with_level_2_data
-    auth = @gateway.authorize(@amount, @credit_card, @options.merge(level_2_data: @level_2_options))
-    assert_success auth
-    assert_equal 'Approved', auth.message
+  # def test_successful_authorize_and_capture_with_level_2_data
+  #   auth = @gateway.authorize(@amount, @credit_card, @options.merge(level_2_data: @level_2_options))
+  #   assert_success auth
+  #   assert_equal 'Approved', auth.message
 
-    capture = @gateway.capture(@amount, auth.authorization, @options.merge(level_2_data: @level_2_options))
-    assert_success capture
-  end
+  #   capture = @gateway.capture(@amount, auth.authorization, @options.merge(level_2_data: @level_2_options))
+  #   assert_success capture
+  # end
 
-  def test_successful_authorize_and_capture_with_level_3_data
-    auth = @gateway.authorize(@amount, @credit_card, @options.merge(level_3_data: @level_3_options))
-    assert_success auth
-    assert_equal 'Approved', auth.message
+  # def test_successful_authorize_and_capture_with_level_3_data
+  #   auth = @gateway.authorize(@amount, @credit_card, @options.merge(level_3_data: @level_3_options))
+  #   assert_success auth
+  #   assert_equal 'Approved', auth.message
 
-    capture = @gateway.capture(@amount, auth.authorization, @options.merge(level_3_data: @level_3_options))
-    assert_success capture
-  end
+  #   capture = @gateway.capture(@amount, auth.authorization, @options.merge(level_3_data: @level_3_options))
+  #   assert_success capture
+  # end
 
   # def test_successful_authorize_and_capture_with_echeck
   #   assert auth = @echeck_gateway.authorize(@amount, @echeck, @options.merge(order_id: '2'))
@@ -637,14 +637,14 @@ class RemoteOrbitalGatewayTest < Test::Unit::TestCase
   #   assert_equal '881', refund.params['proc_status']
   # end
 
-  def test_successful_refund_with_level_2_data
-    amount = @amount
-    assert response = @gateway.purchase(amount, @credit_card, @options.merge(level_2_data: @level_2_options))
-    assert_success response
-    assert response.authorization
-    assert refund = @gateway.refund(amount, response.authorization, @options.merge(level_2_data: @level_2_options))
-    assert_success refund
-  end
+  # def test_successful_refund_with_level_2_data
+  #   amount = @amount
+  #   assert response = @gateway.purchase(amount, @credit_card, @options.merge(level_2_data: @level_2_options))
+  #   assert_success response
+  #   assert response.authorization
+  #   assert refund = @gateway.refund(amount, response.authorization, @options.merge(level_2_data: @level_2_options))
+  #   assert_success refund
+  # end
 
   def test_successful_credit
     payment_method = credit_card('5454545454545454')
