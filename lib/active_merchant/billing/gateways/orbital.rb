@@ -1056,11 +1056,13 @@ module ActiveMerchant #:nodoc:
             add_customer_address(xml, options)
 
             xml.tag! :CustomerProfileAction, options[:customer_profile_action] # C, R, U, D
-            # NO No mapping to order data
-            # OI Use <CustomerRefNum> for <OrderID>
-            # OD Use <CustomerReferNum> for <Comments>
-            # OA Use <CustomerRefNum> for <OrderID> and <Comments>
-            xml.tag! :CustomerProfileOrderOverrideInd, options[:customer_profile_order_override_ind] || NO_MAPPING_TO_ORDER_DATA
+            unless options[:customer_profile_action] == DELETE
+              # NO No mapping to order data
+              # OI Use <CustomerRefNum> for <OrderID>
+              # OD Use <CustomerReferNum> for <Comments>
+              # OA Use <CustomerRefNum> for <OrderID> and <Comments>
+              xml.tag! :CustomerProfileOrderOverrideInd, options[:customer_profile_order_override_ind] || NO_MAPPING_TO_ORDER_DATA
+            end
 
             if options[:customer_profile_action] == CREATE
               # A Auto-Generate the CustomerRefNum
