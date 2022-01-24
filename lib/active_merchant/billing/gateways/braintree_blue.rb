@@ -690,13 +690,15 @@ module ActiveMerchant #:nodoc:
           }
         end
 
-        if options[:three_ds]
-          parameters[:payment_method_nonce] = options[:payment_method_nonce] if parameters[:payment_method_nonce]
-          parameters[:payment_method_nonce] = options[:three_ds_token] if parameters[:three_ds_token]
-        end
-
+        parameters[:payment_method_nonce] = find_payment_method_nonce(options) if options[:three_ds]
         parameters[:payment_method_token] = options[:payment_method_token] if options[:payment_method_token]
         parameters
+      end
+
+      def find_payment_method_nonce(options)
+        return options[:three_ds_token] if options[:three_ds_token] && !options[:three_ds_token].empty?
+
+        options[:three_ds_token] || options[:payment_method_nonce]
       end
 
       def partial_paypal_account_update?(paypal_account)
