@@ -739,7 +739,7 @@ module ActiveMerchant #:nodoc:
 
       def get_msg_type(parameters)
         return parameters[:mit_msg_type] if parameters[:mit_msg_type]
-        return 'CREC' if parameters[:stored_credential][:initial_transaction]
+        return 'MREC' if parameters[:stored_credential][:initial_transaction]
         return unless parameters[:stored_credential][:initiator] && parameters[:stored_credential][:reason_type]
 
         initiator =
