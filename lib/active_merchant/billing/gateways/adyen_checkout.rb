@@ -2,7 +2,6 @@ module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
     class AdyenCheckoutGateway < Gateway
       self.test_url = 'https://checkout-test.adyen.com/'
-      self.live_url = 'https://checkout-live.adyen.com/'
 
       self.supported_countries = %w(AT AU BE BG BR CH CY CZ DE DK EE ES FI FR GB GI GR HK HU IE IS IT LI LT LU LV MC MT MX NL NO PL PT RO SE SG SK SI US)
       self.default_currency = 'USD'
@@ -30,8 +29,8 @@ module ActiveMerchant #:nodoc:
       }
 
       def initialize(options={})
-        requires!(options, :username, :password, :merchant_account)
-        @username, @password, @merchant_account = options.values_at(:username, :password, :merchant_account)
+        requires!(options, :username, :password, :merchant_account, :url_prefix)
+        @username, @password, @merchant_account, @url_prefix = options.values_at(:username, :password, :merchant_account, :url_prefix)
         super
       end
 
@@ -385,6 +384,10 @@ module ActiveMerchant #:nodoc:
         return "Recurring/#{PAL_API_VERSION}/#{action}" if action == "disable"
 
         "#{PAYMENTS_API_VERSION}/#{action}"
+      end
+
+      def live_url
+        "https://#{@url_prefix}-checkout-live.adyenpayments.com/"
       end
 
       def url(action)
