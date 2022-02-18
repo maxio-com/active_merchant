@@ -16,7 +16,6 @@ module ActiveMerchant #:nodoc:
       PAYMENTS_API_VERSION = 'v51'
       PAL_API_VERSION = 'v49'
       PAL_TEST_URL = 'https://pal-test.adyen.com/pal/servlet/'
-      PAL_LIVE_URL = 'https://pal-live.adyen.com/pal/servlet/'
 
       STANDARD_ERROR_CODE_MAPPING = {
           '101' => STANDARD_ERROR_CODE[:incorrect_number],
@@ -390,13 +389,17 @@ module ActiveMerchant #:nodoc:
         "https://#{@url_prefix}-checkout-live.adyenpayments.com/"
       end
 
+      def pal_live_url
+        "https://#{@url_prefix}-pal-live.adyenpayments.com/pal/servlet/"
+      end
+
       def url(action)
         if test?
           use_pal_endpoint?(action) ? "#{PAL_TEST_URL}#{endpoint(action)}" : "#{test_url}#{endpoint(action)}"
         elsif @options[:subdomain]
           "https://#{@options[:subdomain]}-pal-live.adyenpayments.com/pal/servlet/#{endpoint(action)}"
         else
-          use_pal_endpoint?(action) ? "#{PAL_LIVE_URL}#{endpoint(action)}" : "#{live_url}#{endpoint(action)}"
+          use_pal_endpoint?(action) ? "#{pal_live_url}#{endpoint(action)}" : "#{live_url}#{endpoint(action)}"
         end
       end
 
