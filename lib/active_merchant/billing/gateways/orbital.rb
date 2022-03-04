@@ -790,10 +790,6 @@ module ActiveMerchant #:nodoc:
         # Failover URL will be attempted in the event of a connection error
         response =
           begin
-            if ["10500", "11000"].include?(Hash.from_xml(order).dig("Request", "NewOrder", "Amount"))
-              raise ConnectionError.new "Connection Error", nil
-            end
-
             request.call(remote_url)
           rescue ConnectionError
             request.call(remote_url(:secondary))
