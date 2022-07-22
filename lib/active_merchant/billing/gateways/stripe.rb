@@ -409,6 +409,16 @@ module ActiveMerchant #:nodoc:
         end
       end
 
+      def customer_payment_method(customer_id, payment_method_id)
+        r = commit(:get, "customers/#{CGI.escape(customer_id)}/payment_methods/#{CGI.escape(payment_method_id)}")
+        raise r.message unless r.success?
+
+        OpenStruct.new(
+          id: r.params["id"],
+          last4: r.params.dig("card", "last4")
+        )
+      end
+
       def customer_payment_methods(customer, payment_type)
         r = commit(:get, "payment_methods?customer=#{customer}&type=#{payment_type}", nil, options)
         raise r.message unless r.success?
