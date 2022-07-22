@@ -342,7 +342,7 @@ module ActiveMerchant #:nodoc:
         end
 
         if options[:three_d_secure]
-          payment_method = card_payment_method_for_customer(options[:customer]).id
+          payment_method = card_payment_method_for_customer(options[:customer])&.id
 
           if payment_method
             post[:confirmation_method] = "manual"
