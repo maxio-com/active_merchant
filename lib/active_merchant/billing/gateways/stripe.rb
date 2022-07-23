@@ -259,12 +259,13 @@ module ActiveMerchant #:nodoc:
         end
       end
 
-      def update(customer_id, card_id, options = {})
-        commit(:post, "customers/#{CGI.escape(customer_id)}/cards/#{CGI.escape(card_id)}", options, options)
-      end
-
-      def update_payment_method(payment_method_id, options = {})
-        commit(:post, "payment_methods/#{CGI.escape(payment_method_id)}", options, options)
+      def update(customer_id, card_or_payment_method_id, options = {})
+        case card_or_payment_method_id
+        when /^card_/
+          commit(:post, "customers/#{CGI.escape(customer_id)}/cards/#{CGI.escape(card_or_payment_method_id)}", options, options)
+        when /^pm_/
+          commit(:post, "payment_methods/#{CGI.escape(card_or_payment_method_id)}", options, options)
+        end
       end
 
       def update_customer(customer_id, options = {})
