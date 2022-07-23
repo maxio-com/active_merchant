@@ -343,7 +343,7 @@ module ActiveMerchant #:nodoc:
         end
 
         if options[:three_d_secure]
-          payment_method = card_payment_method_for_customer(options[:customer])&.id
+          payment_method = card_payment_method_for_customer(options[:customer])
 
           if payment_method
             post[:confirmation_method] = "manual"
@@ -384,17 +384,11 @@ module ActiveMerchant #:nodoc:
 
       def card_payment_method_for_customer(customer)
         payment_methods = customer_payment_methods(customer, "card")
-        return OpenStruct.new(
-          id: payment_methods.default_payment_method,
-          type: "payment_method"
-        ) if payment_methods.default_payment_method
+        return payment_methods.default_payment_method if payment_methods.default_payment_method
 
         # in last resort we choose default source
         default_source = customer_default_source(customer)
-        return OpenStruct.new(
-          id: default_source,
-          type: "source"
-        ) if default_source
+        return default_source if default_source
 
         if payment_methods.count > 1
           raise "Customer has more than one payment method but doesn't have default one."
@@ -807,10 +801,6 @@ module ActiveMerchant #:nodoc:
 
         Array(payment_method_type)
       end
-
-      # def card_payment_methods_for_customer(customer_id)
-      #   commit(:get, "customers/#{CGI.escape(customer_id)}/payment_methods?type=card")
-      # end
 
       def initial_options_for_sepa_direct_debit(bank_account, options)
         {
