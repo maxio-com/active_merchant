@@ -291,6 +291,8 @@ module ActiveMerchant #:nodoc:
         transcript
           .gsub(%r((Authorization: Bearer )[^\r\n]+), "\1[FILTERED]")
           .gsub(%r(("card_nonce\\*":\\*")[^"]+), "\1[FILTERED]")
+          .gsub(%r(("number\\*":\\*")[^"]+), "\1[FILTERED]")
+          .gsub(%r(("verification_value\\*":\\*")[^"]+), "\1[FILTERED]")
       end
     end
   end
