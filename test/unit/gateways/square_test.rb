@@ -282,10 +282,10 @@ class SquareTest < Test::Unit::TestCase
       "  headers:\n" +
       "    accept: application/json\n" +
       "    content-type: application/json; charset=utf-8\n" +
-      "    \u0001[FILTERED]\n" +
+      "    Authorization: Bearer [FILTERED]\n" +
       "    user-agent: Square-Ruby-SDK/6.3.0.20200826\n" +
       "    Square-Version: '2020-08-26'\n" +
-      "  parameters: '{\"card_nonce\":{\"first_name\":\"Joe\",\"last_name\":\"Smith\",\u0001[FILTERED]\",\"month\":1,\"year\":2025,\"brand\":\"visa\",\u0001[FILTERED]\"},\"billing_address\":{\"first_name\":\"Joe\",\"last_name\":\"Smith\",\"address_line_1\":\"123\n" +
+      "  parameters: '{\"card_nonce\":{\"first_name\":\"Joe\",\"last_name\":\"Smith\",\"number\":\"[FILTERED]\",\"month\":1,\"year\":2025,\"brand\":\"visa\",\"verification_value\":\"[FILTERED]\"},\"billing_address\":{\"first_name\":\"Joe\",\"last_name\":\"Smith\",\"address_line_1\":\"123\n" +
       "    Mass Ave.\",\"locality\":\"Boston\",\"administrative_district_level_1\":\"MA\",\"postal_code\":\"02120\",\"country\":\"US\"},\"cardholder_name\":\"Joe\n" +
       "    Smith\"}'\n" +
       "errors: &1\n" +
