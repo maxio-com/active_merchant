@@ -66,7 +66,7 @@ class RemotePaymentExpressTest < Test::Unit::TestCase
   def test_failed_capture
     assert response = @gateway.capture(@amount, '999')
     assert_failure response
-    assert_equal 'DpsTxnRef Invalid', response.message
+    assert_equal 'The transaction has not been processed.', response.message
   end
 
   def test_invalid_login
