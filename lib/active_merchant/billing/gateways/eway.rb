@@ -52,7 +52,7 @@ module ActiveMerchant #:nodoc:
         commit(refund_url, money, post)
       end
 
-      def supports_scrubbing
+      def supports_scrubbing?
         true
       end
 
