@@ -176,6 +176,10 @@ module ActiveMerchant #:nodoc:
                     raise StandardError, "Unexpected \"false\" in UpdateCustomerResult"
                   end
                 else
+                  if 'page cannot be displayed because an internal server error has occurred'.in?(body)
+                    raise ActiveMerchant::ConnectionError.new('Eway responded with server error', body)
+                  end
+
                   # ERROR: This state should never occur currently. We have handled
                   #        responses for all the methods which we support.
                   raise StandardError, "Unexpected response"
