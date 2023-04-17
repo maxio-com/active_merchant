@@ -242,6 +242,13 @@ module ActiveMerchant #:nodoc:
         637568..637568, 637599..637599, 637609..637609, 637612..637612
       ]
 
+      def self.in_bin_range?(number, ranges)
+        bin = number.to_i
+        ranges.any? do |range|
+          range.include?(bin)
+        end
+      end
+
       def self.included(base)
         base.extend(ClassMethods)
       end
