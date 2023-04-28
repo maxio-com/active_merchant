@@ -381,6 +381,8 @@ module ActiveMerchant #:nodoc:
         add_application_fee(post, options)
         add_destination(post, options)
 
+        add_level_3_data(post, options) if credit_card_payment?(options)
+
         post
       end
 
@@ -561,6 +563,33 @@ module ActiveMerchant #:nodoc:
         post[:metadata][:email] = options[:email] if options[:email]
         post[:metadata][:order_id] = options[:order_id] if options[:order_id]
         post.delete(:metadata) if post[:metadata].empty?
+      end
+
+      def add_level_3_data(post, options = {})
+        # Optional params:
+        #   - customer_reference
+        #   - shipping_address_zip
+        #   - shipping_from_zip
+        #   - shipping_amount
+        post[:merchant_reference] = options[:order_id]
+        line_items = level_3_data_map_line_item(options[:line_items])
+        post[:line_items] = line_items if line_items.present?
+      end
+
+      def level_3_data_map_line_item(line_items)
+        return if line_items.blank?
+
+        line_items.map do |item|
+          description = item[:description].size > 26 ? truncate(item[:description], 25) : item[:description]
+          {
+            product_code: item[:product_code],
+            product_description: description,
+            unit_cost: item[:price_in_cents],
+            quantity: item[:quantity],
+            tax_amount: item[:tax_amount_in_cents],
+            discount_amount: item[:discount_amount_in_cents]
+          }
+        end
       end
 
       def fetch_application_fees(identification, options = {})
@@ -775,6 +804,10 @@ module ActiveMerchant #:nodoc:
         return false unless options[:payment_type] == "bank_account"
 
         DIRECT_DEBIT_SUPPORTED_CURRENCIES.include?(options[:currency])
+      end
+
+      def credit_card_payment?(options)
+        options[:payment_type] == 'credit_card' ? true : false
       end
 
       def payment_method_type_for_direct_debit(currency)
