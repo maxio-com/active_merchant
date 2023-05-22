@@ -380,8 +380,7 @@ module ActiveMerchant #:nodoc:
         add_metadata(post, options)
         add_application_fee(post, options)
         add_destination(post, options)
-
-        add_level_3_data(post, options) if credit_card_payment?(options)
+        add_level_3_data(post, options) if credit_card_payment?(options) && !physical_retail?(options)
 
         post
       end
@@ -566,19 +565,21 @@ module ActiveMerchant #:nodoc:
       end
 
       def add_level_3_data(post, options = {})
-        # Optional params:
-        #   - customer_reference
-        #   - shipping_address_zip
-        #   - shipping_from_zip
-        #   - shipping_amount
-        post[:merchant_reference] = options[:order_id]
-        line_items = level_3_data_map_line_item(options[:line_items])
-        post[:line_items] = line_items if line_items.present?
+        return unless options[:line_items].present?
+
+        post[:level3] = {}.tap do |level3|
+          level3[:merchant_reference] = options[:order_id]
+          level3[:customer_reference] = options[:customer_ref]
+          level3[:shipping_address_zip] = options[:shipping_address_zip]
+          level3[:shipping_from_zip] = options[:shipping_from_zip]
+
+          line_items = level_3_data_map_line_item(options[:line_items])
+
+          level3[:line_items] = line_items if line_items.present?
+        end
       end
 
       def level_3_data_map_line_item(line_items)
-        return if line_items.blank?
-
         line_items.map do |item|
           description = item[:description].size > 26 ? truncate(item[:description], 25) : item[:description]
           {
@@ -933,6 +934,10 @@ module ActiveMerchant #:nodoc:
         else
           card_brand(payment_method) == "check"
         end
+      end
+
+      def physical_retail?(options)
+        !!options.dig(:metadata, :is_physical)
       end
     end
   end

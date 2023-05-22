@@ -283,7 +283,7 @@ module ActiveMerchant #:nodoc:
       #   => "1234"
       #
       # @param [String] value Text which needs to be truncated
-      # @param [String] index_of_last_char Index on which truncation need to be performed.
+      # @param [Integer] index_of_last_char Index on which truncation need to be performed.
       #
       # @return [String] truncated string
       def truncate(value, index_of_last_char)
