@@ -397,7 +397,8 @@ module ActiveMerchant #:nodoc:
         return default_source if default_source
 
         if payment_methods.count > 1
-          raise StripeCustomerManyPaymentMethodWithoutDefault, "Customer has more than one payment method but doesn't have default one."
+          raise RuntimeError.new
+          #raise StripeCustomerManyPaymentMethodWithoutDefault, "Customer has more than one payment method but doesn't have default one."
         end
       end
 
@@ -406,7 +407,8 @@ module ActiveMerchant #:nodoc:
         return payment_methods.default_payment_method if payment_methods.default_payment_method
 
         if payment_methods.count > 1
-          raise StripeCustomerManyPaymentMethodWithoutDefault, "Customer has more than one payment method but doesn't have default one."
+          raise RuntimeError.new
+          #raise StripeCustomerManyPaymentMethodWithoutDefault, "Customer has more than one payment method but doesn't have default one."
         end
       end
 
