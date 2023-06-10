@@ -2,8 +2,8 @@ require 'active_support/core_ext/hash/slice'
 
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
-    class StripeCustomerManyPaymentMethodWithoutDefault < StandardError; end
-    class StripeCustomerDoesNotExist < StandardError; end
+    class StripeCustomerManyPaymentMethodWithoutDefault < RuntimeError; end
+    class StripeCustomerDoesNotExist < RuntimeError; end
 
     class StripeGateway < Gateway
       self.live_url = 'https://api.stripe.com/v1/'
