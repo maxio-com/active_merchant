@@ -106,7 +106,18 @@ module ActiveMerchant #:nodoc:
         post[:payment_source] ||= {}
         payment_source = options[:payment_type] == "paypal_account" ? :paypal : :card
         post[:payment_source][payment_source] = {
-          vault_id: vault_id
+          vault_id: vault_id,
+          experience_context: {
+            payment_method_preference: "IMMEDIATE_PAYMENT_REQUIRED",
+            brand_name: "Maxio",
+            locale: "en-US",
+            landing_page: "LOGIN",
+            shipping_preference: physical_retail?(options) ? "SET_PROVIDED_ADDRESS" : "NO_SHIPPING",
+            user_action: "PAY_NOW",
+            # Placeholder values
+            return_url: "https://example.com/returnUrl",
+            cancel_url: "https://example.com/cancelUrl"
+          }
         }
       end
 
