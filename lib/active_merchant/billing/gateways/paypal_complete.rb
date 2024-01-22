@@ -169,7 +169,7 @@ module ActiveMerchant #:nodoc:
       def price_object(price_in_cent, currency)
         {
           currency_code: currency,
-          value: amount(price_in_cent)
+          value: amount(price_in_cent || 0)
         }
       end
 
