@@ -263,8 +263,13 @@ module ActiveMerchant #:nodoc:
         end
       end
 
-      def update(customer_id, card_id, options = {})
-        commit(:post, "customers/#{CGI.escape(customer_id)}/cards/#{CGI.escape(card_id)}", options, options)
+      def update(customer_id, card_or_payment_method_id, options = {})
+        case card_or_payment_method_id
+        when /^card_/
+          commit(:post, "customers/#{CGI.escape(customer_id)}/cards/#{CGI.escape(card_or_payment_method_id)}", options, options)
+        when /^pm_/
+          commit(:post, "payment_methods/#{CGI.escape(card_or_payment_method_id)}", options, options)
+        end
       end
 
       def update_customer(customer_id, options = {})
@@ -409,6 +414,16 @@ module ActiveMerchant #:nodoc:
         if payment_methods.count > 1
           raise StripeCustomerManyPaymentMethodWithoutDefault, "Customer has more than one payment method but doesn't have default one."
         end
+      end
+
+      def customer_payment_method(customer_id, payment_method_id)
+        r = commit(:get, "customers/#{CGI.escape(customer_id)}/payment_methods/#{CGI.escape(payment_method_id)}")
+        raise r.message unless r.success?
+
+        OpenStruct.new(
+          id: r.params["id"],
+          last4: r.params.dig("card", "last4")
+        )
       end
 
       def customer_payment_methods(customer, payment_type)
@@ -851,7 +866,6 @@ module ActiveMerchant #:nodoc:
 
         Array(payment_method_type)
       end
-
 
       def initial_options_for_sepa_direct_debit(bank_account, options)
         {
