@@ -137,6 +137,10 @@ module ActiveMerchant #:nodoc:
         JSON.parse(response || '{}')
       end
 
+      def ach?
+        true
+      end
+
       def commit(method, action, params, options={})
         begin
           response = parse(
