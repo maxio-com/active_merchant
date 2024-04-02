@@ -15,6 +15,8 @@ module ActiveMerchant #:nodoc:
       end
 
       def purchase(money, token, options = {})
+        lookup if ach?
+
         post = {
           payments: {
             amount: money,
@@ -235,6 +237,11 @@ module ActiveMerchant #:nodoc:
           }
         }
         commit(:post, '/mandates', post)
+      end
+
+      def lookup
+        post = {}
+        commit(:post, '/bank_details_lookups', post)
       end
     end
   end
