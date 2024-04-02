@@ -15,8 +15,6 @@ module ActiveMerchant #:nodoc:
       end
 
       def purchase(money, token, options = {})
-        lookup if ach?
-
         post = {
           payments: {
             amount: money,
@@ -32,6 +30,8 @@ module ActiveMerchant #:nodoc:
       end
 
       def store(customer_attributes, bank_account, options = {})
+        lookup(bank_account) if ach?
+
         res = nil
         MultiResponse.run do |r|
           r.process { res = commit(:post, '/customers', customer_params(customer_attributes, options)) }
@@ -239,8 +239,15 @@ module ActiveMerchant #:nodoc:
         commit(:post, '/mandates', post)
       end
 
-      def lookup
-        post = {}
+      def lookup(bank_account)
+        post = {
+          "bank_details_lookups": {
+            "account_number": bank_account.routing_number.presence,
+            "branch_code": bank_account.branch_code.presence,
+            "country_code": "US"
+          }
+        }
+
         commit(:post, '/bank_details_lookups', post)
       end
     end
