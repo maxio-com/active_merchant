@@ -30,11 +30,18 @@ module ActiveMerchant #:nodoc:
       end
 
       def store(customer_attributes, bank_account, options = {})
-        lookup(bank_account) if ach?
-
         res = nil
         MultiResponse.run do |r|
-          r.process { res = commit(:post, '/customers', customer_params(customer_attributes, options)) }
+          if ach?
+            r.process { res = lookup(bank_account) }
+
+            if res.success?
+              r.process { res = commit(:post, '/customers', customer_params(customer_attributes, options)) }
+            end
+          else
+            r.process { res = commit(:post, '/customers', customer_params(customer_attributes, options)) }
+          end
+
           if res.success?
             r.process { res = create_bank_account(res.params['customers']['id'], bank_account, options) }
           end
