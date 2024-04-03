@@ -235,6 +235,7 @@ module ActiveMerchant #:nodoc:
           post[:customer_bank_accounts]['bank_code'] = bank_account.routing_number.presence || nil
           post[:customer_bank_accounts]['branch_code'] = bank_account.branch_code.presence || nil
           post[:customer_bank_accounts]['account_number'] = bank_account.account_number
+          post[:customer_bank_accounts]['account_type'] = bank_account.account_number
         end
         commit(:post, '/customer_bank_accounts', post)
       end
@@ -255,6 +256,7 @@ module ActiveMerchant #:nodoc:
           "bank_details_lookups": {
             "account_number": bank_account.routing_number.presence,
             "branch_code": bank_account.branch_code.presence,
+            "account_type": bank_account.account_type,
             "country_code": "US"
           }
         }
