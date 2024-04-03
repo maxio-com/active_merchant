@@ -32,7 +32,7 @@ module ActiveMerchant #:nodoc:
       def store(customer_attributes, bank_account, options = {})
         res = nil
         MultiResponse.run do |r|
-          if ach?
+          if ach?(options)
             r.process { res = lookup(bank_account) }
 
             if res.success?
@@ -137,8 +137,8 @@ module ActiveMerchant #:nodoc:
         JSON.parse(response || '{}')
       end
 
-      def ach?
-        true
+      def ach?(options)
+        options[:type] == "ach"
       end
 
       def commit(method, action, params, options={})
