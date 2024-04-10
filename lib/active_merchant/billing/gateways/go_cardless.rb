@@ -59,7 +59,7 @@ module ActiveMerchant #:nodoc:
             r.process { res = create_bank_account(res.params['customers']['id'], bank_account, options) }
           end
           if res.success?
-            r.process { create_mandate(res.params['customer_bank_accounts']['id']) }
+            r.process { create_mandate(res.params['customer_bank_accounts']['id'], options) }
           end
         end
       end
