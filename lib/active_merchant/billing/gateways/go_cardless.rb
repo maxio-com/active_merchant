@@ -256,14 +256,29 @@ module ActiveMerchant #:nodoc:
       def lookup(bank_account)
         post = {
           "bank_details_lookups": {
-            "account_number": bank_account.routing_number.presence,
-            "branch_code": bank_account.branch_code.presence,
-            "account_type": bank_account.account_type,
-            "country_code": "US"
+            "account_number": bank_account.account_number,
+            "bank_code":  bank_account.routing_number.presence,
+            "country_code": "US",
           }
         }
 
-        commit(:post, '/bank_details_lookups', post)
+        response = commit(:post, '/bank_details_lookups', post)
+
+        return response unless response.success?
+
+        available_schemes = response.params["bank_details_lookups"]["available_debit_schemes"]
+
+        if available_schemes.empty? || !available_schemes.include?("ach")
+          Response.new(
+            false,
+            "Bank account is close or invalid.",
+            response.params,
+            authorization: response.authorization,
+            test: response.test
+          )
+        else
+          response
+        end
       end
     end
   end
