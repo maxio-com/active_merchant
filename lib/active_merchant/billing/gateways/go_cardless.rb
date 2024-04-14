@@ -46,7 +46,7 @@ module ActiveMerchant #:nodoc:
             r.process { res = create_bank_account(res.params['customers']['id'], bank_account, options) }
           end
           if res.success?
-            r.process { create_mandate(res.params['customer_bank_accounts']['id']) }
+            r.process { create_mandate(res.params['customer_bank_accounts']['id'], options) }
           end
         end
       end
@@ -240,14 +240,16 @@ module ActiveMerchant #:nodoc:
         commit(:post, '/customer_bank_accounts', post)
       end
 
-      def create_mandate(bank_account_id)
+      def create_mandate(bank_account_id, options)
         post = {
-          "mandates": {
-            "links": {
+          "mandates": {}.tap do |hash|
+            hash[:links] = {
               "customer_bank_account": bank_account_id
             }
-          }
+            hash[:payer_ip_address] = options[:device_data][:ip] if options[:device_data]
+          end
         }
+
         commit(:post, '/mandates', post)
       end
 
