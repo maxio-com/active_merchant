@@ -280,7 +280,7 @@ module ActiveMerchant #:nodoc:
         if available_schemes.empty? || !available_schemes.include?("ach")
           Response.new(
             false,
-            "Bank account is close or invalid.",
+            "The bank account is closed or invalid.",
             response.params,
             authorization: response.authorization,
             test: response.test
