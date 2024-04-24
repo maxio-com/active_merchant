@@ -244,7 +244,7 @@ module ActiveMerchant #:nodoc:
           post[:customer_bank_accounts]['bank_code'] = bank_account.routing_number.presence || nil
           post[:customer_bank_accounts]['branch_code'] = bank_account.branch_code.presence || nil
           post[:customer_bank_accounts]['account_number'] = bank_account.account_number
-          post[:customer_bank_accounts]['account_type'] = bank_account.account_type.presence || nil
+          post[:customer_bank_accounts]['account_type'] = bank_account.account_type.presence if ach?(opts)
         end
         commit(:post, '/customer_bank_accounts', post)
       end
