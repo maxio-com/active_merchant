@@ -281,11 +281,6 @@ module ActiveMerchant #:nodoc:
         raw_response = raw_ssl_request(http_method, url, body, headers(options))
         http_code = raw_response.code.to_i
         response = JSON.parse(handle_response(raw_response))
-        puts "*@" * 100
-        puts body
-        puts "*@" * 100
-        puts response.inspect
-        puts "*@" * 100
         success = success_from(http_method, path, http_code, response)
 
         Response.new(
