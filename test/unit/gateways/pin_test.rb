@@ -8,7 +8,7 @@ class PinTest < Test::Unit::TestCase
     @amount = 100
 
     @options = {
-      :email => 'roland@pinpayments.com ',
+      :email => 'roland@pinpayments.com',
       :billing_address => address,
       :description => 'Store Purchase',
       :ip => '127.0.0.1'
@@ -225,7 +225,7 @@ class PinTest < Test::Unit::TestCase
 
     @gateway.send(:add_customer_data, post, @options)
 
-    assert_equal 'roland@pinpayments.com ', post[:email]
+    assert_equal 'roland@pinpayments.com', post[:email]
     assert_equal '127.0.0.1', post[:ip_address]
   end
 
@@ -327,7 +327,7 @@ class PinTest < Test::Unit::TestCase
         "amount":400,
         "currency":"AUD",
         "description":"test charge",
-        "email":"roland@pinpayments.com ",
+        "email":"roland@pinpayments.com",
         "ip_address":"203.192.1.172",
         "created_at":"2013-01-14T03:00:41Z",
         "status_message":"Success!",
@@ -407,7 +407,7 @@ class PinTest < Test::Unit::TestCase
     '{
       "response":{
         "token":"cus_05p0n7UFPmcyCNjD8c6HdA",
-        "email":"roland@pinpayments.com ",
+        "email":"roland@pinpayments.com",
         "created_at":"2013-01-16T03:16:11Z",
         "card":{
           "token":"card__o8I8GmoXDF0d35LEDZbNQ",
@@ -473,7 +473,7 @@ class PinTest < Test::Unit::TestCase
         "amount":400,
         "currency":"AUD",
         "description":"test charge",
-        "email":"roland@pinpayments.com ",
+        "email":"roland@pinpayments.com",
         "ip_address":"203.192.1.172",
         "created_at":"2013-01-14T03:00:41Z",
         "status_message":"Success!",
@@ -504,7 +504,7 @@ class PinTest < Test::Unit::TestCase
     '{
       "amount":"100",
       "currency":"AUD",
-      "email":"roland@pinpayments.com ",
+      "email":"roland@pinpayments.com",
       "ip_address":"203.59.39.62",
       "description":"Store Purchase 1437598192",
       "card":{
@@ -526,7 +526,7 @@ class PinTest < Test::Unit::TestCase
     '{
       "amount":"100",
       "currency":"AUD",
-      "email":"roland@pinpayments.com ",
+      "email":"roland@pinpayments.com",
       "ip_address":"203.59.39.62",
       "description":"Store Purchase 1437598192",
       "card":{
