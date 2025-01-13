@@ -121,12 +121,13 @@ module ActiveMerchant #:nodoc:
               id: vault_id,
               type: 'PAYMENT_METHOD_TOKEN'
             },
-            stored_credential: sca_indicators, # this hash corresponds to the SCA payment indicators, which are needed to trigger RTAU
+            stored_credential: sca_indicators,
             experience_context: experience_context_body(options)
           }
         end
       end
 
+      # This hash corresponds to the SCA payment indicators, which are needed to trigger RTAU
       def sca_indicators
         {
           payment_initiator: 'MERCHANT',
