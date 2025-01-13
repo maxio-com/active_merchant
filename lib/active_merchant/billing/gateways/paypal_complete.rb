@@ -111,7 +111,7 @@ module ActiveMerchant #:nodoc:
         payment_source_in_use = options[:payment_type] == "paypal_account" ? :paypal : :card
         if payment_source_in_use == :card
           {
-            "token": {
+            token: {
               id: vault_id,
               type: 'PAYMENT_METHOD_TOKEN'
             },
