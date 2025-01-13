@@ -120,7 +120,7 @@ module ActiveMerchant #:nodoc:
           }
         else
           {
-            payment_source: {
+            paypal: {
               vault_id: vault_id,
               experience_context: experience_context_body(options)
             }
