@@ -102,6 +102,10 @@ module ActiveMerchant # :nodoc:
       #
       # :password =>  the transaction key you generated in the Business Center
       #
+      # :p12 => the contents of your .p12 file
+      #
+      # :p12_password => the password you set on your .p12 file
+      #
       # :test => true   sets the gateway to test mode
       #
       # :vat_reg_number => your VAT registration number
@@ -115,7 +119,7 @@ module ActiveMerchant # :nodoc:
       # :ignore_cvv => true   don't want to use CVV so continue processing even
       #                       if CVV would have failed
       def initialize(options = {})
-        requires!(options, :login, :password)
+        requires!(options, :login, :password, :p12, :p12_password)
         super
       end
 
