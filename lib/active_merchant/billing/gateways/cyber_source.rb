@@ -834,43 +834,67 @@ module ActiveMerchant # :nodoc:
           end
         end
         if @options[:p12].present? && @options[:p12_password].present?
-          doc = Nokogiri::XML(xml.target!)
-
-          security_element = doc.at_xpath('//wsse:Security', 'wsse' => 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd')
-          security_element.children.remove
-
-          token_element = generate_security_token(doc)
-          security_element.add_child(token_element)
-
-          signature_element = doc.create_element('ds:Signature')
-          signature_element.add_namespace('ds', DS_NS)
-          security_element.add_child(signature_element)
-
-          sign_info = build_signed_info(doc, ['Body'])
-          signature_element.add_child(sign_info)
-
-          signature = @private_key.sign(
-            OpenSSL::Digest.new('SHA256'),
-            canonicalize_node(sign_info)
-          )
-
-          signature_value = doc.create_element('ds:SignatureValue')
-          signature_value.content = Base64.strict_encode64(signature)
-          signature_element.add_child(signature_value)
-
-          key_info = doc.create_element('ds:KeyInfo')
-          security_token_reference = doc.create_element('wsse:SecurityTokenReference')
-          reference = doc.create_element('wsse:Reference')
-          reference['URI'] = '#X509Token'
-          security_token_reference.add_child(reference)
-          key_info.add_child(security_token_reference)
-          signature_element.add_child(key_info)
+          doc = parse_xml(xml)
+          security_element = initialize_security_element(doc)
+          add_security_token(doc, security_element)
+          signature_element = create_signature_element(doc, security_element)
+          sign_info = build_and_add_signed_info(doc, signature_element)
+          sign_and_add_signature_value(doc, signature_element, sign_info)
+          add_key_information(doc, signature_element)
           doc.to_xml
         elsif @options[:p12].blank? ^ @options[:p12_password].blank?
           raise ArgumentError, "Both p12 certificate contents ('@options[:p12]')and its password (''@options[:p12]'') must be provided together, or neither should be present."
         else
           xml.target!
         end
+      end
+
+      def parse_xml(xml)
+        Nokogiri::XML(xml.target!)
+      end
+
+      def initialize_security_element(doc)
+        security_element = doc.at_xpath('//wsse:Security', 'wsse' => 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd')
+        security_element.children.remove
+        security_element
+      end
+
+      def add_security_token(doc, security_element)
+        token_element = generate_security_token(doc)
+        security_element.add_child(token_element)
+      end
+
+      def create_signature_element(doc, security_element)
+        signature_element = doc.create_element('ds:Signature')
+        signature_element.add_namespace('ds', DS_NS)
+        security_element.add_child(signature_element)
+        signature_element
+      end
+
+      def build_and_add_signed_info(doc, signature_element)
+        sign_info = build_signed_info(doc, ['Body'])
+        signature_element.add_child(sign_info)
+        sign_info
+      end
+
+      def sign_and_add_signature_value(doc, signature_element, sign_info)
+        signature = @private_key.sign(
+          OpenSSL::Digest.new('SHA256'),
+          canonicalize_node(sign_info)
+        )
+        signature_value = doc.create_element('ds:SignatureValue')
+        signature_value.content = Base64.strict_encode64(signature)
+        signature_element.add_child(signature_value)
+      end
+
+      def add_key_information(doc, signature_element)
+        key_info = doc.create_element('ds:KeyInfo')
+        security_token_reference = doc.create_element('wsse:SecurityTokenReference')
+        reference = doc.create_element('wsse:Reference')
+        reference['URI'] = '#X509Token'
+        security_token_reference.add_child(reference)
+        key_info.add_child(security_token_reference)
+        signature_element.add_child(key_info)
       end
 
       def generate_security_token(doc)
