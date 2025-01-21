@@ -32,8 +32,8 @@ module ActiveMerchant #:nodoc:
       SOAP_NS = 'http://schemas.xmlsoap.org/soap/envelope/'.freeze
       DS_NS = 'http://www.w3.org/2000/09/xmldsig#'.freeze
 
-      self.supported_cardtypes = %i[visa master american_express discover diners_club jcb dankort maestro]
-      self.supported_countries = %w[US BR CA CN DK FI FR DE IN JP MX NO SE GB SG LB ZA]
+      self.supported_cardtypes = [:visa, :master, :american_express, :discover, :diners_club, :jcb, :dankort, :maestro]
+      self.supported_countries = %w(US BR CA CN DK FI FR DE IN JP MX NO SE GB SG LB ZA)
 
       self.default_currency = 'USD'
       self.currencies_without_fractions = %w(JPY)
@@ -948,10 +948,10 @@ module ActiveMerchant #:nodoc:
         authorization = success ? authorization_from(response, action, amount, options) : nil
 
         Response.new(success, message, response,
-                     :test => test?,
-                     :authorization => authorization,
-                     :avs_result => { :code => response[:avsCode] },
-                     :cvv_result => response[:cvCode]
+          :test => test?,
+          :authorization => authorization,
+          :avs_result => { :code => response[:avsCode] },
+          :cvv_result => response[:cvCode]
         )
       end
 
