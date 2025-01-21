@@ -760,9 +760,7 @@ module ActiveMerchant #:nodoc:
         xml.instruct!
         xml.tag! 's:Envelope', {'xmlns:s' => 'http://schemas.xmlsoap.org/soap/envelope/'} do
           xml.tag! 's:Header' do
-            xml.tag! 'wsse:Security',
-                     { 's:mustUnderstand' => '1',
-                       'xmlns:wsse' => 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd' } do
+            xml.tag! 'wsse:Security', {'s:mustUnderstand' => '1', 'xmlns:wsse' => 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd'} do
               xml.tag! 'wsse:UsernameToken' do
                 xml.tag! 'wsse:Username', @options[:login]
                 xml.tag! 'wsse:Password', @options[:password], 'Type' => 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText'
