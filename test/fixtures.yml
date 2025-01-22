@@ -248,7 +248,7 @@ culqi:
 # services on your test account.
 cyber_source:
   login: X
-  password:
+  password: Y
   p12: ''
   p12_password: ''
 
