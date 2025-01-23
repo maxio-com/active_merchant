@@ -844,10 +844,10 @@ module ActiveMerchant #:nodoc:
       end
 
       def generate_security_token(doc)
-        cert = OpenSSL::PKCS12.new(@options[:p12], @options[:p12_password])
+        decoded_p12_cert =  Base64.decode64(@options[:p12])
+        cert = OpenSSL::PKCS12.new(decoded_p12_cert, @options[:p12_password])
         @private_key = cert.key
-        p12 = OpenSSL::PKCS12.new(@options[:p12], @options[:p12_password])
-        certificate = p12.certificate.to_pem
+        certificate = cert.certificate.to_pem
 
         pubcert_lines = certificate.lines.map(&:strip) # Split and trim each line
         pubcert_lines.shift # Remove "-----BEGIN CERTIFICATE-----"
