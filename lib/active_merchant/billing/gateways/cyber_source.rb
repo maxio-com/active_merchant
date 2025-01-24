@@ -862,6 +862,8 @@ module ActiveMerchant #:nodoc:
         token['wsu:Id'] = 'X509Token'
         token.set_attribute('xmlns:wsu', WSU_NS)
         token
+      rescue OpenSSL::PKCS12::PKCS12Error => e
+        raise ArgumentError, "Invalid p12 certificate or password provided: #{e.message}"
       end
 
       def build_signed_info(dom_document, ids)
