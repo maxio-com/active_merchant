@@ -788,8 +788,6 @@ module ActiveMerchant #:nodoc:
           sign_and_add_signature_value(doc, signature_element, sign_info)
           add_key_information(doc, signature_element)
           doc.to_xml
-        elsif @options[:p12].blank? ^ @options[:p12_password].blank?
-          raise ArgumentError, "Both p12 certificate contents ('@options[:p12]')and its password (''@options[:p12]'') must be provided together, or neither should be present."
         else
           xml.target!
         end
