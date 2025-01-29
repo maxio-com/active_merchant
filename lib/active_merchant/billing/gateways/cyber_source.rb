@@ -102,9 +102,9 @@ module ActiveMerchant #:nodoc:
       #
       # :password =>  the transaction key you generated in the Business Center
       #
-      # :p12 => the contents of your .p12 file
+      # :p12_certificate => the contents of your .p12 file
       #
-      # :p12_password => the password you set on your .p12 file
+      # :p12_certificate_password => the password you set on your .p12 file
       #
       # :test => true   sets the gateway to test mode
       #
@@ -119,7 +119,7 @@ module ActiveMerchant #:nodoc:
       # :ignore_cvv => true   don't want to use CVV so continue processing even
       #                       if CVV would have failed
       def initialize(options = {})
-        requires!(options, :login, :password, :p12, :p12_password)
+        requires!(options, :login, :password, :p12_certificate, :p12_certificate_password)
         super
       end
 
@@ -779,7 +779,7 @@ module ActiveMerchant #:nodoc:
             end
           end
         end
-        if @options[:p12].present? && @options[:p12_password].present?
+        if @options[:p12_certificate].present? && @options[:p12_certificate_password].present?
           doc = parse_xml(xml)
           security_element = initialize_security_element(doc)
           add_security_token(doc, security_element)
@@ -842,8 +842,8 @@ module ActiveMerchant #:nodoc:
       end
 
       def generate_security_token(doc)
-        decoded_p12_cert =  Base64.decode64(@options[:p12])
-        cert = OpenSSL::PKCS12.new(decoded_p12_cert, @options[:p12_password])
+        decoded_p12_cert =  Base64.decode64(@options[:p12_certificate])
+        cert = OpenSSL::PKCS12.new(decoded_p12_cert, @options[:p12_certificate_password])
         @private_key = cert.key
         certificate = cert.certificate.to_pem
 
