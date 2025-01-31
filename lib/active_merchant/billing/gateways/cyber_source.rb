@@ -937,7 +937,7 @@ module ActiveMerchant #:nodoc:
         rescue REXML::ParseException => e
           response = { message: e.to_s }
         end
-        binding.pry
+
         success = response[:decision] == 'ACCEPT'
 
         response_code = ('r' + response.fetch(:reasonCode,'')).to_sym
