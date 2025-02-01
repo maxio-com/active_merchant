@@ -1,3 +1,3 @@
 module ActiveMerchant
-  VERSION = "cybersource-test"
+  VERSION = "1.61.0"
 end
