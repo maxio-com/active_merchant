@@ -108,26 +108,26 @@ module ActiveMerchant #:nodoc:
       end
 
       def create_payment_source_body(options, vault_id)
-        payment_source_in_use = options[:payment_type] == "paypal_account" ? :paypal : :card
-        if payment_source_in_use == :card
+        if options[:payment_type] == "paypal_account"
           {
-            "token": {
-              id: vault_id,
-              type: 'PAYMENT_METHOD_TOKEN'
-            },
-            stored_credential: sca_indicators, # this hash corresponds to the SCA payment indicators, which are needed to trigger RTAU
-            experience_context: experience_context_body(options)
-          }
-        else
-          {
-            payment_source: {
+            paypal: {
               vault_id: vault_id,
               experience_context: experience_context_body(options)
             }
           }
+        else
+          {
+            token: {
+              id: vault_id,
+              type: 'PAYMENT_METHOD_TOKEN'
+            },
+            stored_credential: sca_indicators,
+            experience_context: experience_context_body(options)
+          }
         end
       end
 
+      # This hash corresponds to the SCA payment indicators, which are needed to trigger RTAU
       def sca_indicators
         {
           payment_initiator: 'MERCHANT',
@@ -312,7 +312,12 @@ module ActiveMerchant #:nodoc:
         elsif path.start_with?('/v3/vault/payment-tokens')
           true
         elsif path.start_with?('/v2/checkout/orders')
-          response['status'] == 'COMPLETED'
+          response['status'] == 'COMPLETED' &&
+            response['purchase_units'].all? do |unit|
+              unit['payments']['captures'].all? do |capture|
+                capture['status'] == 'COMPLETED'
+              end
+            end
         elsif path.start_with?('/v2/payments/captures')
           response['status'] == 'COMPLETED'
         end
@@ -335,7 +340,7 @@ module ActiveMerchant #:nodoc:
 
       def handle_response(response)
         case response.code.to_i
-        when 200..300
+        when 200..499
           response.body || '{}'
         else
           raise ResponseError.new(response)
