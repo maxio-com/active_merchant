@@ -9,7 +9,9 @@ class CyberSourceTest < Test::Unit::TestCase
 
     @gateway = CyberSourceGateway.new(
       :login => 'l',
-      :password => 'p'
+      :password => 'p',
+      :p12 => '',
+      :p12_password => ''
     )
 
     @amount = 100
