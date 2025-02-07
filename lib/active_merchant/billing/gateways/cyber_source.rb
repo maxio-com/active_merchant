@@ -779,13 +779,6 @@ module ActiveMerchant #:nodoc:
             end
           end
         end
-        opts_copy = @options.dup
-        p12_cert_100_first_chars = opts_copy[:p12_certificate].to_s[0..100]
-        p12_pass_5_first_chars = opts_copy[:p12_certificate_password].to_s[0..5]
-        opts_copy[:p12_certificate] = p12_cert_100_first_chars + '...' if opts_copy[:p12_certificate].present?
-        opts_copy[:p12_certificate_password] = p12_pass_5_first_chars + '...' if opts_copy[:p12_certificate_password].present?
-        will_use_new_flow = @options[:p12_certificate].present? && @options[:p12_certificate_password].present?
-        Honeybadger.notify("Auth flow check", context: {'options' => @options, 'will_use_new_flow': will_use_new_flow})
         if @options[:p12_certificate].present? && @options[:p12_certificate_password].present?
           doc = parse_xml(xml)
           security_element = initialize_security_element(doc)
