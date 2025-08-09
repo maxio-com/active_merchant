@@ -206,4 +206,15 @@ class RemoteQuickpayV5Test < Test::Unit::TestCase
     assert_equal 'Invalid merchant id', response.message
     assert_failure response
   end
+
+  def test_transcript_scrubbing
+    transcript = capture_transcript(@gateway) do
+      @gateway.purchase(@amount, @visa, @options)
+    end
+    transcript = @gateway.scrub(transcript)
+
+    assert_scrubbed(@visa.number, transcript)
+    assert_scrubbed(@visa.verification_value, transcript)
+    assert_scrubbed(@gateway.options[:login], transcript)
+  end
 end
