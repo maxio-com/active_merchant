@@ -13,6 +13,7 @@ module ActiveMerchant #:nodoc:
 
       def purchase(money, payment_method, options = {})
         post = {}
+        conditionally_fix_discrepancies(money, options)
         add_order_id(post, money, options)
         add_amount(post[:purchase_units].first, money, options)
         add_payment_source(post, payment_method, options)
@@ -200,6 +201,22 @@ module ActiveMerchant #:nodoc:
           currency_code: currency,
           value: amount(price_in_cent || 0)
         }
+      end
+
+      # handle product migration (upgrade)
+      def conditionally_fix_discrepancies(money, options)
+        total_amount = items_total(options)
+        return if money >= total_amount
+
+        ratio = money / total_amount.to_d
+        options[:line_items].map do |line_item|
+          line_item[:price_in_cents] = (line_item[:price_in_cents] * ratio).round(0)
+          line_item[:total_amount_in_cents] = line_item[:price_in_cents] * line_item[:quantity]
+        end
+        unless (difference = items_total(options) - money).zero?
+          options[:line_items].first[:price_in_cents] += difference
+          options[:line_items].first[:total_amount_in_cents] += difference
+        end
       end
 
       def add_order_id(post, _money, options)
