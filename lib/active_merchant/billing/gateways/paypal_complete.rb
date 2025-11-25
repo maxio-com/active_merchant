@@ -206,16 +206,18 @@ module ActiveMerchant #:nodoc:
       # handle product migration (upgrade)
       def conditionally_fix_discrepancies(money, options)
         total_amount = items_total(options)
-        return if money >= total_amount
 
-        ratio = money / total_amount.to_d
-        options[:line_items].map do |line_item|
-          line_item[:price_in_cents] = (line_item[:price_in_cents] * ratio).round(0)
-          line_item[:total_amount_in_cents] = line_item[:price_in_cents] * line_item[:quantity]
-        end
-        unless (difference = items_total(options) - money).zero?
-          options[:line_items].first[:price_in_cents] += difference
-          options[:line_items].first[:total_amount_in_cents] += difference
+        if money != total_amount && options[:discount_amount_in_cents].zero?
+          ratio = money / total_amount.to_d
+          options[:line_items].map do |line_item|
+            line_item[:price_in_cents] = (line_item[:price_in_cents] * ratio).round(0)
+            line_item[:total_amount_in_cents] = line_item[:price_in_cents] * line_item[:quantity]
+          end
+
+          unless (difference = money - items_total(options)).zero?
+            options[:line_items].first[:price_in_cents] += difference
+            options[:line_items].first[:total_amount_in_cents] += difference
+          end
         end
       end
 
