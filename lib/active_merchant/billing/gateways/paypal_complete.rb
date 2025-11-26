@@ -207,7 +207,7 @@ module ActiveMerchant #:nodoc:
       def conditionally_fix_discrepancies(money, options)
         total_amount = items_total(options)
 
-        if money != total_amount && options[:discount_amount_in_cents].zero?
+        if money != total_amount && options[:discount_amount_in_cents]&.zero?
           ratio = money / total_amount.to_d
           options[:line_items].map do |line_item|
             line_item[:price_in_cents] = (line_item[:price_in_cents] * ratio).round(0)
