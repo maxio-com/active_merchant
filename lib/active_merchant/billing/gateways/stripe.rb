@@ -572,6 +572,10 @@ module ActiveMerchant #:nodoc:
       end
 
       def add_level_3_data(post, options = {})
+        if cedp_data_present?(options)
+          add_cedp_data(post, options)
+          return
+        end
         return unless options[:line_items].present?
 
         post[:level3] = {}.tap do |level3|
@@ -584,6 +588,18 @@ module ActiveMerchant #:nodoc:
 
           level3[:line_items] = line_items if line_items.present?
         end
+      end
+
+      def cedp_data_present?(options)
+        options[:payment_details].present? && options[:amount_details].present?
+      end
+
+      def add_cedp_data(post, options)
+        post[:payment_details] = options[:payment_details]
+        post[:amount_details]  = options[:amount_details]
+        post[:payment_method_types] = ["card"]
+        options[:version] = options.dig(:stripe_level3_version)
+        options.delete(:stripe_level3_version)
       end
 
       def level_3_data_map_line_item(line_items)
