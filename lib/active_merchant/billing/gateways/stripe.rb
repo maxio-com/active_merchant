@@ -598,7 +598,8 @@ module ActiveMerchant #:nodoc:
         post[:payment_details] = options[:payment_details]
         post[:amount_details]  = options[:amount_details]
         post[:payment_method_types] = ["card"]
-        @options.merge!(:version => '2025-04-30.preview')
+        options[:version] = options.dig(:stripe_level3_version)
+        options.delete(:stripe_level3_version)
       end
 
       def level_3_data_map_line_item(line_items)
