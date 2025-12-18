@@ -598,8 +598,6 @@ module ActiveMerchant #:nodoc:
         post[:payment_details] = options[:payment_details]
         post[:amount_details]  = options[:amount_details]
         post[:payment_method_types] = ["card"]
-        options[:version] = options.dig(:stripe_level3_version)
-        options.delete(:stripe_level3_version)
       end
 
       def level_3_data_map_line_item(line_items)
@@ -678,7 +676,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def api_version(options)
-        options[:version] || @options[:version] || "2015-04-07"
+        options[:stripe_level3_version] ||options[:version] || @options[:version] || "2015-04-07"
       end
 
       def api_request(method, endpoint, parameters = nil, options = {})
