@@ -573,6 +573,7 @@ module ActiveMerchant #:nodoc:
 
       def add_level_3_data(post, options = {})
         if cedp_data_present?(options)
+          # CEDP/Product 3 replaces legacy Level 3 data.
           add_cedp_data(post, options)
           return
         end
@@ -676,7 +677,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def api_version(options)
-        options[:stripe_level3_version] ||options[:version] || @options[:version] || "2015-04-07"
+        options[:stripe_level3_version] || options[:version] || @options[:version] || "2015-04-07"
       end
 
       def api_request(method, endpoint, parameters = nil, options = {})
