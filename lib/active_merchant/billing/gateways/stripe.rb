@@ -384,7 +384,9 @@ module ActiveMerchant #:nodoc:
         add_metadata(post, options)
         add_application_fee(post, options)
         add_destination(post, options)
-        add_level_3_data(post, options) if credit_card_payment?(options) && !physical_retail?(options)
+        if credit_card_payment?(options) && !physical_retail?(options)
+          cedp_data_present?(options) ? add_cedp_data(post, options) : add_level_3_data(post, options)
+        end
 
         post
       end
@@ -572,11 +574,6 @@ module ActiveMerchant #:nodoc:
       end
 
       def add_level_3_data(post, options = {})
-        if cedp_data_present?(options)
-          # CEDP/Product 3 replaces legacy Level 3 data.
-          add_cedp_data(post, options)
-          return
-        end
         return unless options[:line_items].present?
 
         post[:level3] = {}.tap do |level3|
@@ -677,7 +674,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def api_version(options)
-        options[:stripe_level3_version] || options[:version] || @options[:version] || "2015-04-07"
+        options[:stripe_api_version] || options[:version] || @options[:version] || "2015-04-07"
       end
 
       def api_request(method, endpoint, parameters = nil, options = {})
