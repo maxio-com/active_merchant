@@ -25,9 +25,10 @@ module ActiveMerchant #:nodoc:
                    else
                      post = { payment_source: {} }
                      add_credit_card(post[:payment_source], payment_method, options)
-                     response = commit(:post, '/v3/vault/setup-tokens', post, options)
+                     token_response = tokenize_credit_card(post, options)
+                     return token_response unless token_response.success?
 
-                     response.params['id']
+                     token_response.params["token"]
                    end
 
         post = { payment_source: {} }
@@ -92,6 +93,16 @@ module ActiveMerchant #:nodoc:
 
           params[:card].delete(:billing_address) unless
             params[:card][:billing_address].any? { |_, value| value.present? }
+        end
+      end
+
+      def tokenize_credit_card(post, options)
+        response = commit(:post, '/v3/vault/setup-tokens', post, options)
+
+        if response.success? && response.params['id'].present?
+          Response.new(true, nil, token: response.params['id'])
+        else
+          Response.new(false, response.message, response.params)
         end
       end
 
