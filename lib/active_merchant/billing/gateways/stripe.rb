@@ -384,7 +384,9 @@ module ActiveMerchant #:nodoc:
         add_metadata(post, options)
         add_application_fee(post, options)
         add_destination(post, options)
-        add_level_3_data(post, options) if credit_card_payment?(options) && !physical_retail?(options)
+        if credit_card_payment?(options) && !physical_retail?(options)
+          cedp_data_present?(options) ? add_cedp_data(post, options) : add_level_3_data(post, options)
+        end
 
         post
       end
@@ -586,6 +588,16 @@ module ActiveMerchant #:nodoc:
         end
       end
 
+      def cedp_data_present?(options)
+        options[:payment_details].present? && options[:amount_details].present?
+      end
+
+      def add_cedp_data(post, options)
+        post[:payment_details] = options[:payment_details]
+        post[:amount_details]  = options[:amount_details]
+        post[:payment_method_types] = ["card"]
+      end
+
       def level_3_data_map_line_item(line_items)
         line_items.map do |item|
           description = item[:description].size > 26 ? truncate(item[:description], 25) : item[:description]
@@ -662,7 +674,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def api_version(options)
-        options[:version] || @options[:version] || "2015-04-07"
+        options[:stripe_api_version] || options[:version] || @options[:version] || "2015-04-07"
       end
 
       def api_request(method, endpoint, parameters = nil, options = {})
