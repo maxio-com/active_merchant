@@ -594,7 +594,7 @@ module ActiveMerchant #:nodoc:
 
       def add_cedp_data(post, options)
         post[:payment_details] = options[:payment_details]
-        post[:amount_details]  = options[:amount_details]
+        post[:amount_details] = sanitize_cedp_amount_details(options[:amount_details])
         post[:payment_method_types] = ["card"]
       end
 
@@ -607,7 +607,8 @@ module ActiveMerchant #:nodoc:
             unit_cost: item[:price_in_cents],
             quantity: item[:quantity],
             tax_amount: item[:tax_amount_in_cents],
-            discount_amount: item[:discount_amount_in_cents]
+            discount_amount: item[:discount_amount_in_cents],
+            unit_of_measure: sanitize_unit_of_measure(item[:unit_of_measure] || item[:unit_name])
           }
         end
       end
@@ -1012,6 +1013,25 @@ module ActiveMerchant #:nodoc:
           error_message: error["message"],
           parameters: parameters,
           tags: "level3,stripe"
+        )
+      end
+
+      def sanitize_unit_of_measure(value)
+        sanitized = value.to_s.gsub(/[^A-Za-z0-9]/, '')[0, 12]
+        sanitized.blank? ? 'each' : sanitized
+      end
+
+      def sanitize_cedp_amount_details(amount_details)
+        return amount_details unless amount_details&.dig(:line_items)
+      
+        amount_details.merge(
+          line_items: amount_details[:line_items].map do |item|
+            item.merge(
+              unit_of_measure: sanitize_unit_of_measure(
+                item[:unit_of_measure] || item[:unit_name]
+              )
+            )
+          end
         )
       end
     end
