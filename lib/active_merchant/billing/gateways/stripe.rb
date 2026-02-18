@@ -1015,11 +1015,6 @@ module ActiveMerchant #:nodoc:
           tags: "level3,stripe"
         )
       end
-
-      def sanitize_unit_of_measure(value)
-        sanitized = value.to_s.gsub(/[^A-Za-z0-9]/, '')[0, 12]
-        sanitized.blank? ? 'each' : sanitized
-      end
     end
   end
 end
