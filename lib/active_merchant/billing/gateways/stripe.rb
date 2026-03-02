@@ -594,7 +594,7 @@ module ActiveMerchant #:nodoc:
 
       def add_cedp_data(post, options)
         post[:payment_details] = options[:payment_details]
-        post[:amount_details]  = options[:amount_details]
+        post[:amount_details] = options[:amount_details]
         post[:payment_method_types] = ["card"]
       end
 
@@ -607,7 +607,8 @@ module ActiveMerchant #:nodoc:
             unit_cost: item[:price_in_cents],
             quantity: item[:quantity],
             tax_amount: item[:tax_amount_in_cents],
-            discount_amount: item[:discount_amount_in_cents]
+            discount_amount: item[:discount_amount_in_cents],
+            unit_of_measure: item[:unit_of_measure]
           }
         end
       end
