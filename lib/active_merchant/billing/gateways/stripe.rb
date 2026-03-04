@@ -998,6 +998,7 @@ module ActiveMerchant #:nodoc:
         return response unless parameters[:amount_details].present?
         return response if response.success?
         return response unless cedp_related_error?(response)
+        return response unless cedp_related_error?(response.params.dig("error", "param").to_s)
 
         notify_hb(response.params["error"], parameters)
         parameters.delete(:amount_details)
@@ -1006,9 +1007,9 @@ module ActiveMerchant #:nodoc:
         commit(method, url, parameters, options)
       end
 
-      def cedp_related_error?(response)
-        response.params.dig("error", "param").to_s.start_with?("amount_details") ||
-          response.params.dig("error", "param").to_s.start_with?("payment_details")
+      def cedp_related_error?(error_param)
+        error_param.start_with?("amount_details") ||
+          error_param.start_with?("payment_details")
       end
 
       def notify_hb(error, parameters)
