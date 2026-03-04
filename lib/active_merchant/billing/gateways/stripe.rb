@@ -997,7 +997,6 @@ module ActiveMerchant #:nodoc:
         response = commit(method, url, parameters, options)
         return response unless parameters[:amount_details].present?
         return response if response.success?
-        return response unless cedp_related_error?(response)
         return response unless cedp_related_error?(response.params.dig("error", "param").to_s)
 
         notify_hb(response.params["error"], parameters)
