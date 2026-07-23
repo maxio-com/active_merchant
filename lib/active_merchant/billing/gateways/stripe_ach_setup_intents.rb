@@ -13,7 +13,7 @@ module ActiveMerchant #:nodoc:
     # Legacy ACH semantics are preserved: a `processing` PaymentIntent is treated as success
     # (see StripeGateway#success_response?), verification is microdeposit-based, and the bank
     # account holder type is mapped the same way (personal -> individual, business -> company).
-    class StripeSetupIntentsGateway < StripeGateway
+    class StripeAchSetupIntentsGateway < StripeGateway
       SETUP_INTENTS_API_VERSION = "2026-05-27.dahlia".freeze
       PAYMENT_METHOD_TYPE = "us_bank_account".freeze
 
@@ -25,7 +25,7 @@ module ActiveMerchant #:nodoc:
       # are never surfaced as the vault token.
       def store(payment, options = {})
         unless payment.is_a?(Check)
-          return Response.new(false, "StripeSetupIntentsGateway only supports bank account (ACH) payment methods")
+          return Response.new(false, "StripeAchSetupIntentsGateway only supports bank account (ACH) payment methods")
         end
 
         payment_method_response = create_payment_method(payment, options)

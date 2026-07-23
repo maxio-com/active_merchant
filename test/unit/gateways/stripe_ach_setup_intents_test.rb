@@ -1,10 +1,10 @@
 require 'test_helper'
 
-class StripeSetupIntentsTest < Test::Unit::TestCase
+class StripeAchSetupIntentsTest < Test::Unit::TestCase
   include CommStub
 
   def setup
-    @gateway = StripeSetupIntentsGateway.new(:login => 'login')
+    @gateway = StripeAchSetupIntentsGateway.new(:login => 'login')
 
     @amount = 400
     @refund_amount = 200
@@ -33,7 +33,7 @@ class StripeSetupIntentsTest < Test::Unit::TestCase
   def test_pins_modern_api_version_in_request_headers
     headers = @gateway.send(:headers)
 
-    assert_equal StripeSetupIntentsGateway::SETUP_INTENTS_API_VERSION, headers["Stripe-Version"]
+    assert_equal StripeAchSetupIntentsGateway::SETUP_INTENTS_API_VERSION, headers["Stripe-Version"]
     assert_equal "2026-05-27.dahlia", headers["Stripe-Version"]
   end
 
