@@ -23,7 +23,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def initialize(options = {})
-        if options.has_key?(:security_key)
+        if options[:security_key].present?
           requires!(options, :security_key)
         else
           requires!(options, :login, :password)
@@ -235,9 +235,9 @@ module ActiveMerchant #:nodoc:
       def commit(action, params)
 
         params[action == "add_customer" ? :customer_vault : :type] = action
-        params[:username] = @options[:login] unless @options[:login].nil?
-        params[:password] = @options[:password] unless @options[:password].nil?
-        params[:security_key] = @options[:security_key] unless @options[:security_key].nil?
+        params[:username] = @options[:login] if @options[:login].present?
+        params[:password] = @options[:password] if @options[:password].present?
+        params[:security_key] = @options[:security_key] if @options[:security_key].present?
 
         raw_response = ssl_post(url, post_data(action, params), headers)
         response = parse(raw_response)
