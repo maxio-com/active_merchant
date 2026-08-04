@@ -336,6 +336,38 @@ class NmiTest < Test::Unit::TestCase
     assert_equal scrubbed_transcript, @gateway.scrub(transcript)
   end
 
+  def test_transcript_scrubbing_security_key
+    assert_equal '&security_key=[FILTERED]&type=sale',
+      @gateway.scrub('&security_key=abc123def456&type=sale')
+  end
+
+  def test_security_key_only_initialize_succeeds
+    assert_nothing_raised do
+      NmiGateway.new(security_key: 'abc123')
+    end
+  end
+
+  def test_login_password_initialize_succeeds
+    assert_nothing_raised do
+      NmiGateway.new(login: 'demo', password: 'password')
+    end
+  end
+
+  def test_missing_credentials_raises
+    assert_raises(ArgumentError) { NmiGateway.new }
+  end
+
+  def test_security_key_transaction_sends_security_key_not_login
+    gateway = NmiGateway.new(security_key: 'abc123')
+    stub_comms(gateway) do
+      gateway.purchase(@amount, @credit_card)
+    end.check_request do |endpoint, data, headers|
+      assert_match(/security_key=abc123/, data)
+      assert_not_match(/username=/, data)
+      assert_not_match(/password=/, data)
+    end.respond_with(successful_purchase_response)
+  end
+
   def test_includes_cvv_tag
     stub_comms do
       @gateway.purchase(@amount, @credit_card)

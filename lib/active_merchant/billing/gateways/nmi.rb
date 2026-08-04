@@ -23,7 +23,11 @@ module ActiveMerchant #:nodoc:
       end
 
       def initialize(options = {})
-        requires!(options, :login, :password)
+        if options.has_key?(:security_key)
+          requires!(options, :security_key)
+        else
+          requires!(options, :login, :password)
+        end
         super
       end
 
@@ -114,6 +118,7 @@ module ActiveMerchant #:nodoc:
       def scrub(transcript)
         transcript.
           gsub(%r((password=)\w+), '\1[FILTERED]').
+          gsub(%r((security_key=)\w+), '\1[FILTERED]').
           gsub(%r((ccnumber=)\d+), '\1[FILTERED]').
           gsub(%r((cvv=)\d+), '\1[FILTERED]').
           gsub(%r((checkaba=)\d+), '\1[FILTERED]').
@@ -230,8 +235,9 @@ module ActiveMerchant #:nodoc:
       def commit(action, params)
 
         params[action == "add_customer" ? :customer_vault : :type] = action
-        params[:username] = @options[:login]
-        params[:password] = @options[:password]
+        params[:username] = @options[:login] unless @options[:login].nil?
+        params[:password] = @options[:password] unless @options[:password].nil?
+        params[:security_key] = @options[:security_key] unless @options[:security_key].nil?
 
         raw_response = ssl_post(url, post_data(action, params), headers)
         response = parse(raw_response)
