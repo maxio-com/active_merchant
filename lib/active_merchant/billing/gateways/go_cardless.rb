@@ -25,6 +25,7 @@ module ActiveMerchant #:nodoc:
             }
           }
         }
+        post[:payments][:retry_if_possible] = options[:retry_if_possible] unless options[:retry_if_possible].nil?
 
         commit(:post, '/payments', post, options)
       end
