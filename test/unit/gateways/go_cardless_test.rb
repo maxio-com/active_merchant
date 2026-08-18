@@ -53,6 +53,32 @@ class GoCardlessTest < Test::Unit::TestCase
     assert_success update_response
   end
 
+  def test_update_reuses_mandate_when_bank_account_already_exists
+    bank_account = mock_bank_account_with_iban
+    stub_update_requests_with_existing_bank_account
+    @gateway.expects(:ssl_request)
+      .with(:get, 'https://api-sandbox.gocardless.com/mandates?customer_bank_account=BA01M09Z40W9GYM1FJ12E94C2PRK', nil, anything)
+      .returns(list_mandates_response('cancelled'))
+
+    response = @gateway.update('CU0004CKN9T1HZ', @customer_attributes, bank_account)
+
+    assert_success response
+    assert_equal 'MD00048KV3PRCX', response.params['mandates']['id']
+  end
+
+  def test_update_creates_mandate_when_existing_bank_account_has_none
+    bank_account = mock_bank_account_with_iban
+    stub_update_requests_with_existing_bank_account
+    @gateway.expects(:ssl_request)
+      .with(:get, 'https://api-sandbox.gocardless.com/mandates?customer_bank_account=BA01M09Z40W9GYM1FJ12E94C2PRK', nil, anything)
+      .returns('{ "mandates": [] }')
+    @gateway.expects(:ssl_request)
+      .with(:post, 'https://api-sandbox.gocardless.com/mandates', anything, anything)
+      .returns(successful_create_mandate_response)
+
+    assert_success @gateway.update('CU0004CKN9T1HZ', @customer_attributes, bank_account)
+  end
+
   def test_successful_update_ach
     bank_account = mock_ach_bank_account
     stub_ach_update_requests_to_be_successful
@@ -204,6 +230,45 @@ class GoCardlessTest < Test::Unit::TestCase
     @gateway.expects(:ssl_request)
       .with(:post, 'https://api-sandbox.gocardless.com/mandates', anything, anything)
       .returns(successful_create_mandate_response)
+  end
+
+  def stub_update_requests_with_existing_bank_account
+    @gateway.expects(:ssl_request)
+      .with(:put, 'https://api-sandbox.gocardless.com/customers/CU0004CKN9T1HZ', anything, anything)
+      .returns(successful_create_customer_response)
+
+    @gateway.expects(:ssl_request)
+      .with(:post, 'https://api-sandbox.gocardless.com/customer_bank_accounts', anything, anything)
+      .raises(ActiveMerchant::ResponseError.new(stub(code: '409', body: bank_account_exists_response)))
+  end
+
+  def bank_account_exists_response
+    <<~RESPONSE
+      {
+        "error": {
+          "message": "Bank account already exists",
+          "errors": [{
+            "reason": "bank_account_exists",
+            "message": "Bank account already exists",
+            "links": { "customer_bank_account": "BA01M09Z40W9GYM1FJ12E94C2PRK" }
+          }],
+          "type": "validation_failed",
+          "code": 409
+        }
+      }
+    RESPONSE
+  end
+
+  def list_mandates_response(status)
+    <<~RESPONSE
+      {
+        "mandates": [{
+          "id": "MD00048KV3PRCX",
+          "status": "#{status}",
+          "links": { "customer_bank_account": "BA01M09Z40W9GYM1FJ12E94C2PRK" }
+        }]
+      }
+    RESPONSE
   end
 
   def stub_ach_update_requests_to_be_successful

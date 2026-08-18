@@ -47,7 +47,7 @@ module ActiveMerchant #:nodoc:
             r.process { res = create_bank_account(res.params['customers']['id'], bank_account, options) }
           end
           if res.success?
-            r.process { create_mandate(res.params['customer_bank_accounts']['id'], options) }
+            r.process { create_or_reuse_mandate(res.params, options) }
           end
         end
       end
@@ -69,7 +69,7 @@ module ActiveMerchant #:nodoc:
             r.process { res = create_bank_account(res.params['customers']['id'], bank_account, options) }
           end
           if res.success?
-            r.process { create_mandate(res.params['customer_bank_accounts']['id'], options) }
+            r.process { create_or_reuse_mandate(res.params, options) }
           end
         end
       end
@@ -247,7 +247,35 @@ module ActiveMerchant #:nodoc:
           post[:customer_bank_accounts]['account_number'] = bank_account.account_number
           post[:customer_bank_accounts]['account_type'] = bank_account.account_type.presence if ach?(opts)
         end
-        commit(:post, '/customer_bank_accounts', post)
+        response = commit(:post, '/customer_bank_accounts', post)
+        existing_id = existing_bank_account_id(response)
+        return response unless existing_id
+
+        Response.new(
+          true,
+          'Success',
+          { 'customer_bank_accounts' => { 'id' => existing_id }, 'existing' => true },
+          test: test?
+        )
+      end
+
+      def existing_bank_account_id(response)
+        response.params.dig('error', 'errors').to_a.
+          find { |error| error['reason'] == 'bank_account_exists' }&.dig('links', 'customer_bank_account')
+      end
+
+      def create_or_reuse_mandate(bank_account_params, options)
+        bank_account_id = bank_account_params['customer_bank_accounts']['id']
+        return create_mandate(bank_account_id, options) unless bank_account_params['existing']
+
+        response = commit(:get, "/mandates?customer_bank_account=#{bank_account_id}", nil, options)
+        return response unless response.success?
+
+        mandate = response.params['mandates'].to_a.first
+        # the account exists but has no mandate
+        return create_mandate(bank_account_id, options) unless mandate
+
+        Response.new(true, 'Success', { 'mandates' => mandate }, test: test?)
       end
 
       def create_mandate(bank_account_id, options)
