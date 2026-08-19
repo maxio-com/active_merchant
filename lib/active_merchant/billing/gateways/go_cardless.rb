@@ -4,6 +4,7 @@ module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
     class GoCardlessGateway < ActiveMerchant::Billing::Gateway
       API_VERSION = '2015-07-06'.freeze
+      REUSABLE_MANDATE_STATUSES = %w[pending_customer_approval pending_submission submitted active].freeze
 
       self.test_url = 'https://api-sandbox.gocardless.com'
       self.live_url = 'https://api.gocardless.com'
@@ -262,7 +263,7 @@ module ActiveMerchant #:nodoc:
         response = commit(:get, "/mandates?customer_bank_account=#{bank_account_id}", nil, options)
         return response unless response.success?
 
-        mandate = response.params['mandates'].to_a.first
+        mandate = response.params['mandates'].to_a.find { |m| REUSABLE_MANDATE_STATUSES.include?(m['status']) }
         return create_mandate(bank_account_id, options) unless mandate
 
         Response.new(true, 'Success', { 'mandates' => mandate }, test: test?)
