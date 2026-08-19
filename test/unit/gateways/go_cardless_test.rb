@@ -58,7 +58,7 @@ class GoCardlessTest < Test::Unit::TestCase
     stub_update_requests_with_existing_bank_account
     @gateway.expects(:ssl_request)
       .with(:get, 'https://api-sandbox.gocardless.com/mandates?customer_bank_account=BA01M09Z40W9GYM1FJ12E94C2PRK', nil, anything)
-      .returns(list_mandates_response('cancelled'))
+      .returns(list_mandates_response)
 
     response = @gateway.update('CU0004CKN9T1HZ', @customer_attributes, bank_account)
 
@@ -259,12 +259,12 @@ class GoCardlessTest < Test::Unit::TestCase
     RESPONSE
   end
 
-  def list_mandates_response(status)
+  def list_mandates_response
     <<~RESPONSE
       {
         "mandates": [{
           "id": "MD00048KV3PRCX",
-          "status": "#{status}",
+          "status": "cancelled",
           "links": { "customer_bank_account": "BA01M09Z40W9GYM1FJ12E94C2PRK" }
         }]
       }

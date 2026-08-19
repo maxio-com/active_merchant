@@ -248,20 +248,11 @@ module ActiveMerchant #:nodoc:
           post[:customer_bank_accounts]['account_type'] = bank_account.account_type.presence if ach?(opts)
         end
         response = commit(:post, '/customer_bank_accounts', post)
-        existing_id = existing_bank_account_id(response)
+        existing_id = response.params.dig('error', 'errors').to_a.
+          find { |error| error['reason'] == 'bank_account_exists' }&.dig('links', 'customer_bank_account')
         return response unless existing_id
 
-        Response.new(
-          true,
-          'Success',
-          { 'customer_bank_accounts' => { 'id' => existing_id }, 'existing' => true },
-          test: test?
-        )
-      end
-
-      def existing_bank_account_id(response)
-        response.params.dig('error', 'errors').to_a.
-          find { |error| error['reason'] == 'bank_account_exists' }&.dig('links', 'customer_bank_account')
+        Response.new(true, 'Success', { 'customer_bank_accounts' => { 'id' => existing_id }, 'existing' => true }, test: test?)
       end
 
       def create_or_reuse_mandate(bank_account_params, options)
@@ -272,7 +263,6 @@ module ActiveMerchant #:nodoc:
         return response unless response.success?
 
         mandate = response.params['mandates'].to_a.first
-        # the account exists but has no mandate
         return create_mandate(bank_account_id, options) unless mandate
 
         Response.new(true, 'Success', { 'mandates' => mandate }, test: test?)
