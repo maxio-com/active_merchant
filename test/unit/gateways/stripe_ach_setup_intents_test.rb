@@ -166,6 +166,18 @@ class StripeAchSetupIntentsTest < Test::Unit::TestCase
     end
   end
 
+  def test_purchase_uses_a_legacy_bank_account_id_as_the_payment_method
+    @gateway.expects(:ssl_request).with do |_m, endpoint, _p, _h|
+      endpoint.start_with?("https://api.stripe.com/v1/payment_methods?customer")
+    end.returns(payment_methods_list_with_single_legacy_bank_account)
+    @gateway.expects(:ssl_request).with do |_m, endpoint, post, _h|
+      endpoint.start_with?("https://api.stripe.com/v1/payment_intents") &&
+        post.include?("payment_method=ba_legacy123")
+    end.returns(successful_payment_intent_response("processing"))
+
+    assert_success @gateway.purchase(@amount, nil, @options.merge(customer: "cus_ACH"))
+  end
+
   # --- refund --------------------------------------------------------------------------------
 
   def test_refund_refunds_by_payment_intent
@@ -199,6 +211,41 @@ class StripeAchSetupIntentsTest < Test::Unit::TestCase
     end.returns(empty_payment_methods_list)
 
     assert_success @gateway.unstore("cus_ACH")
+  end
+
+  def test_unstore_detaches_only_the_payment_method_named_in_the_identification
+    @gateway.expects(:ssl_request).with do |_m, endpoint, _p, _h|
+      endpoint.start_with?("https://api.stripe.com/v1/payment_methods?customer")
+    end.returns(payment_methods_list_with_two_bank_accounts)
+    @gateway.expects(:ssl_request).with do |_m, endpoint, _p, _h|
+      endpoint == "https://api.stripe.com/v1/payment_methods/pm_bank999/detach"
+    end.returns(successful_detach_response)
+
+    assert_success @gateway.unstore("cus_ACH|pm_bank999")
+  end
+
+  def test_unstore_detaches_a_legacy_bank_account_id
+    @gateway.expects(:ssl_request).with do |_m, endpoint, _p, _h|
+      endpoint.start_with?("https://api.stripe.com/v1/payment_methods?customer")
+    end.returns(payment_methods_list_with_single_legacy_bank_account)
+    @gateway.expects(:ssl_request).with do |_m, endpoint, _p, _h|
+      endpoint == "https://api.stripe.com/v1/payment_methods/ba_legacy123/detach"
+    end.returns(successful_detach_response)
+
+    assert_success @gateway.unstore("cus_ACH|ba_legacy123")
+  end
+
+  def test_unstore_raises_rather_than_detaching_every_method_when_the_profile_is_ambiguous
+    @gateway.expects(:ssl_request).with do |_m, endpoint, _p, _h|
+      endpoint.start_with?("https://api.stripe.com/v1/payment_methods?customer")
+    end.returns(payment_methods_list_with_two_bank_accounts)
+    @gateway.expects(:ssl_request).with do |_m, endpoint, _p, _h|
+      endpoint == "https://api.stripe.com/v1/customers/cus_ACH"
+    end.returns(customer_without_default_payment_method)
+
+    assert_raises(StripeCustomerManyPaymentMethodWithoutDefault) do
+      @gateway.unstore("cus_ACH")
+    end
   end
 
   private
@@ -241,6 +288,18 @@ class StripeAchSetupIntentsTest < Test::Unit::TestCase
 
   def payment_methods_list_with_single_bank_account
     %({"object": "list", "data": [{"id": "pm_bank123", "type": "us_bank_account"}], "livemode": false})
+  end
+
+  def payment_methods_list_with_single_legacy_bank_account
+    %({"object": "list", "data": [{"id": "ba_legacy123", "type": "us_bank_account"}], "livemode": false})
+  end
+
+  def payment_methods_list_with_two_bank_accounts
+    %({"object": "list", "data": [{"id": "pm_bank123", "type": "us_bank_account"}, {"id": "pm_bank999", "type": "us_bank_account"}], "livemode": false})
+  end
+
+  def customer_without_default_payment_method
+    %({"id": "cus_ACH", "object": "customer", "invoice_settings": {"default_payment_method": null}, "livemode": false})
   end
 
   def empty_payment_methods_list
