@@ -57,8 +57,8 @@ class GoCardlessTest < Test::Unit::TestCase
     bank_account = mock_bank_account_with_iban
     stub_update_requests_with_existing_bank_account
     @gateway.expects(:ssl_request)
-      .with(:get, 'https://api-sandbox.gocardless.com/mandates?customer_bank_account=BA01M09Z40W9GYM1FJ12E94C2PRK', nil, anything)
-      .returns(list_mandates_response('active'))
+      .with(:get, "https://api-sandbox.gocardless.com/mandates?customer_bank_account=BA01M09Z40W9GYM1FJ12E94C2PRK&status=#{ActiveMerchant::Billing::GoCardlessGateway::REUSABLE_MANDATE_STATUSES}", nil, anything)
+      .returns(list_mandates_response)
 
     response = @gateway.update('CU0004CKN9T1HZ', @customer_attributes, bank_account)
 
@@ -70,8 +70,8 @@ class GoCardlessTest < Test::Unit::TestCase
     bank_account = mock_bank_account_with_iban
     stub_update_requests_with_existing_bank_account
     @gateway.expects(:ssl_request)
-      .with(:get, 'https://api-sandbox.gocardless.com/mandates?customer_bank_account=BA01M09Z40W9GYM1FJ12E94C2PRK', nil, anything)
-      .returns(list_mandates_response('cancelled'))
+      .with(:get, "https://api-sandbox.gocardless.com/mandates?customer_bank_account=BA01M09Z40W9GYM1FJ12E94C2PRK&status=#{ActiveMerchant::Billing::GoCardlessGateway::REUSABLE_MANDATE_STATUSES}", nil, anything)
+      .returns('{ "mandates": [] }')
     @gateway.expects(:ssl_request)
       .with(:post, 'https://api-sandbox.gocardless.com/mandates', anything, anything)
       .returns(successful_create_mandate_response)
@@ -259,12 +259,12 @@ class GoCardlessTest < Test::Unit::TestCase
     RESPONSE
   end
 
-  def list_mandates_response(status)
+  def list_mandates_response
     <<~RESPONSE
       {
         "mandates": [{
           "id": "MD00048KV3PRCX",
-          "status": "#{status}",
+          "status": "active",
           "links": { "customer_bank_account": "BA01M09Z40W9GYM1FJ12E94C2PRK" }
         }]
       }
