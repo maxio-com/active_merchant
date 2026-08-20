@@ -5,7 +5,8 @@ module ActiveMerchant #:nodoc:
 
       DUP_WINDOW_DEPRECATION_MESSAGE = "The class-level duplicate_window variable is deprecated. Please use the :dup_seconds transaction option instead."
 
-      self.test_url = self.live_url = 'https://secure.nmi.com/api/transact.php'
+      self.test_url = 'https://sandbox.nmi.com/api/transact.php'
+      self.live_url = 'https://secure.nmi.com/api/transact.php'
       self.default_currency = 'USD'
       self.money_format = :dollars
       self.supported_countries = ['US']
@@ -23,7 +24,11 @@ module ActiveMerchant #:nodoc:
       end
 
       def initialize(options = {})
-        requires!(options, :login, :password)
+        if options[:security_key].present?
+          requires!(options, :security_key)
+        else
+          requires!(options, :login, :password)
+        end
         super
       end
 
@@ -114,6 +119,7 @@ module ActiveMerchant #:nodoc:
       def scrub(transcript)
         transcript.
           gsub(%r((password=)\w+), '\1[FILTERED]').
+          gsub(%r((security_key=)\w+), '\1[FILTERED]').
           gsub(%r((ccnumber=)\d+), '\1[FILTERED]').
           gsub(%r((cvv=)\d+), '\1[FILTERED]').
           gsub(%r((checkaba=)\d+), '\1[FILTERED]').
@@ -230,8 +236,9 @@ module ActiveMerchant #:nodoc:
       def commit(action, params)
 
         params[action == "add_customer" ? :customer_vault : :type] = action
-        params[:username] = @options[:login]
-        params[:password] = @options[:password]
+        params[:username] = @options[:login] if @options[:login].present?
+        params[:password] = @options[:password] if @options[:password].present?
+        params[:security_key] = @options[:security_key] if @options[:security_key].present?
 
         raw_response = ssl_post(url, post_data(action, params), headers)
         response = parse(raw_response)

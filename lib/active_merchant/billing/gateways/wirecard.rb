@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'base64'
 
 module ActiveMerchant #:nodoc:
@@ -334,7 +336,7 @@ module ActiveMerchant #:nodoc:
           end
         end
 
-        message = ""
+        message = +""
         if status
           if info = status.elements['Info']
             message << info.text
@@ -360,7 +362,7 @@ module ActiveMerchant #:nodoc:
       end
 
       # Parse a generic error response from the gateway
-      def parse_error(root, message = "")
+      def parse_error(root, message = +"")
         # Get errors if available and append them to the message
         errors = errors_to_string(root)
         unless errors.strip.blank?
@@ -385,7 +387,7 @@ module ActiveMerchant #:nodoc:
           errors << error
         end
         # Convert all messages to a single string
-        string = ''
+        string = +''
         errors.each do |error|
           string << error[:Message] if error[:Message]
           error[:Advice].each_with_index do |advice, index|
@@ -423,7 +425,7 @@ module ActiveMerchant #:nodoc:
       # (for http basic authentication)
       def encoded_credentials
         credentials = [@options[:login], @options[:password]].join(':')
-        "Basic " << Base64.encode64(credentials).strip
+        "Basic #{Base64.encode64(credentials).strip}"
       end
     end
   end
