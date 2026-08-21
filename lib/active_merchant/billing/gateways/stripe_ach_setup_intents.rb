@@ -218,6 +218,13 @@ module ActiveMerchant #:nodoc:
           default = customer_default_payment_method(customer)
           return default if default && payment_method_ids.include?(default)
 
+          # Before giving up, prefer the single modern PaymentMethod if there is exactly one. Removing
+          # the pm_* filter above widened this list, and a customer holding one pm_* beside a legacy
+          # ba_* used to reduce to that one pm_* and charge fine. Without this the widening turns a
+          # working profile into a raise, which is the one regression the change could cause.
+          modern = payment_method_ids.select { |id| id.to_s.start_with?("pm_") }
+          return modern.first if modern.size == 1
+
           raise StripeCustomerManyPaymentMethodWithoutDefault,
                 "Customer has more than one us_bank_account payment method but no default one."
         end

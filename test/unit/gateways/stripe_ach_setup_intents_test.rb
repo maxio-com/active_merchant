@@ -193,6 +193,24 @@ class StripeAchSetupIntentsTest < Test::Unit::TestCase
     end
   end
 
+  # A customer holding one modern PaymentMethod beside a legacy bank account charged fine before the
+  # pm_* filter was removed, because the filter reduced the list to that one id. Widening the list must
+  # not turn that into a raise.
+  def test_purchase_prefers_the_single_modern_payment_method_over_a_legacy_sibling
+    @gateway.stubs(:ssl_request).with do |_m, endpoint, _p, _h|
+      endpoint.start_with?("https://api.stripe.com/v1/payment_methods?customer")
+    end.returns(payment_methods_list_with_a_modern_and_a_legacy_bank_account)
+    @gateway.stubs(:ssl_request).with do |_m, endpoint, _p, _h|
+      endpoint.start_with?("https://api.stripe.com/v1/customers/")
+    end.returns(customer_without_default_payment_method)
+    @gateway.expects(:ssl_request).with do |_m, endpoint, post, _h|
+      endpoint.start_with?("https://api.stripe.com/v1/payment_intents") &&
+        post.include?("payment_method=pm_bank123")
+    end.returns(successful_payment_intent_response("processing"))
+
+    assert_success @gateway.purchase(@amount, nil, @options.merge(customer: "cus_ACH"))
+  end
+
   # --- refund --------------------------------------------------------------------------------
 
   def test_refund_refunds_by_payment_intent
@@ -311,6 +329,10 @@ class StripeAchSetupIntentsTest < Test::Unit::TestCase
 
   def payment_methods_list_with_two_bank_accounts
     %({"object": "list", "data": [{"id": "pm_bank123", "type": "us_bank_account"}, {"id": "pm_bank999", "type": "us_bank_account"}], "livemode": false})
+  end
+
+  def payment_methods_list_with_a_modern_and_a_legacy_bank_account
+    %({"object": "list", "data": [{"id": "pm_bank123", "type": "us_bank_account"}, {"id": "ba_legacy123", "type": "us_bank_account"}], "livemode": false})
   end
 
   def payment_methods_list_with_two_legacy_bank_accounts
