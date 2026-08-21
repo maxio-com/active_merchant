@@ -178,6 +178,21 @@ class StripeAchSetupIntentsTest < Test::Unit::TestCase
     assert_success @gateway.purchase(@amount, nil, @options.merge(customer: "cus_ACH"))
   end
 
+  # Documents why Stripe::AchRoutingState keeps a customer with several legacy instruments on the
+  # legacy path: here there is nothing to disambiguate them with, so the charge cannot be made at all.
+  def test_purchase_raises_when_several_instruments_have_no_usable_default
+    @gateway.stubs(:ssl_request).with do |_m, endpoint, _p, _h|
+      endpoint.start_with?("https://api.stripe.com/v1/payment_methods?customer")
+    end.returns(payment_methods_list_with_two_legacy_bank_accounts)
+    @gateway.stubs(:ssl_request).with do |_m, endpoint, _p, _h|
+      endpoint.start_with?("https://api.stripe.com/v1/customers/")
+    end.returns(customer_without_default_payment_method)
+
+    assert_raises(ActiveMerchant::Billing::StripeCustomerManyPaymentMethodWithoutDefault) do
+      @gateway.purchase(@amount, nil, @options.merge(customer: "cus_ACH"))
+    end
+  end
+
   # --- refund --------------------------------------------------------------------------------
 
   def test_refund_refunds_by_payment_intent
@@ -296,6 +311,10 @@ class StripeAchSetupIntentsTest < Test::Unit::TestCase
 
   def payment_methods_list_with_two_bank_accounts
     %({"object": "list", "data": [{"id": "pm_bank123", "type": "us_bank_account"}, {"id": "pm_bank999", "type": "us_bank_account"}], "livemode": false})
+  end
+
+  def payment_methods_list_with_two_legacy_bank_accounts
+    %({"object": "list", "data": [{"id": "ba_legacy123", "type": "us_bank_account"}, {"id": "ba_legacy999", "type": "us_bank_account"}], "livemode": false})
   end
 
   def customer_without_default_payment_method
