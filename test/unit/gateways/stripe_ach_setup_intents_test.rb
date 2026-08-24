@@ -268,6 +268,17 @@ class StripeAchSetupIntentsTest < Test::Unit::TestCase
     assert_success @gateway.unstore("cus_ACH|ba_legacy123")
   end
 
+  def test_unstore_is_a_noop_when_the_named_instrument_is_already_detached
+    @gateway.expects(:ssl_request).with do |_m, endpoint, _p, _h|
+      endpoint.start_with?("https://api.stripe.com/v1/payment_methods?customer")
+    end.returns(payment_methods_list_with_single_bank_account)
+
+    response = @gateway.unstore("cus_ACH|ba_gone123")
+
+    assert_success response
+    assert_equal "Payment method already detached", response.message
+  end
+
   def test_unstore_raises_rather_than_detaching_every_method_when_the_profile_is_ambiguous
     @gateway.expects(:ssl_request).with do |_m, endpoint, _p, _h|
       endpoint.start_with?("https://api.stripe.com/v1/payment_methods?customer")

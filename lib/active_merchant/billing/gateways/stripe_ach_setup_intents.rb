@@ -91,6 +91,13 @@ module ActiveMerchant #:nodoc:
         listed = list_us_bank_account_payment_methods(customer_id).map { |pm| pm["id"] }
         return Response.new(true, "No us_bank_account payment method to detach") if listed.empty?
 
+        # A named instrument that is no longer attached means the detach already happened. Falling
+        # through to the singleton or default guesses would detach an instrument the caller never
+        # named — possibly a sibling profile's — so this succeeds as a no-op instead.
+        if instrument_id && !listed.include?(instrument_id)
+          return Response.new(true, "Payment method already detached")
+        end
+
         payment_method_id =
           if listed.include?(instrument_id)
             instrument_id
