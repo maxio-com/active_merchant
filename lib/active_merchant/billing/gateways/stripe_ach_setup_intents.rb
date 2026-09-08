@@ -80,19 +80,26 @@ module ActiveMerchant #:nodoc:
         commit(:post, "refunds", { payment_intent: identification }, options)
       end
 
-      # Detaches the customer's us_bank_account PaymentMethod(s). The legacy StripeGateway#unstore
-      # deletes a card source (customers/{id}/cards/{id}), which does not apply to PaymentMethod-based
-      # us_bank_account profiles.
+      # Detaches the one us_bank_account PaymentMethod this profile owns. The legacy
+      # StripeGateway#unstore deletes a card source (customers/{id}/cards/{id}), which does not apply
+      # to PaymentMethod-based us_bank_account profiles. One Stripe customer can back several payment
+      # profiles, so detaching every listed method would remove instruments belonging to profiles the
+      # caller never asked about.
       def unstore(identification, options = {}, _deprecated_options = {})
-        customer_id = identification.to_s.split("|").first
-        payment_methods = list_us_bank_account_payment_methods(customer_id)
-        return Response.new(true, "No us_bank_account payment method to detach") if payment_methods.empty?
+        customer_id, instrument_id = identification.to_s.split("|")
+        listed = list_us_bank_account_payment_methods(customer_id).map { |pm| pm["id"] }
+        # Nothing listed, or a named instrument no longer listed: the detach already happened.
+        already_detached = listed.empty? || (instrument_id && !listed.include?(instrument_id))
+        return Response.new(true, "No us_bank_account payment method to detach") if already_detached
 
-        MultiResponse.run(:first) do |r|
-          payment_methods.each do |payment_method|
-            r.process { commit(:post, "payment_methods/#{CGI.escape(payment_method["id"])}/detach", {}, options) }
-          end
+        payment_method_id = instrument_id ||
+                            (listed.size == 1 ? listed.first : customer_default_payment_method(customer_id))
+        unless listed.include?(payment_method_id)
+          raise StripeCustomerManyPaymentMethodWithoutDefault,
+                "Customer has more than one us_bank_account payment method and none identifies this profile."
         end
+
+        commit(:post, "payment_methods/#{payment_method_id}/detach", {}, options)
       end
 
       private
@@ -192,25 +199,22 @@ module ActiveMerchant #:nodoc:
       # back to the single listed us_bank_account PM. Raises on ambiguity or absence rather than
       # silently charging the wrong method.
       def us_bank_account_payment_method_for_customer(customer)
-        # Only modern PaymentMethods (pm_*) are valid as a PaymentIntent payment_method. Stripe can
-        # list legacy bank-account sources here with their original ba_* id; those must not be used.
-        payment_method_ids = list_us_bank_account_payment_methods(customer)
-          .map { |pm| pm["id"] }
-          .select { |id| id.to_s.start_with?("pm_") }
+        # Not filtered by id prefix: a legacy bank account keeps its ba_* id, and PaymentIntent takes it.
+        ids = list_us_bank_account_payment_methods(customer).map { |pm| pm["id"] }
 
-        return payment_method_ids.first if payment_method_ids.size == 1
+        raise RuntimeError, "Customer has no us_bank_account payment method." if ids.empty?
+        return ids.first if ids.size == 1
 
-        if payment_method_ids.size > 1
-          # Disambiguate by the customer's default payment method, but only when the default is
-          # itself one of the us_bank_account methods (it could be a card).
-          default = customer_default_payment_method(customer)
-          return default if default && payment_method_ids.include?(default)
+        # The default is only usable when it is itself one of the us_bank_account methods (it could be a card).
+        default = customer_default_payment_method(customer)
+        return default if ids.include?(default)
 
-          raise StripeCustomerManyPaymentMethodWithoutDefault,
-                "Customer has more than one us_bank_account payment method but no default one."
-        end
+        # A single modern PM beside a legacy ba_* charged fine before the pm_* filter went away; keep it working.
+        modern = ids.grep(/\Apm_/)
+        return modern.first if modern.size == 1
 
-        raise RuntimeError, "Customer has no us_bank_account payment method."
+        raise StripeCustomerManyPaymentMethodWithoutDefault,
+              "Customer has more than one us_bank_account payment method but no default one."
       end
 
       def list_us_bank_account_payment_methods(customer)
