@@ -77,8 +77,66 @@ class EwayTest < Test::Unit::TestCase
    end
   end
 
-  def test_ensure_does_not_respond_to_authorize
-    assert !@gateway.respond_to?(:authorize)
+  def test_successful_authorize
+    @gateway.expects(:ssl_post).with('https://www.eway.com.au/gateway_cvn/xmltest/authtestpage.asp', anything).returns(successful_authorize_response)
+
+    response = @gateway.authorize(@amount, @credit_card, @options)
+    assert_success response
+    assert_equal '20003', response.authorization
+  end
+
+  def test_failed_authorize
+    @gateway.expects(:ssl_post).returns(failed_authorize_response)
+
+    response = @gateway.authorize(105, @credit_card, @options)
+    assert_failure response
+    assert_equal 'Do Not Honour', response.message
+  end
+
+  def test_authorize_without_verification_value_uses_non_cvn_url
+    @credit_card.verification_value = nil
+    @gateway.expects(:ssl_post).with('https://www.eway.com.au/gateway/xmltest/authtestpage.asp', anything).returns(successful_authorize_response)
+
+    assert_success @gateway.authorize(@amount, @credit_card, @options)
+  end
+
+  def test_authorize_uses_live_url_in_production
+    ActiveMerchant::Billing::Base.mode = :production
+    @gateway.expects(:ssl_post).with('https://www.eway.com.au/gateway_cvn/xmlauth.asp', anything).returns(successful_authorize_response)
+
+    assert_success @gateway.authorize(@amount, @credit_card, @options)
+  ensure
+    ActiveMerchant::Billing::Base.mode = :test
+  end
+
+  def test_authorize_without_billing_address
+    @options.delete(:billing_address)
+    assert_raise(ArgumentError) do
+      @gateway.authorize(@amount, @credit_card, @options)
+    end
+  end
+
+  def test_successful_void
+    @gateway.expects(:ssl_post).with(
+      'https://www.eway.com.au/gateway/xmltest/authvoidtestpage.asp',
+      all_of(regexp_matches(%r{<ewayAuthTrxnNumber>20003</ewayAuthTrxnNumber>}), regexp_matches(%r{<ewayTotalAmount>100</ewayTotalAmount>}))
+    ).returns(successful_void_response)
+
+    response = @gateway.void('20003', amount: @amount)
+    assert_success response
+  end
+
+  def test_failed_void
+    @gateway.expects(:ssl_post).returns(failed_void_response)
+
+    response = @gateway.void('20003', amount: @amount)
+    assert_failure response
+  end
+
+  def test_void_requires_amount
+    assert_raise(ArgumentError) do
+      @gateway.void('20003')
+    end
   end
 
   def test_ensure_does_not_respond_to_capture
@@ -128,6 +186,30 @@ class EwayTest < Test::Unit::TestCase
         <ewayReturnAmount>100</ewayReturnAmount>
         <ewayTrxnError>eWAY Error: Invalid Expiry Date. Your credit card has not been billed for this transaction.(Test CVN Gateway)</ewayTrxnError>
       </ewayResponse>
+    XML
+  end
+
+  def successful_authorize_response
+    <<-XML
+      <ewayResponse><ewayTrxnStatus>True</ewayTrxnStatus><ewayTrxnNumber>20003</ewayTrxnNumber><ewayTrxnReference/><ewayTrxnOption1/><ewayTrxnOption2/><ewayTrxnOption3/><ewayAuthCode>123456</ewayAuthCode><ewayReturnAmount>100</ewayReturnAmount><ewayTrxnError>00,Transaction Approved(Test Gateway)</ewayTrxnError></ewayResponse>
+    XML
+  end
+
+  def failed_authorize_response
+    <<-XML
+      <ewayResponse><ewayTrxnStatus>False</ewayTrxnStatus><ewayTrxnNumber>20002</ewayTrxnNumber><ewayTrxnReference/><ewayTrxnOption1/><ewayTrxnOption2/><ewayTrxnOption3/><ewayAuthCode>123456</ewayAuthCode><ewayReturnAmount>105</ewayReturnAmount><ewayTrxnError>05,Do Not Honour(Test Gateway)</ewayTrxnError></ewayResponse>
+    XML
+  end
+
+  def successful_void_response
+    <<-XML
+      <ewayResponse><ewayTrxnStatus>True</ewayTrxnStatus><ewayTrxnNumber>30004</ewayTrxnNumber><ewayTrxnOption1/><ewayTrxnOption2/><ewayTrxnOption3/><ewayAuthCode/><ewayReturnAmount>100</ewayReturnAmount><ewayTrxnError>00,Transaction Approved(Test Gateway)</ewayTrxnError></ewayResponse>
+    XML
+  end
+
+  def failed_void_response
+    <<-XML
+      <ewayResponse><ewayTrxnStatus>False</ewayTrxnStatus><ewayTrxnNumber>30004</ewayTrxnNumber><ewayTrxnOption1/><ewayTrxnOption2/><ewayTrxnOption3/><ewayAuthCode/><ewayReturnAmount>100</ewayReturnAmount><ewayTrxnError>Error: Invalid Original Transaction Number. Your credit card has not been billed for this transaction.(Test Gateway)</ewayTrxnError></ewayResponse>
     XML
   end
 
