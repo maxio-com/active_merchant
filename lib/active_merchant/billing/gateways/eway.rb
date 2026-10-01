@@ -25,12 +25,12 @@ module ActiveMerchant #:nodoc:
 
       def purchase(money, creditcard, options = {})
         post = card_transaction_post(money, creditcard, options)
-        commit(purchase_url(post[:CVN]), money, post)
+        commit(card_url(post[:CVN], 'testpage.asp', 'xmlpayment.asp'), money, post)
       end
 
       def authorize(money, creditcard, options = {})
         post = card_transaction_post(money, creditcard, options)
-        commit(authorize_url(post[:CVN]), money, post)
+        commit(card_url(post[:CVN], 'authtestpage.asp', 'xmlauth.asp'), money, post)
       end
 
       def void(authorization, options = {})
@@ -174,8 +174,8 @@ module ActiveMerchant #:nodoc:
         MESSAGES[message[0,2]] || message
       end
 
-      def purchase_url(cvn)
-        suffix = test? ? 'xmltest/testpage.asp' : 'xmlpayment.asp'
+      def card_url(cvn, test_page, live_page)
+        suffix = test? ? "xmltest/#{test_page}" : live_page
         gateway_part = cvn ? 'gateway_cvn' : 'gateway'
         "#{live_url}/#{gateway_part}/#{suffix}"
       end
@@ -183,12 +183,6 @@ module ActiveMerchant #:nodoc:
       def refund_url
         suffix = test? ? 'xmltest/refund_test.asp' : 'xmlpaymentrefund.asp'
         "#{live_url}/gateway/#{suffix}"
-      end
-
-      def authorize_url(cvn)
-        suffix = test? ? 'xmltest/authtestpage.asp' : 'xmlauth.asp'
-        gateway_part = cvn ? 'gateway_cvn' : 'gateway'
-        "#{live_url}/#{gateway_part}/#{suffix}"
       end
 
       def void_url

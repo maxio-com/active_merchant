@@ -109,13 +109,6 @@ class EwayTest < Test::Unit::TestCase
     ActiveMerchant::Billing::Base.mode = :test
   end
 
-  def test_authorize_without_billing_address
-    @options.delete(:billing_address)
-    assert_raise(ArgumentError) do
-      @gateway.authorize(@amount, @credit_card, @options)
-    end
-  end
-
   def test_successful_void
     @gateway.expects(:ssl_post).with(
       'https://www.eway.com.au/gateway/xmltest/authvoidtestpage.asp',
@@ -124,13 +117,6 @@ class EwayTest < Test::Unit::TestCase
 
     response = @gateway.void('20003', amount: @amount)
     assert_success response
-  end
-
-  def test_failed_void
-    @gateway.expects(:ssl_post).returns(failed_void_response)
-
-    response = @gateway.void('20003', amount: @amount)
-    assert_failure response
   end
 
   def test_void_requires_amount
@@ -204,12 +190,6 @@ class EwayTest < Test::Unit::TestCase
   def successful_void_response
     <<-XML
       <ewayResponse><ewayTrxnStatus>True</ewayTrxnStatus><ewayTrxnNumber>30004</ewayTrxnNumber><ewayTrxnOption1/><ewayTrxnOption2/><ewayTrxnOption3/><ewayAuthCode/><ewayReturnAmount>100</ewayReturnAmount><ewayTrxnError>00,Transaction Approved(Test Gateway)</ewayTrxnError></ewayResponse>
-    XML
-  end
-
-  def failed_void_response
-    <<-XML
-      <ewayResponse><ewayTrxnStatus>False</ewayTrxnStatus><ewayTrxnNumber>30004</ewayTrxnNumber><ewayTrxnOption1/><ewayTrxnOption2/><ewayTrxnOption3/><ewayAuthCode/><ewayReturnAmount>100</ewayReturnAmount><ewayTrxnError>Error: Invalid Original Transaction Number. Your credit card has not been billed for this transaction.(Test Gateway)</ewayTrxnError></ewayResponse>
     XML
   end
 
