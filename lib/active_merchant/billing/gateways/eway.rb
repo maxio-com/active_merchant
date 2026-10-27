@@ -24,18 +24,27 @@ module ActiveMerchant #:nodoc:
       end
 
       def purchase(money, creditcard, options = {})
-        requires_address!(options)
+        post = card_transaction_post(money, creditcard, options)
+        commit(card_url(post[:CVN], 'testpage.asp', 'xmlpayment.asp'), money, post)
+      end
+
+      def authorize(money, creditcard, options = {})
+        post = card_transaction_post(money, creditcard, options)
+        commit(card_url(post[:CVN], 'authtestpage.asp', 'xmlauth.asp'), money, post)
+      end
+
+      def void(authorization, options = {})
+        requires!(options, :amount)
 
         post = {}
-        add_creditcard(post, creditcard)
-        add_address(post, options)
         add_customer_id(post)
-        add_invoice_data(post, options)
-        add_non_optional_data(post)
-        add_amount(post, money)
-        post[:CustomerEmail] = options[:email]
+        add_amount(post, options[:amount])
+        post[:AuthTrxnNumber] = authorization
+        post[:Option1] = nil
+        post[:Option2] = nil
+        post[:Option3] = nil
 
-        commit(purchase_url(post[:CVN]), money, post)
+        commit(void_url, options[:amount], post)
       end
 
       def refund(money, authorization, options={})
@@ -68,6 +77,20 @@ module ActiveMerchant #:nodoc:
       end
 
       private
+      def card_transaction_post(money, creditcard, options)
+        requires_address!(options)
+
+        post = {}
+        add_creditcard(post, creditcard)
+        add_address(post, options)
+        add_customer_id(post)
+        add_invoice_data(post, options)
+        add_non_optional_data(post)
+        add_amount(post, money)
+        post[:CustomerEmail] = options[:email]
+        post
+      end
+
       def requires_address!(options)
         raise ArgumentError.new("Missing eWay required parameters: address or billing_address") unless (options.has_key?(:address) or options.has_key?(:billing_address))
       end
@@ -151,14 +174,19 @@ module ActiveMerchant #:nodoc:
         MESSAGES[message[0,2]] || message
       end
 
-      def purchase_url(cvn)
-        suffix = test? ? 'xmltest/testpage.asp' : 'xmlpayment.asp'
+      def card_url(cvn, test_page, live_page)
+        suffix = test? ? "xmltest/#{test_page}" : live_page
         gateway_part = cvn ? 'gateway_cvn' : 'gateway'
         "#{live_url}/#{gateway_part}/#{suffix}"
       end
 
       def refund_url
         suffix = test? ? 'xmltest/refund_test.asp' : 'xmlpaymentrefund.asp'
+        "#{live_url}/gateway/#{suffix}"
+      end
+
+      def void_url
+        suffix = test? ? 'xmltest/authvoidtestpage.asp' : 'xmlauthvoid.asp'
         "#{live_url}/gateway/#{suffix}"
       end
 
