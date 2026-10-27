@@ -14,6 +14,9 @@ module ActiveMerchant #:nodoc:
       self.homepage_url = "https://squareup.com/"
       self.display_name = "Square Payments Gateway"
 
+      # Pinned to the API version square.rb 16 sent; newer versions reject phone numbers the gateway still accepts.
+      SQUARE_API_VERSION = "2021-11-17".freeze
+
       CVC_CODE_TRANSLATOR = {
         "CVV_ACCEPTED" => "M",
         "CVV_REJECTED" => "N",
@@ -63,8 +66,9 @@ module ActiveMerchant #:nodoc:
 
       def square_client
         @square_client ||= Square::Client.new(
-          access_token: @access_token,
-          environment: test? ? "sandbox" : "production"
+          bearer_auth_credentials: Square::BearerAuthCredentials.new(access_token: @access_token),
+          environment: test? ? "sandbox" : "production",
+          square_version: SQUARE_API_VERSION
         )
       end
 
