@@ -101,6 +101,34 @@ class SquareTest < Test::Unit::TestCase
     assert_equal @gateway.send(:scrub, pre_scrubbed), post_scrubbed
   end
 
+  def test_square_client_pins_api_version_and_uses_bearer_credentials
+    config = @gateway.square_client.config
+
+    assert_equal "2021-11-17", config.square_version
+    assert_equal "token", config.bearer_auth_credentials.access_token
+    assert_equal "sandbox", config.environment
+    assert_equal "https://connect.squareupsandbox.com", config.get_base_uri
+  end
+
+  def test_square_client_uses_production_outside_test_mode
+    @gateway.stubs(:test?).returns(false)
+    config = @gateway.square_client.config
+
+    assert_equal "production", config.environment
+    assert_equal "https://connect.squareup.com", config.get_base_uri
+    assert_equal "2021-11-17", config.square_version
+  end
+
+  def test_square_client_sends_pinned_api_version_header
+    sent_request = nil
+    CoreLibrary::FaradayClient.any_instance.stubs(:execute).with { |request| sent_request = request }.raises(Interrupt)
+
+    assert_raises(Interrupt) { @gateway.square_client.locations.list_locations }
+    assert_equal "2021-11-17", sent_request.headers["Square-Version"]
+    assert_equal "Bearer token", sent_request.headers["Authorization"]
+    assert sent_request.query_url.start_with?("https://connect.squareupsandbox.com/")
+  end
+
   private
 
   def successful_purchase_response
