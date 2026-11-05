@@ -44,7 +44,10 @@ class BogusTest < Test::Unit::TestCase
 
   def test_purchase_with_card_or_token_ending_0002_declines
     [credit_card(DECLINE_CARD), 'bogus_4821_9f3a1c7e_0002'].each do |paysource|
-      assert_decline @gateway.purchase(1000, paysource, @options)
+      response = @gateway.purchase(1000, paysource, @options)
+
+      assert_decline response
+      assert_equal BogusGateway::FAILURE_MESSAGE, response.message
     end
   end
 
@@ -108,8 +111,20 @@ class BogusTest < Test::Unit::TestCase
     assert_live_site_failure @gateway.store(check(account_number: CHECK_SUCCESS_PLACEHOLDER, number: nil), live)
   end
 
+  def test_live_site_failures_carry_amount_and_last_four
+    live = { live_site: true }
+    purchase = @gateway.purchase(1000, credit_card(SUCCESS_CARD), live)
+    verify = @gateway.verify(credit_card(SUCCESS_CARD), live)
+
+    assert_equal ['10.00', '1111', nil], purchase.params.values_at('paid_amount', 'last4', 'authorization')
+    assert_equal ['1111', nil], verify.params.values_at('last4', 'authorization')
+  end
+
   def test_missing_or_non_boolean_live_site_raises_on_charges
-    [credit_card(SUCCESS_CARD), check(account_number: CHECK_SUCCESS_PLACEHOLDER, number: nil)].each do |paysource|
+    paysources = [credit_card(SUCCESS_CARD), credit_card('4000000000000028'), credit_card('123', icc_data: 'DEADBEEF'),
+                  check(account_number: CHECK_SUCCESS_PLACEHOLDER, number: nil)]
+
+    paysources.each do |paysource|
       [{}, { live_site: nil }, { live_site: 'false' }].each do |options|
         assert_raises(ArgumentError) { @gateway.purchase(1000, paysource, options) }
         assert_raises(ArgumentError) { @gateway.authorize(1000, paysource, options) }
@@ -125,6 +140,18 @@ class BogusTest < Test::Unit::TestCase
       assert_raises(ArgumentError) { @gateway.capture(1000, TXN_REFERENCE, options) }
       assert_raises(ArgumentError) { @gateway.void(TXN_REFERENCE, options) }
       assert_raises(ArgumentError) { @gateway.store(credit_card(SUCCESS_CARD), options.merge(site_id: 4821)) }
+    end
+  end
+
+  # Fails a public operation added later without the live_site guard (E4).
+  def test_every_public_operation_except_unstore_requires_live_site
+    operations = BogusGateway.public_instance_methods(false) - [:unstore]
+    refute_empty operations
+
+    operations.each do |operation|
+      required = @gateway.method(operation).parameters.count { |type, _| type == :req }
+      error = assert_raises(ArgumentError, operation.to_s) { @gateway.public_send(operation, *[1] * required, {}) }
+      assert_match(/live_site/, error.message)
     end
   end
 
@@ -154,10 +181,12 @@ class BogusTest < Test::Unit::TestCase
     assert_equal ['10.00', '0002', nil], decline.params.values_at('paid_amount', 'last4', 'authorization')
   end
 
-  def test_refund_response_carries_amount_and_authorization
+  def test_refund_and_capture_responses_carry_amount_and_authorization
     refund = @gateway.refund(500, TXN_REFERENCE, @options)
+    capture = @gateway.capture(500, TXN_REFERENCE, @options)
 
     assert_equal ['5.00', refund.authorization], refund.params.values_at('paid_amount', 'authorization')
+    assert_equal ['5.00', capture.authorization], capture.params.values_at('paid_amount', 'authorization')
   end
 
   def test_credit
@@ -186,7 +215,7 @@ class BogusTest < Test::Unit::TestCase
 
     assert response.success?
     assert_match(/\Abogus_4821_\h{8}_1111\z/, response.authorization)
-    assert_equal response.authorization, response.params['billingid']
+    assert_equal [response.authorization, '1111'], response.params.values_at('billingid', 'last4')
   end
 
   def test_storing_the_same_card_twice_returns_different_tokens
@@ -270,6 +299,24 @@ class BogusTest < Test::Unit::TestCase
     assert_equal("Bogus Gateway: Use bank account number ending in 1 for success, 2 for exception and anything else for error", e.message)
   end
 
+  def test_bank_account_store_and_authorize_return_todays_ids
+    store = @gateway.store(check(account_number: CHECK_SUCCESS_PLACEHOLDER, number: nil), @options)
+    authorize = @gateway.authorize(1000, check(account_number: CHECK_SUCCESS_PLACEHOLDER, number: nil), @options)
+
+    assert_equal ['1', BogusGateway::AUTHORIZATION], [store.params['billingid'], store.authorization]
+    assert_equal BogusGateway::AUTHORIZATION, authorize.authorization
+  end
+
+  def test_verify_with_check
+    response = @gateway.verify(check(account_number: CHECK_SUCCESS_PLACEHOLDER, number: nil), @options)
+
+    assert_equal ['1', BogusGateway::AUTHORIZATION], [response.params['billingid'], response.authorization]
+    refute @gateway.verify(check(account_number: CHECK_FAILURE_PLACEHOLDER, number: nil), @options).success?
+    assert_billing_error(BogusGateway::CHECK_ERROR_MESSAGE) do
+      @gateway.verify(check(account_number: '123', number: nil), @options)
+    end
+  end
+
   def test_credit_with_check
     assert  @gateway.credit(1000, check(account_number: CHECK_SUCCESS_PLACEHOLDER, number: nil), @options).success?
     assert !@gateway.credit(1000, check(account_number: CHECK_FAILURE_PLACEHOLDER, number: nil), @options).success?
@@ -313,13 +360,17 @@ class BogusTest < Test::Unit::TestCase
 
   def assert_transaction(response)
     assert response.success?, response.message
+    assert response.test?
     assert_match TXN_ID, response.authorization
   end
 
   def assert_decline(response)
     refute response.success?
+    assert response.test?
     assert_equal Gateway::STANDARD_ERROR_CODE[:processing_error], response.error_code
     assert_nil response.authorization
+    assert response.params.key?('authorization')
+    assert_equal response.message, response.params['error']
   end
 
   def assert_live_site_failure(response)
